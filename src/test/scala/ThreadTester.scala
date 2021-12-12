@@ -3,7 +3,7 @@
  * 
  */
 
-package thread
+package npus
 
 import chisel3._
 import chisel3.iotesters.PeekPokeTester
@@ -27,7 +27,7 @@ object ThreadTester extends App {
                                                                         "--full-stacktrace",
                                                                         "--output-file", "ThreadSocTop.v",
                                                                         "--infer-rw", " ",
-                                                                        "--repl-seq-mem", "-c:thread.ThreadSocTop:-o:ThreadSocTop.v.conf"))*/
+                                                                        "--repl-seq-mem", "-c:npus.ThreadSocTop:-o:ThreadSocTop.v.conf"))*/
 
   iotesters.Driver.execute(Array("--target-dir", "generated",
                                 "--generate-vcd-output", "on", 
