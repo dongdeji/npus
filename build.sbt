@@ -41,7 +41,7 @@ lazy val `rocket-chip` = (Project("rocket-chip", file("rocket-chip/src")))
   .dependsOn(hardfloat)
 
 
-lazy val xiangshan = (Project("XiangShan", base = file(".")))
+lazy val npus = (Project("npus", base = file(".")))
   .settings(commonSettings, chiselSettings)
   .dependsOn(`rocket-chip`)
 
