@@ -957,7 +957,7 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 
 
 
-class XbarThread()(implicit p: Parameters) extends LazyModule {
+class npusTop()(implicit p: Parameters) extends LazyModule {
 
   ElaborationArtefacts.add("graphml", graphML)
   ElaborationArtefacts.add("plusArgs", PlusArgArtefacts.serialize_cHeader)
@@ -1016,13 +1016,13 @@ object TopMain extends App with HasRocketChipStageUtils {
     implicit val p = Parameters.empty
     (new chisel3.stage.ChiselStage).execute(args, Seq(
       chisel3.stage.ChiselGeneratorAnnotation(() => {
-        val soc = LazyModule(new XbarThread())
+        val soc = LazyModule(new npusTop())
         soc.module
       })
     ))
 
     ElaborationArtefacts.files.foreach{ case (extension, contents) =>
-      writeOutputFile("./generated-src", s"XbarThread.${extension}", contents())
+      writeOutputFile("./generated-src", s"npusTop.${extension}", contents())
     }
   }
 }

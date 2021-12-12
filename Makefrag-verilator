@@ -4,7 +4,7 @@ generated_dir_debug = $(abspath .)/generated-src-debug
 sim_dir = ./
 
 
-long_name ?= XbarThread
+long_name ?= npusTop
 
 rc_resource_dir := $(abspath .)/src/main/resources
 csrc := $(rc_resource_dir)/csrc
@@ -17,7 +17,7 @@ LDFLAGS := -L$(RISCV)/lib -Wl,-rpath,$(RISCV)/lib -L$(abspath $(sim_dir)) -lfesv
 emu = emulator
 emu_debug = emulator-debug
 
-MODEL ?= XbarThread
+MODEL ?= npusTop
 
 #--------------------------------------------------------------------
 # Verilator Generation
@@ -25,7 +25,7 @@ MODEL ?= XbarThread
 
 verilog = \
   $(abspath .)/generated-src/tsmc28_sram.v \
-  $(abspath .)/generated-src/XbarThread.v \
+  $(abspath .)/generated-src/npusTop.v \
   $(abspath .)/generated-src/plusarg_reader.v
 
 # Build and install our own Verilator, to work around versionining issues.

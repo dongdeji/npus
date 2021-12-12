@@ -15,11 +15,11 @@ init:
 thread:
 	$(SBT) "runMain thread.ThreadMain"
 
-XbarThread:
+npusTop:
 	mkdir -p generated-src
-	$(SBT) "runMain thread.TopMain -td generated-src --full-stacktrace --output-file XbarThread.v --infer-rw --repl-seq-mem -c:thread.TopMain:-o:generated-src/XbarThread.v.conf "
-	./scripts/vlsi_mem_gen generated-src/XbarThread.v.conf --tsmc28 --output_file generated-src/tsmc28_sram.v > generated-src/tsmc28_sram.v.conf
-	./scripts/vlsi_mem_gen generated-src/XbarThread.v.conf --output_file generated-src/sim_sram.v
+	$(SBT) "runMain thread.TopMain -td generated-src --full-stacktrace --output-file npusTop.v --infer-rw --repl-seq-mem -c:thread.TopMain:-o:generated-src/npusTop.v.conf "
+	./scripts/vlsi_mem_gen generated-src/npusTop.v.conf --tsmc28 --output_file generated-src/tsmc28_sram.v > generated-src/tsmc28_sram.v.conf
+	./scripts/vlsi_mem_gen generated-src/npusTop.v.conf --output_file generated-src/sim_sram.v
 
 # Generate run vcd
 thread-test:
