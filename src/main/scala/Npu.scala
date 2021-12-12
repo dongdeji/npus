@@ -20,14 +20,14 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 
 
-class Group(lid: Int)(implicit p: Parameters) extends LazyModule 
+class Npu(id: Int)(implicit p: Parameters) extends LazyModule 
 {
-  val xbar = AXI4Xbar()
+  //val xbar = AXI4Xbar()
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"Group_$lid",
+                                                      name = s"Cluster_$id",
                                                       id   = IdRange(0, 1 << 1))))))
-  xbar := masternode
+
   lazy val module = new LazyModuleImp(this) {
     val (out, edge) = masternode.out(0)
 
