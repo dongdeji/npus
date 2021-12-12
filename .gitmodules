@@ -1,0 +1,4 @@
+[submodule "rocket-chip"]
+	path = rocket-chip
+	url = https://github.com/dongdeji/rocket-chip.git
+	branch = master
