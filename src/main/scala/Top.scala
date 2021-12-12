@@ -972,10 +972,30 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
     ram.node := TLFragmenter(8, 256) := TLDelayer(0.1) := tlxbar.node
   }
 
-  /* axi4 test */
-  val slaves = Seq.tabulate(1) { i => LazyModule(new AXI4ROM(address = AddressSet(0x10000 + 0x400*i, 0x3ff), beatBytes = beatBytes)) }
-  slaves.foreach { s => (s.node := AXI4Fragmenter() := AXI4Buffer(BufferParams.flow) := AXI4Delayer(0.25) := axi4xbar) }
-  axi4xbar := AXI4Delayer(0.25) := AXI4Deinterleaver(4096) := TLToAXI4() := tlxbar.node
+  /* iram */
+  val iramxbars = Seq.tabulate(1) 
+  { i => 
+    val iramxbar = AXI4Xbar()
+    val iram = LazyModule(new AXI4ROM(AddressSet(0x10000 + 0x400*i, 0x3ff), beatBytes = beatBytes))
+    iram.node := iramxbar
+    iramxbar
+  }
+  iramxbars.foreach { x => (x := AXI4Buffer(BufferParams.flow) := axi4xbar) }
+
+  /*val clusterxbars = Seq.tabulate(1)
+  { i => 
+    val clusterxbar = AXI4Xbar()
+    val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+                                          masters = Seq(AXI4MasterParameters(
+                                                          name = s"Cluster_$i",
+                                                          id   = IdRange(0, 1 << params.idBits))))))
+    clusterxbar := AXI4IdIndexer(1/*fifoBits*/) := masternode
+  }*/
+  val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+                                        masters = Seq(AXI4MasterParameters(
+                                                        name = s"Cluster_test",
+                                                        id   = IdRange(0, 1 << 1))))))
+  axi4xbar := AXI4Deinterleaver(4096) := TLToAXI4() := tlxbar.node
   val axi4slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(AddressSet(0x20000 + 0x400, 0x3ff)),
@@ -988,7 +1008,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
     beatBytes  = beatBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
-  axi4slavenode := axi4xbar
+  axi4slavenode := axi4xbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {
