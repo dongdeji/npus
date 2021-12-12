@@ -34,7 +34,7 @@ object ThreadTester extends App {
                                 "--full-stacktrace",
                                 "--output-file", "ThreadSocTop",
                                 "--infer-rw", " ",
-                                "--repl-seq-mem", "-c:thread.ThreadSocTop:-o:ThreadSocTop.v.conf"), 
+                                "--repl-seq-mem", "-c:npus.ThreadSocTop:-o:ThreadSocTop.v.conf"), 
                           () => new ThreadSocTop()) { c => new ThreadTester(c) }
 }
 

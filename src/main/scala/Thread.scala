@@ -4,7 +4,7 @@
  * 
  */
 
-package thread
+package npus
 
 import chisel3._
 import chisel3.util._
@@ -568,8 +568,6 @@ class DRAM(depth: Int, datalen: Int) extends Module with ThreadsParams
   /************************ handle CUSTOM end ************************/
 }
 
-class FileData(contentsDelayed: => Seq[Byte] ) { def Bytes = contentsDelayed }
-
 
 class BOOTROM(depth: Int, datalen: Int) extends Module
 {
@@ -966,16 +964,16 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
   val model = LazyModule(new TLRAMModel("Xbar"))
   val tlxbar = LazyModule(new TLXbar)
   val axi4xbar = AXI4Xbar()
-  val beatBytes = 16
+  val beatBytes = 8
 
   tlxbar.node := TLDelayer(0.1) := model.node := fuzz.node
   (0 until 2) foreach { n =>
     val ram  = LazyModule(new TLRAM(address = AddressSet(0x0+0x400*n, 0x3ff), beatBytes = beatBytes))
-    ram.node := TLFragmenter(16, 256) := TLDelayer(0.1) := tlxbar.node
+    ram.node := TLFragmenter(8, 256) := TLDelayer(0.1) := tlxbar.node
   }
 
   /* axi4 test */
-  val slaves = Seq.tabulate(3) { i => LazyModule(new AXI4RAM(address = AddressSet(0x10000 + 0x400*i, 0x3ff), beatBytes = beatBytes)) }
+  val slaves = Seq.tabulate(1) { i => LazyModule(new AXI4ROM(address = AddressSet(0x10000 + 0x400*i, 0x3ff), beatBytes = beatBytes)) }
   slaves.foreach { s => (s.node := AXI4Fragmenter() := AXI4Buffer(BufferParams.flow) := AXI4Delayer(0.25) := axi4xbar) }
   axi4xbar := AXI4Delayer(0.25) := AXI4Deinterleaver(4096) := TLToAXI4() := tlxbar.node
   val axi4slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
