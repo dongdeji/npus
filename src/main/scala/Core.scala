@@ -251,7 +251,7 @@ class CUSTOMDecode extends DecodeConstants
 
 
 
-class ThreadALU extends Module with ThreadsParams
+class ThreadALU extends Module with NpusParams
 {
   val io = IO(new Bundle {
                   val dw = Input(UInt(SZ_DW.W)) //Bits(INPUT, SZ_DW)
@@ -330,7 +330,7 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 }
 
 
-class DRAMSim(depth: Int, datalen: Int) extends Module with ThreadsParams
+/*class DRAMSim(depth: Int, datalen: Int) extends Module with NpusParams
 {
   val io = IO(new Bundle {
                   val thread = Flipped(new DRAMBundle(datalen = datalen, addrlen = 32))
@@ -394,7 +394,7 @@ class DRAMSim(depth: Int, datalen: Int) extends Module with ThreadsParams
   io.thread.resp.valid := req_valid
   io.thread.resp.bits.addr := req_addr
   io.thread.resp.bits.tid := req_tid
-  /************************ handle uart RW begin ************************/
+  // handle uart RW begin  
   val uart_regs = RegInit(0.U.asTypeOf(Vec(numThread, UInt(32.W)))); chisel3.dontTouch(uart_regs)
   for(i <- 0 until numThread)
   {
@@ -404,17 +404,17 @@ class DRAMSim(depth: Int, datalen: Int) extends Module with ThreadsParams
     when(req_valid && (i.U === req_tid) && (M_XRD === req_cmd) && (0x54000000.U === req_addr) ) 
     { io.thread.resp.bits.data := Cat(0.U(33.W), uart_regs(i)(30,0)) }
   }
-  /************************ handle uart RW end ************************/
+  //  handle uart RW end 
 
-  /************************ handle CUSTOM begin ************************/
+  // handle CUSTOM begin 
   val shift8 = RegNext(RegNext(RegNext(RegNext(RegNext(RegNext(RegNext(RegNext(io.custom.req))))))))
   io.custom.resp.valid := shift8.valid
   io.custom.resp.bits.rd_valid := true.B
   io.custom.resp.bits.rd := shift8.bits.rd
   io.custom.resp.bits.rd_data := shift8.bits.rs1_data * shift8.bits.rs2_data
   io.custom.resp.bits.tid := shift8.bits.tid
-  /************************ handle CUSTOM end ************************/
-}
+  // handle CUSTOM end  
+}*/
 
 
 
