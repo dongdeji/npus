@@ -24,6 +24,7 @@ trait NpusParams {
   val inslenb: Int = 32  
   val fetchWidthB: Int = 16
   val xLenb: Int = 64
+  val reset_vector: Int = 0x0000000
 }
 
 import chisel3._
