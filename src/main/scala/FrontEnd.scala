@@ -32,6 +32,8 @@ class FrontEnd(implicit p: Parameters) extends LazyModule
     })
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
+    val test_R = RegInit(0.U(32.W)); chisel3.dontTouch(test_R)
+    test_R := test_R + 1.U
 
 
   }
