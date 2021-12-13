@@ -31,6 +31,10 @@ class Group(lid: Int)(implicit p: Parameters) extends LazyModule
                                                       id   = IdRange(0, 1 << 1))))))
   ixbar := tempxbar := masternode
   pxbar := tempxbar
+
+  val npu = LazyModule(new Npu(0))
+  ixbar := npu.imasternode
+  pxbar := npu.pmasternode
   lazy val module = new LazyModuleImp(this) {
     val (out, edge) = masternode.out(0)
 
