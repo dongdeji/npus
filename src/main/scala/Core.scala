@@ -419,15 +419,17 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 
 
 
-class Core(lid: Int)(implicit p: Parameters) extends LazyModule 
+class Core(implicit p: Parameters) extends LazyModule 
 {
-  //val xbar = AXI4Xbar()
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"Core_$lid",
+                                                      name = s"Core",
                                                       id   = IdRange(0, 1 << 1))))))
-
   lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val test = Input(UInt(8.W))
+    })
+    chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
 
 
