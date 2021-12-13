@@ -532,9 +532,9 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
                                                         name = s"Cluster_test",
                                                         id   = IdRange(0, 1 << 1))))))
   axi4xbar := AXI4Deinterleaver(4096) := TLToAXI4() := tlxbar.node
-  val axi4slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  val matchslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
-      address       = Seq(AddressSet(0x20000 + 0x400, 0x3ff)),
+      address       = Seq(AddressSet(0x7000000 + 0x400, 0x3ff)),
       //resources     = resources,
       regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable    = true,
@@ -544,7 +544,10 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
     beatBytes  = beatBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
-  axi4slavenode := axi4xbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+  matchslavenode := axi4xbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+
+  val cluster = LazyModule(new Cluster(0))
+  axi4xbar := cluster.axi4xbar
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {
@@ -554,7 +557,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
       val start = Input(Bool())
     })
 
-    val membus = axi4slavenode.makeIOs()
+    val matchperph = matchslavenode.makeIOs()
 
     chisel3.dontTouch(io)
     io.success := fuzz.module.io.finished
