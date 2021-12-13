@@ -19,15 +19,13 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 
 
-class Cluster(id: Int)(implicit p: Parameters) extends LazyModule 
+class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
-  val beatBytes = 8
-
   /* iram sequence */
   val iramxbars = Seq.tabulate(8) 
   { i => 
     val iramxbar = AXI4Xbar()
-    val iram = LazyModule(new AXI4ROM(AddressSet(0x2000000 + 0x400*i, 0x3ff), beatBytes = beatBytes))
+    val iram = LazyModule(new AXI4ROM(AddressSet(0x2000000 + 0x400*i, 0x3ff), beatBytes = fetchWidthB))
     iram.node := iramxbar
     iramxbar
   }
@@ -56,10 +54,10 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule
       //resources     = resources,
       regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable    = true,
-      supportsRead  = TransferSizes(1, beatBytes),
-      supportsWrite = TransferSizes(1, beatBytes),
+      supportsRead  = TransferSizes(1, fetchWidthB),
+      supportsWrite = TransferSizes(1, fetchWidthB),
       interleavedId = Some(0))),
-    beatBytes  = beatBytes,
+    beatBytes  = fetchWidthB,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 

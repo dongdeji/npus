@@ -256,10 +256,10 @@ class ThreadALU extends Module with NpusParams
   val io = IO(new Bundle {
                   val dw = Input(UInt(SZ_DW.W)) //Bits(INPUT, SZ_DW)
                   val fn = Input(UInt(SZ_ALU_FN.W)) //Bits(INPUT, SZ_ALU_FN)
-                  val in2 = Input(UInt(xLen.W)) //UInt(INPUT, xLen)
-                  val in1 = Input(UInt(xLen.W)) //UInt(INPUT, xLen)
-                  val out = Output(UInt(xLen.W)) //UInt(OUTPUT, xLen)
-                  val adder_out = Output(UInt(xLen.W)) //UInt(OUTPUT, xLen)
+                  val in2 = Input(UInt(xLenb.W)) //UInt(INPUT, xLenb)
+                  val in1 = Input(UInt(xLenb.W)) //UInt(INPUT, xLenb)
+                  val out = Output(UInt(xLenb.W)) //UInt(OUTPUT, xLenb)
+                  val adder_out = Output(UInt(xLenb.W)) //UInt(OUTPUT, xLenb)
                   val cmp_out = Output(Bool()) //Bool(OUTPUT)
                 })
 
@@ -269,15 +269,15 @@ class ThreadALU extends Module with NpusParams
   io.adder_out := io.in1 + in2_inv + isSub(io.fn)
 
   // SLT, SLTU
-  val slt = Mux(io.in1(xLen-1) === io.in2(xLen-1), io.adder_out(xLen-1),
-                  Mux(cmpUnsigned(io.fn), io.in2(xLen-1), io.in1(xLen-1)))
+  val slt = Mux(io.in1(xLenb-1) === io.in2(xLenb-1), io.adder_out(xLenb-1),
+                  Mux(cmpUnsigned(io.fn), io.in2(xLenb-1), io.in1(xLenb-1)))
                   io.cmp_out := cmpInverted(io.fn) ^ Mux(cmpEq(io.fn), in1_xor_in2 === 0.U, slt)
 
   // SLL, SRL, SRA
   val (shamt, shin_r) =
-  if (xLen == 32) (io.in2(4,0), io.in1)
+  if (xLenb == 32) (io.in2(4,0), io.in1)
   else {
-    require(xLen == 64)
+    require(xLenb == 64)
     val shin_hi_32 = Fill(32, isSub(io.fn) && io.in1(31))
     val shin_hi = Mux(io.dw === DW_64, io.in1(63,32), shin_hi_32)
     val shamt = Cat(io.in2(5) & (io.dw === DW_64), io.in2(4,0))
@@ -285,7 +285,7 @@ class ThreadALU extends Module with NpusParams
   }
 
   val shin = Mux(io.fn === FN_SR || io.fn === FN_SRA, shin_r, Reverse(shin_r))
-  val shout_r = (Cat(isSub(io.fn) & shin(xLen-1), shin).asSInt >> shamt)(xLen-1,0)
+  val shout_r = (Cat(isSub(io.fn) & shin(xLenb-1), shin).asSInt >> shamt)(xLenb-1,0)
   val shout_l = Reverse(shout_r)
   val shout = Mux(io.fn === FN_SR || io.fn === FN_SRA, shout_r, 0.U) |
                               Mux(io.fn === FN_SL, shout_l, 0.U)
@@ -296,8 +296,8 @@ class ThreadALU extends Module with NpusParams
   val out = Mux(io.fn === FN_ADD || io.fn === FN_SUB, io.adder_out, shift_logic)
 
   io.out := out
-  if (xLen > 32) {
-    require(xLen == 64)
+  if (xLenb > 32) {
+    require(xLenb == 64)
     when (io.dw === DW_32) { io.out := Cat(Fill(32, out(31)), out(31,0)) }
   }
 }
@@ -419,7 +419,7 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 
 
 
-class Core(implicit p: Parameters) extends LazyModule 
+class Core(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(

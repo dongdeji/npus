@@ -20,7 +20,7 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 
 
-class Group(lid: Int)(implicit p: Parameters) extends LazyModule 
+class Group(lid: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val ixbar = AXI4Xbar() 
   val pxbar = AXI4Xbar()

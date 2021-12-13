@@ -20,7 +20,7 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 
 
-class FrontEnd(implicit p: Parameters) extends LazyModule 
+class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
@@ -29,12 +29,19 @@ class FrontEnd(implicit p: Parameters) extends LazyModule
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val test = Output(UInt(8.W))
+      val thread_readys = Input(Vec(numThread, Bool()))
     })
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
-    val test_R = RegInit(0.U(32.W)); chisel3.dontTouch(test_R)
-    test_R := test_R + 1.U
 
+    //frontend FSM state
+    val front_s_reset :: front_s_req :: front_s_resp :: front_s_ecc :: front_s_scan :: front_s_full :: Nil = Enum(6)
+    //thread FSM state
+    val thread_s_reset :: thread_s_stall :: thread_s_ready :: thread_s_running :: Nil = Enum(4)
+
+    val front_state = RegInit(front_s_reset);chisel3.dontTouch(front_state)
+    val thread_states = RegInit(VecInit(Seq.fill(numThread)(thread_s_reset)));thread_states.foreach(chisel3.dontTouch(_))
+  
 
   }
 }

@@ -20,12 +20,10 @@ import java.nio.file.{Files,Paths}
 
 
 trait NpusParams {
-  val numThread: Int = 11
-  val inslen: Int = 32
-  val iramddrlen: Int = 32
-  val dramddrlen: Int = 32
-  val xLen: Int = 64
-  val isSyncReadMem: Boolean = true
+  val numThread: Int = 8
+  val inslenb: Int = 32  
+  val fetchWidthB: Int = 16
+  val xLenb: Int = 64
 }
 
 import chisel3._
@@ -43,14 +41,12 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 
 
 
-class npusTop()(implicit p: Parameters) extends LazyModule {
+class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams 
+{
 
   ElaborationArtefacts.add("graphml", graphML)
   ElaborationArtefacts.add("plusArgs", PlusArgArtefacts.serialize_cHeader)
   
-  val pxbar = AXI4Xbar()
-  val beatBytes = 8
-
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                         masters = Seq(AXI4MasterParameters(
                                                         name = s"Cluster_test",
@@ -62,12 +58,13 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
       //resources     = resources,
       regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable    = true,
-      supportsRead  = TransferSizes(1, beatBytes),
-      supportsWrite = TransferSizes(1, beatBytes),
+      supportsRead  = TransferSizes(1, fetchWidthB),
+      supportsWrite = TransferSizes(1, fetchWidthB),
       interleavedId = Some(0))),
-    beatBytes  = beatBytes,
+    beatBytes  = fetchWidthB,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
+  val pxbar = AXI4Xbar()
   matchslavenode := pxbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
   val clusters = Seq.tabulate(2) 
