@@ -22,12 +22,15 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 
 class Group(lid: Int)(implicit p: Parameters) extends LazyModule 
 {
-  val xbar = AXI4Xbar()
+  val tempxbar = AXI4Xbar()  
+  val ixbar = AXI4Xbar() 
+  val pxbar = AXI4Xbar()
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Group_$lid",
                                                       id   = IdRange(0, 1 << 1))))))
-  xbar := masternode
+  ixbar := tempxbar := masternode
+  pxbar := tempxbar
   lazy val module = new LazyModuleImp(this) {
     val (out, edge) = masternode.out(0)
 

@@ -547,7 +547,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
   matchslavenode := axi4xbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
   val cluster = LazyModule(new Cluster(0))
-  axi4xbar := cluster.axi4xbar
+  axi4xbar := cluster.pxbar
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {

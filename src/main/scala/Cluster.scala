@@ -21,7 +21,6 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 
 class Cluster(id: Int)(implicit p: Parameters) extends LazyModule 
 {
-  val axi4xbar = AXI4Xbar()
   val beatBytes = 8
 
   /* iram sequence */
@@ -32,8 +31,21 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule
     iram.node := iramxbar
     iramxbar
   }
+  /* groups */
+  val groupxbars = Seq.tabulate(2) 
+  { i => 
+    val group = LazyModule(new Group(i))
+    (group.ixbar, group.pxbar)
+ }
+  /* connect irams and groups */
+  for(i <- 0 until iramxbars.size; j <- 0 until groupxbars.size )
+  { iramxbars(i) := groupxbars(j)._1 }
 
-  iramxbars.foreach { x => (x := AXI4Buffer(BufferParams.flow) := axi4xbar) }
+  /* connect match engin*/
+  val pxbar = AXI4Xbar()
+  for(j <- 0 until groupxbars.size )
+  { pxbar := groupxbars(j)._2 }
+
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Cluster_$id",
@@ -50,18 +62,12 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule
     beatBytes  = beatBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
-  slavenode := axi4xbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
-  /* groups */
-  val groupxbars = Seq.tabulate(2) 
-  { i => LazyModule(new Group(i)).xbar }
-  /* connect irams and groups */
-  for(i <- 0 until iramxbars.size; j <- 0 until groupxbars.size )
-  { iramxbars(i) := groupxbars(j) }
+  slavenode := pxbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
   lazy val module = new LazyModuleImp(this) {
     val (out, outedge) = masternode.out(0)
-    //val (in, inedge) = slavenode.in(0)
+    val (in, inedge) = slavenode.in(0)
   }
 }
 
