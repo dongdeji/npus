@@ -38,6 +38,10 @@ class Group(lid: Int)(implicit p: Parameters) extends LazyModule
   }
 
   lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val clock = Input(Clock())
+      val reset = Input(Bool())
+    })
     val (pout, pedge) = pmasternode.out(0)
 
   }

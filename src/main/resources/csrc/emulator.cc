@@ -284,10 +284,10 @@ done_processing:
     if (done_reset && (dtm->done() || jtag->done() || tile->io_success))
       break;
 
-    tile->io_clock = 0;
-    tile->io_reset = trace_count < async_reset_cycles*2 ? trace_count % 2 :
+    tile->clock = 0;
+    tile->reset = trace_count < async_reset_cycles*2 ? trace_count % 2 :
       trace_count < async_reset_cycles*2 + sync_reset_cycles;
-    done_reset = !tile->io_reset;
+    done_reset = !tile->reset;
     tile->eval();
 #if VM_TRACE
     bool dump = tfp && trace_count >= start;
@@ -295,7 +295,7 @@ done_processing:
       tfp->dump(static_cast<vluint64_t>(trace_count * 2));
 #endif
 
-    tile->io_clock = trace_count >= async_reset_cycles*2;
+    tile->clock = trace_count >= async_reset_cycles*2;
     tile->eval();
 #if VM_TRACE
     if (dump)

@@ -70,13 +70,15 @@ class npusTop()(implicit p: Parameters) extends LazyModule {
     minLatency = 1)))
   matchslavenode := pxbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
-  val cluster = LazyModule(new Cluster(0))
-  pxbar := cluster.pxbar
+  val clusters = Seq.tabulate(2) 
+  { i => 
+    val cluster = LazyModule(new Cluster(i)) 
+    pxbar := cluster.pxbar
+    cluster
+  }
 
-  lazy val module = new LazyRawModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val clock = Input(Clock())
-      val reset = Input(Bool())
       val success = Output(Bool())
       val start = Input(Bool())
     })
