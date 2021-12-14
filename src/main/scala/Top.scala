@@ -27,10 +27,18 @@ trait NpusParams {
   val numIram: Int = 1
   val iramBase: BigInt = 0x2000000
   val iramSize: BigInt = 4096
-  val inslenb: Int = 32  
-  val fetchWidthB: Int = 16
+  val instrBytes: Int = 4  
+  val fetchBytes: Int = 16
   val xLenb: Int = 64
-  val reset_vector: Int = 0x2000000
+  val reset_vector: Int = 0x2000420
+  val pcWidth = 32
+
+  val fetchInstrs = fetchBytes/instrBytes
+  val fetchWidth = fetchBytes*8
+  val instrWidth = instrBytes*8
+  val fetchAddrOffWidth = log2Up(fetchBytes)
+  val instrAddrOffWidth = log2Up(instrBytes)
+  val tidWidth = log2Up(numThread)
 }
 
 import chisel3._
@@ -65,10 +73,10 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
       //resources     = resources,
       regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable    = true,
-      supportsRead  = TransferSizes(1, fetchWidthB),
-      supportsWrite = TransferSizes(1, fetchWidthB),
+      supportsRead  = TransferSizes(1, fetchBytes),
+      supportsWrite = TransferSizes(1, fetchBytes),
       interleavedId = Some(0))),
-    beatBytes  = fetchWidthB,
+    beatBytes  = fetchBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
   val pxbar = LazyModule(new AXI4Xbar)

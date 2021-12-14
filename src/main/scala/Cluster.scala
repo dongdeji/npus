@@ -25,7 +25,7 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
   val iramxbars = Seq.tabulate(numIram) 
   { i => 
     val iramxbar = LazyModule(new AXI4Xbar)
-    val iram = LazyModule(new AXI4ROM(AddressSet(iramBase + iramSize*i, iramSize-1), beatBytes = fetchWidthB))
+    val iram = LazyModule(new AXI4ROM(AddressSet(iramBase + iramSize*i, iramSize-1), beatBytes = fetchBytes))
     iram.node := iramxbar.node
     iramxbar.node
   }
@@ -54,10 +54,10 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
       //resources     = resources,
       regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable    = true,
-      supportsRead  = TransferSizes(1, fetchWidthB),
-      supportsWrite = TransferSizes(1, fetchWidthB),
+      supportsRead  = TransferSizes(1, fetchBytes),
+      supportsWrite = TransferSizes(1, fetchBytes),
       interleavedId = Some(0))),
-    beatBytes  = fetchWidthB,
+    beatBytes  = fetchBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 
