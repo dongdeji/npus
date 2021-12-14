@@ -22,7 +22,6 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 
 class RegFiles(id: Int)(implicit p: Parameters) extends LazyModule 
 {
-  //val xbar = AXI4Xbar()
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Cluster_$id",

@@ -22,7 +22,6 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 
 class Window(lid: Int)(implicit p: Parameters) extends LazyModule 
 {
-  //val xbar = AXI4Xbar()
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Core_$lid",

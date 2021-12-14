@@ -76,13 +76,16 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
     val rrsch = Module(new RRScheduler)
     rrsch.io.readys := readys
 
-
-    val thread_npc = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt)));thread_npc.foreach(chisel3.dontTouch(_))
+    val fetch_data = RegInit(0.U);chisel3.dontTouch(fetch_data)
+    val thread_npc = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt(32.W))));thread_npc.foreach(chisel3.dontTouch(_))
     when(io.redirect) { thread_npc(io.redirect_thread) := io.redirect_npc }
     val req_pc = PriorityMux(rrsch.io.issues, thread_npc)
 
+    chisel3.dontTouch(out.ar)
+    chisel3.dontTouch(out.r)
+    out.r.ready := true.B
     out.ar.valid := false.B
-    out.ar.bits.id := 0.U
+    out.ar.bits.id := 1.U
     //frontend FSM state
     val front_s_reset :: front_s_req :: front_s_resp :: front_s_ecc :: front_s_scan :: front_s_full :: Nil = Enum(6)
     val front_state = RegInit(front_s_reset);chisel3.dontTouch(front_state)
@@ -93,10 +96,15 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
         out.ar.bits.addr := req_pc
         when(out.ar.fire()) { front_state := front_s_resp } 
       }
-      is(front_s_resp) { when(out.r.fire()) { front_state := front_s_ecc } }
-      is(front_s_ecc) {}
-      is(front_s_scan) {}
-      is(front_s_full) {}
+      is(front_s_resp) { 
+        when(out.r.fire()) { 
+          front_state := front_s_ecc 
+          fetch_data := out.r.bits.data
+        } 
+      }
+      is(front_s_ecc) { front_state := front_s_scan }
+      is(front_s_scan) {  }
+      is(front_s_full) {  }
     }
   }
 }

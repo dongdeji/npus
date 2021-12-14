@@ -24,11 +24,13 @@ trait NpusParams {
   val numGroup: Int = 2
   val numNpu: Int = 2
   val numThread: Int = 2
-  val numIram: Int = 4
+  val numIram: Int = 1
+  val iramBase: BigInt = 0x2000000
+  val iramSize: BigInt = 4096
   val inslenb: Int = 32  
   val fetchWidthB: Int = 16
   val xLenb: Int = 64
-  val reset_vector: Int = 0x0000000
+  val reset_vector: Int = 0x2000000
 }
 
 import chisel3._
@@ -69,13 +71,13 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
     beatBytes  = fetchWidthB,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
-  val pxbar = AXI4Xbar()
-  matchslavenode := pxbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+  val pxbar = LazyModule(new AXI4Xbar)
+  matchslavenode := pxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
   val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
-    pxbar := cluster.pxbar
+    pxbar.node := cluster.pxbar.node
     cluster
   }
 

@@ -24,10 +24,10 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
   /* iram sequence */
   val iramxbars = Seq.tabulate(numIram) 
   { i => 
-    val iramxbar = AXI4Xbar()
-    val iram = LazyModule(new AXI4ROM(AddressSet(0x2000000 + 0x400*i, 0x3ff), beatBytes = fetchWidthB))
-    iram.node := iramxbar
-    iramxbar
+    val iramxbar = LazyModule(new AXI4Xbar)
+    val iram = LazyModule(new AXI4ROM(AddressSet(iramBase + iramSize*i, iramSize-1), beatBytes = fetchWidthB))
+    iram.node := iramxbar.node
+    iramxbar.node
   }
   /* groups */
   val groupxbars = Seq.tabulate(numGroup) 
@@ -37,12 +37,12 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
  }
   /* connect irams and groups */
   for(i <- 0 until iramxbars.size; j <- 0 until groupxbars.size )
-  { iramxbars(i) := groupxbars(j)._1 }
+  { iramxbars(i) := groupxbars(j)._1.node }
 
   /* connect match engin*/
-  val pxbar = AXI4Xbar()
+  val pxbar = LazyModule(new AXI4Xbar)
   for(j <- 0 until groupxbars.size )
-  { pxbar := groupxbars(j)._2 }
+  { pxbar.node := groupxbars(j)._2.node }
 
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
@@ -61,7 +61,7 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 
-  slavenode := pxbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+  slavenode := pxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
   lazy val module = new LazyModuleImp(this) {
     chisel3.dontTouch(clock)

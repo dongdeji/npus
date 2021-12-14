@@ -64,13 +64,15 @@ class AXI4ROM(
 
     val index = in.ar.bits.addr(log2Ceil(wrapSize)-1,log2Ceil(beatBytes))
 
-    val ar_sel_s0 = address.contains(in.ar.bits.addr)
-    val ar_sel_s1 = RegNext(ar_sel_s0)
-    val ar_fire_s1 = RegNext(in.ar.fire())
-    val ar_id_s1 = RegNext(in.ar.bits.id)
-    val ar_echo_s1 = RegNext(in.ar.bits.echo)
-    val r_data = RegNext(rom(index))
+    val ar_sel_s0 = address.contains(in.ar.bits.addr);chisel3.dontTouch(ar_sel_s0)
+    val ar_sel_s1 = RegNext(ar_sel_s0);chisel3.dontTouch(ar_sel_s1)
+    val ar_fire_s1 = RegNext(in.ar.fire() && ar_sel_s0);chisel3.dontTouch(ar_fire_s1)
+    val ar_id_s1 = RegNext(in.ar.bits.id);chisel3.dontTouch(ar_id_s1)
+    val ar_echo_s1 = RegNext(in.ar.bits.echo);chisel3.dontTouch(ar_echo_s1)
+    val r_data = RegNext(rom(index));chisel3.dontTouch(r_data)
     
+    chisel3.dontTouch(in.ar)
+    chisel3.dontTouch(in.r)
     in.ar.ready := true.B
     in.r.valid  := ar_fire_s1
     in.r.bits.id   := ar_id_s1
