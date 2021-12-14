@@ -22,7 +22,7 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   /* iram sequence */
-  val iramxbars = Seq.tabulate(8) 
+  val iramxbars = Seq.tabulate(numIram) 
   { i => 
     val iramxbar = AXI4Xbar()
     val iram = LazyModule(new AXI4ROM(AddressSet(0x2000000 + 0x400*i, 0x3ff), beatBytes = fetchWidthB))
@@ -30,7 +30,7 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
     iramxbar
   }
   /* groups */
-  val groupxbars = Seq.tabulate(2) 
+  val groupxbars = Seq.tabulate(numGroup) 
   { i => 
     val group = LazyModule(new Group(i))
     (group.ixbar, group.pxbar)

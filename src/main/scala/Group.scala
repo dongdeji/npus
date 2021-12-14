@@ -30,7 +30,7 @@ class Group(lid: Int)(implicit p: Parameters) extends LazyModule with NpusParams
                                                       id   = IdRange(0, 1 << 1))))))
   pxbar := pmasternode
 
-  val npus = Seq.tabulate(8)
+  val npus = Seq.tabulate(numNpu)
   { i => 
     val npu = LazyModule(new Npu(i)) 
     ixbar := npu.imasternode

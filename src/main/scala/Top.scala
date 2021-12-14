@@ -20,7 +20,11 @@ import java.nio.file.{Files,Paths}
 
 
 trait NpusParams {
-  val numThread: Int = 8
+  val numCluster: Int = 2
+  val numGroup: Int = 2
+  val numNpu: Int = 2
+  val numThread: Int = 2
+  val numIram: Int = 4
   val inslenb: Int = 32  
   val fetchWidthB: Int = 16
   val xLenb: Int = 64
@@ -68,7 +72,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   val pxbar = AXI4Xbar()
   matchslavenode := pxbar := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
-  val clusters = Seq.tabulate(2) 
+  val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
     pxbar := cluster.pxbar
