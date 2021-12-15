@@ -89,7 +89,7 @@ abstract trait DecodeConstants {
 }
 
 
-class ThreadIntCtrlSigs extends Bundle {
+class InstrCtrlSigs extends Bundle {
   val legal = Bool()
   val fp = Bool()
   val custom = Bool()
@@ -256,10 +256,10 @@ class NpuALU extends Module with NpusParams
   val io = IO(new Bundle {
                   val dw = Input(UInt(SZ_DW.W)) //Bits(INPUT, SZ_DW)
                   val fn = Input(UInt(SZ_ALU_FN.W)) //Bits(INPUT, SZ_ALU_FN)
-                  val in2 = Input(UInt(xLenb.W)) //UInt(INPUT, xLenb)
-                  val in1 = Input(UInt(xLenb.W)) //UInt(INPUT, xLenb)
-                  val out = Output(UInt(xLenb.W)) //UInt(OUTPUT, xLenb)
-                  val adder_out = Output(UInt(xLenb.W)) //UInt(OUTPUT, xLenb)
+                  val in2 = Input(UInt(dataWdth.W)) //UInt(INPUT, dataWdth)
+                  val in1 = Input(UInt(dataWdth.W)) //UInt(INPUT, dataWdth)
+                  val out = Output(UInt(dataWdth.W)) //UInt(OUTPUT, dataWdth)
+                  val adder_out = Output(UInt(dataWdth.W)) //UInt(OUTPUT, dataWdth)
                   val cmp_out = Output(Bool()) //Bool(OUTPUT)
                 })
 
@@ -269,15 +269,15 @@ class NpuALU extends Module with NpusParams
   io.adder_out := io.in1 + in2_inv + isSub(io.fn)
 
   // SLT, SLTU
-  val slt = Mux(io.in1(xLenb-1) === io.in2(xLenb-1), io.adder_out(xLenb-1),
-                  Mux(cmpUnsigned(io.fn), io.in2(xLenb-1), io.in1(xLenb-1)))
+  val slt = Mux(io.in1(dataWdth-1) === io.in2(dataWdth-1), io.adder_out(dataWdth-1),
+                  Mux(cmpUnsigned(io.fn), io.in2(dataWdth-1), io.in1(dataWdth-1)))
                   io.cmp_out := cmpInverted(io.fn) ^ Mux(cmpEq(io.fn), in1_xor_in2 === 0.U, slt)
 
   // SLL, SRL, SRA
   val (shamt, shin_r) =
-  if (xLenb == 32) (io.in2(4,0), io.in1)
+  if (dataWdth == 32) (io.in2(4,0), io.in1)
   else {
-    require(xLenb == 64)
+    require(dataWdth == 64)
     val shin_hi_32 = Fill(32, isSub(io.fn) && io.in1(31))
     val shin_hi = Mux(io.dw === DW_64, io.in1(63,32), shin_hi_32)
     val shamt = Cat(io.in2(5) & (io.dw === DW_64), io.in2(4,0))
@@ -285,7 +285,7 @@ class NpuALU extends Module with NpusParams
   }
 
   val shin = Mux(io.fn === FN_SR || io.fn === FN_SRA, shin_r, Reverse(shin_r))
-  val shout_r = (Cat(isSub(io.fn) & shin(xLenb-1), shin).asSInt >> shamt)(xLenb-1,0)
+  val shout_r = (Cat(isSub(io.fn) & shin(dataWdth-1), shin).asSInt >> shamt)(dataWdth-1,0)
   val shout_l = Reverse(shout_r)
   val shout = Mux(io.fn === FN_SR || io.fn === FN_SRA, shout_r, 0.U) |
                               Mux(io.fn === FN_SL, shout_l, 0.U)
@@ -296,8 +296,8 @@ class NpuALU extends Module with NpusParams
   val out = Mux(io.fn === FN_ADD || io.fn === FN_SUB, io.adder_out, shift_logic)
 
   io.out := out
-  if (xLenb > 32) {
-    require(xLenb == 64)
+  if (dataWdth > 32) {
+    require(dataWdth == 64)
     when (io.dw === DW_32) { io.out := Cat(Fill(32, out(31)), out(31,0)) }
   }
 }
@@ -329,95 +329,22 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
   def wordData = genData(2)
 }
 
-
-/*class DRAMSim(depth: Int, datalen: Int) extends Module with NpusParams
-{
-  val io = IO(new Bundle {
-                  val thread = Flipped(new DRAMBundle(datalen = datalen, addrlen = 32))
-                  val custom = Flipped(new CustomBundle)
-                  val bootrom = new IRAMBundle(datalen = 64, addrlen = 32)
-                  })
-
-  val req_valid = RegNext(io.thread.req.valid)
-  val req_cmd = RegNext(io.thread.req.bits.cmd)
-  val req_addr = RegNext(io.thread.req.bits.addr)
-  val req_tid = RegNext(io.thread.req.bits.tid)
-  val bankrams = (0 until datalen/8 ).map{ i => Module(new SyncReadMemSim(depth, 8/*bits*/))}
-
-  io.bootrom.write.valid := false.B
-  io.bootrom.write.bits.addr := 0.U
-  io.bootrom.write.bits.data := 0.U
-  io.bootrom.write.bits.tid := 0xFF.U
-
-  when(io.thread.req.valid && (io.thread.req.bits.addr < 0x2000000.U) )
-  {
-    io.bootrom.read.valid := true.B
-    io.bootrom.read.bits.addr := Cat(io.thread.req.bits.addr(31, 3), 0.U(3.W))
-    io.bootrom.read.bits.tid := io.thread.req.bits.tid
-  }
-  .otherwise
-  {
-    io.bootrom.read.valid := false.B
-    io.bootrom.read.bits.addr := 0.U
-    io.bootrom.read.bits.tid := 0xFF.U
-  }
-  val wdata = Wire(Vec(datalen/8, UInt(8.W))); chisel3.dontTouch(wdata)
-  wdata := (new StoreGen(io.thread.req.bits.size, 0.U, io.thread.req.bits.data, 8).data).asTypeOf(Vec(datalen/8, UInt(8.W)))
-
-  val dsize = WireInit(1.U << io.thread.req.bits.size); chisel3.dontTouch(dsize)
-  val addr_h = io.thread.req.bits.addr(log2Up(depth) - 1, log2Up(datalen/8))
-  val addr_l = io.thread.req.bits.addr(log2Up(datalen/8)-1, 0)
-  val unmask_l = WireInit((-1.S((datalen/8).W) >> addr_l) << addr_l); chisel3.dontTouch(unmask_l)
-  val unmask_h = WireInit((-1.S((datalen/8).W) >> (addr_l + dsize)) << (addr_l + dsize)); chisel3.dontTouch(unmask_h)
-  val dmask = WireInit((~unmask_h & unmask_l)((datalen/8) -1, 0)); chisel3.dontTouch(dmask)
-  val enmask = WireInit(Fill(datalen/8, io.thread.req.valid && io.thread.req.bits.cmd.isOneOf(M_XRD, M_XWR)) & dmask); chisel3.dontTouch(enmask)
-
-  (0 until datalen/8).map{ i =>
-    bankrams(i).io.addr := addr_h
-    bankrams(i).io.wen := enmask(i) && io.thread.req.bits.cmd.isOneOf(M_XWR)
-    bankrams(i).io.wdata := wdata(i)
-  }
-
-  val renmask = RegNext(enmask)
-
-
-  val rdatas = (0 until datalen/8).map{ i => 
-        Mux(renmask(i).asBool, 
-          Mux(req_addr < 0x2000000.U, io.bootrom.resp.bits.data(i*8+7, i*8), 
-                                      bankrams(i).io.rdata), 0.U) }
-  val rdata = WireInit(Cat(rdatas.reverse))
-
-  io.thread.resp.bits.data := rdata >> (req_addr(log2Up(datalen/8)-1, 0) << 3)
-  //val rdatas = (0 until datalen/8).map{ i => Mux(renmask(i).asBool, bankrams(i).io.rdata, 0.U) }
-  //val rdata = WireInit(Cat(rdatas.reverse))
-  //io.thread.resp.bits.data := Mux(req_addr < 0x2000000.U, io.bootrom.resp.bits.data , rdata) >> (req_addr(log2Up(datalen/8)-1, 0) << 3)
-  io.thread.resp.valid := req_valid
-  io.thread.resp.bits.addr := req_addr
-  io.thread.resp.bits.tid := req_tid
-  // handle uart RW begin  
-  val uart_regs = RegInit(0.U.asTypeOf(Vec(numThread, UInt(32.W)))); chisel3.dontTouch(uart_regs)
-  for(i <- 0 until numThread)
-  {
-    when(io.thread.req.valid && (i.U === io.thread.req.bits.tid) && (M_XWR === io.thread.req.bits.cmd) && (0x54000000.U === io.thread.req.bits.addr) )
-    { uart_regs(i) := io.thread.req.bits.data(31,0) }
-
-    when(req_valid && (i.U === req_tid) && (M_XRD === req_cmd) && (0x54000000.U === req_addr) ) 
-    { io.thread.resp.bits.data := Cat(0.U(33.W), uart_regs(i)(30,0)) }
-  }
-  //  handle uart RW end 
-
-  // handle CUSTOM begin 
-  val shift8 = RegNext(RegNext(RegNext(RegNext(RegNext(RegNext(RegNext(RegNext(io.custom.req))))))))
-  io.custom.resp.valid := shift8.valid
-  io.custom.resp.bits.rd_valid := true.B
-  io.custom.resp.bits.rd := shift8.bits.rd
-  io.custom.resp.bits.rd_data := shift8.bits.rs1_data * shift8.bits.rs2_data
-  io.custom.resp.bits.tid := shift8.bits.tid
-  // handle CUSTOM end  
-}*/
-
-
-
+class ThreadUop extends Bundle with NpusParams {
+  val ready = Bool()
+  val valid = Bool() // valid after decode
+  val tid = UInt(log2Up(numThread).W)
+  val ctrl = new InstrCtrlSigs
+  val pc = UInt(pcWidth.W) // valid after decode
+  val instr = Bits(instrWidth.W) // valid after decode
+  val rd_valid = Bool() // valid after alu/lsu/mul/div/fpu
+  val rd = UInt(5.W) // valid after decode, bit40 for register index
+  val rs1 = UInt(5.W) // valid after decode, bit40 for register index
+  val rs2 = UInt(5.W) // valid after decode, bit4~0 for register index
+  val rd_data = Bits(dataWdth.W) // valid after alu/lsu/mul/div/fpu
+  val rs1_data = Bits(dataWdth.W) // valid at the end of ISSUE
+  val rs2_data = Bits(dataWdth.W) // valid at the end of ISSUE
+  val resped = Bool() // mark mem/custom responed
+}
 
 class Core(implicit p: Parameters) extends LazyModule with NpusParams 
 {
@@ -440,11 +367,21 @@ class Core(implicit p: Parameters) extends LazyModule with NpusParams
           val instr = UInt(instrWidth.W) }
       ))
     })
-
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
 
+    /**********************************************************/
+    /****************** decode stage begin ********************/
+    val decode_table = { Seq(new CUSTOMDecode) ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
+    val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.instr.bits.instr, decode_table); chisel3.dontTouch(id_ctrl)
+    val id_rs1 = WireInit(Mux(id_ctrl.rxs1, io.instr.bits.instr(19,15), 0.U(5.W)))
+    val id_rs2 = WireInit(Mux(id_ctrl.rxs2, io.instr.bits.instr(24,20), 0.U(5.W)))
 
+    /****************** decode stage begin ********************/
+    /**********************************************************/
+    val rr_uops = RegInit(VecInit(Seq.fill(3)(0.U.asTypeOf(new ThreadUop))));rr_uops.foreach(dontTouch(_))
+    val ex_uop = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop)
+    val wb_uop = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop)
   }
 }
 

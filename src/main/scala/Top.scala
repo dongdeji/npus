@@ -29,15 +29,14 @@ trait NpusParams {
   val iramSize: BigInt = 4096
   val instrBytes: Int = 4
   val fetchInstrs: Int = 4
-  val xLenb: Int = 64
   val reset_vector: Int = 0x2000000
+
+  val dataWdth: Int = 64
   val pcWidth = 32
-  
+
   val fetchBytes = instrBytes*fetchInstrs
   val fetchWidth = fetchBytes*8
   val instrWidth = instrBytes*8
-  //val fetchAddrOffWidth = log2Up(fetchBytes)
-  //val instrAddrOffWidth = log2Up(instrBytes)
   val tidWidth = log2Up(numThread)
 }
 
