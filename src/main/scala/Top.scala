@@ -30,14 +30,14 @@ trait NpusParams {
   val instrBytes: Int = 4  
   val fetchBytes: Int = 16
   val xLenb: Int = 64
-  val reset_vector: Int = 0x2000420
+  val reset_vector: Int = 0x200042c
   val pcWidth = 32
 
   val fetchInstrs = fetchBytes/instrBytes
   val fetchWidth = fetchBytes*8
   val instrWidth = instrBytes*8
-  val fetchAddrOffWidth = log2Up(fetchBytes)
-  val instrAddrOffWidth = log2Up(instrBytes)
+  //val fetchAddrOffWidth = log2Up(fetchBytes)
+  //val instrAddrOffWidth = log2Up(instrBytes)
   val tidWidth = log2Up(numThread)
 }
 

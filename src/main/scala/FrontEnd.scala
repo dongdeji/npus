@@ -18,16 +18,18 @@ import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
-
+import freechips.rocketchip.util._
+import freechips.rocketchip.rocket.Instructions._
 
 class RRScheduler extends Module with NpusParams
 {
   val io = IO(new Bundle() {
                     val readys = Input(UInt(numThread.W))
-                    val issues = Output(UInt(numThread.W))
+                    val issue_OH = Output(UInt(numThread.W))
+                    val issue_tid = Output(UInt(tidWidth.W))
                     })
 
-  val issues_cnt = PopCount(io.issues)
+  val issues_cnt = PopCount(io.issue_OH)
   //if(numThread > 1) { assert((io.readys =/= (-1.S(numThread.W)).asUInt)) } // can not be all idle
   assert(issues_cnt === 1.U || issues_cnt === 0.U) // one thread per clock, otherwise error
 
@@ -44,10 +46,11 @@ class RRScheduler extends Module with NpusParams
   rrcnt_nxt := Mux(big_rrcnt >= numThread.U, big_rrcnt - numThread.U, big_rrcnt)
 
   when(reset.asBool)
-  { io.issues := 0.U }
+  { io.issue_OH := 0.U }
   .otherwise
-  { io.issues := (io.readys.orR).asUInt << rrcnt_nxt }
-
+  { io.issue_OH := (io.readys.orR).asUInt << rrcnt_nxt }
+  
+  io.issue_tid := OHToUInt(io.issue_OH)
 }
 
 class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -73,11 +76,11 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
 
     //thread state
     val thread_s_reset :: thread_halt :: thread_s_stall :: thread_s_ready :: thread_s_running :: Nil = Enum(5)
-    val thread_states_R = RegInit(VecInit(Seq.fill(numThread)(thread_s_reset)));thread_states_R.foreach(chisel3.dontTouch(_))
+    val thread_states_R = RegInit(VecInit(Seq.fill(numThread)(thread_s_ready)));thread_states_R.foreach(chisel3.dontTouch(_))
     for(i <- 0 until numThread) { when(io.thread_readys(i)) { thread_states_R(i) := thread_s_ready } }
 
     //val readys = VecInit(Seq.tabulate(numThread) { i => thread_states_R(i) === thread_s_ready } ).asUInt
-    val readys = 1.U //to do
+    val readys = 1.U //to do by dongdeji
     val rrsch = Module(new RRScheduler);chisel3.dontTouch(rrsch.io)
     rrsch.io.readys := readys
 
@@ -110,6 +113,8 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
     io.core.bits.tid := tid_buff_R(tidWidth - 1, 0)
     io.core.bits.instr := instr_buff_R(instrWidth - 1, 0)
 
+    val temp1 = WireInit(0.U); chisel3.dontTouch(temp1)
+    val temp2 = WireInit(0.U); chisel3.dontTouch(temp2)
     //frontend FSM state
     val fetch_s_reset :: fetch_s_req :: fetch_s_resp :: fetch_s_ecc :: fetch_s_scan :: fetch_s_nospace :: Nil = Enum(6)
     val fetch_state_R = RegInit(fetch_s_reset);chisel3.dontTouch(fetch_state_R)
@@ -120,16 +125,16 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
       { 
         //make instr reqest msg
         out.ar.valid := true.B
-        out.ar.bits.addr := PriorityMux(rrsch.io.issues, thread_npc_R)
-        fetch_s_req_pc_R := PriorityMux(rrsch.io.issues, thread_npc_R)
-        fetch_s_req_tid_R := OHToUInt(rrsch.io.issues)
+        out.ar.bits.addr := PriorityMux(rrsch.io.issue_OH, thread_npc_R)
+        fetch_s_req_pc_R := PriorityMux(rrsch.io.issue_OH, thread_npc_R)
+        fetch_s_req_tid_R := rrsch.io.issue_tid
         when(out.ar.fire()) { fetch_state_R := fetch_s_resp } 
 
         //update npc
         for(i <- 0 until numThread) 
         { 
-          when(out.ar.fire() && i.U === OHToUInt(rrsch.io.issues)) 
-          { thread_npc_R(i) := ((thread_npc_R(i) >> fetchAddrOffWidth) + 1.U ) << fetchAddrOffWidth } 
+          when(out.ar.fire() && i.U === rrsch.io.issue_tid) 
+          { thread_npc_R(i) := ((thread_npc_R(i) >> log2Up(fetchBytes)) + 1.U ) << log2Up(fetchBytes) } 
         }
       }
       is(fetch_s_resp) 
@@ -137,12 +142,15 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
         when(out.r.fire()) 
         { 
           //store instr data to register and shiftout unwanted data
-          fetch_tid_R := Fill(fetchInstrs, fetch_s_req_tid_R) >> (fetch_s_req_pc_R(fetchAddrOffWidth-1 ,0) << tidWidth)
-          fetch_data_R := out.r.bits.data >> (fetch_s_req_pc_R(fetchAddrOffWidth-1 ,0) << fetchAddrOffWidth)
+          fetch_tid_R := Fill(fetchInstrs, fetch_s_req_tid_R) >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
+          fetch_data_R := out.r.bits.data >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
           fetch_state_R := fetch_s_ecc
         } 
       }
-      is(fetch_s_ecc) { fetch_state_R := fetch_s_scan }
+      is(fetch_s_ecc) 
+      { 
+        fetch_state_R := fetch_s_scan 
+      }
       is(fetch_s_scan) 
       { 
         when(instr_cnt_R <= (instr_buff_R.getWidth/instrWidth - fetchInstrs + 1).U) 
@@ -156,13 +164,22 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
             Cat(0.U(tidWidth.W), tid_buff_R(2*fetchInstrs*tidWidth-1, tidWidth)) 
               | ( fetch_tid_R << ((instr_cnt_R-1.U) << log2Up(tidWidth)) ) )
 
-          val instr_num = (fetchBytes.U - fetch_s_req_pc_R(fetchAddrOffWidth-1 ,0)) >> instrAddrOffWidth
+          val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
           //update instr cnt
-          instr_cnt_R := Mux(instr_cnt_R === 0.U, instr_num, instr_num + instr_cnt_R - 1.U)
+          instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)
           fetch_state_R := fetch_s_req 
           //check redirect instr
-          val redirects = WireInit(VecInit(Seq.fill(fetchInstrs)(false.B))) //to do by dongdeji
-          when(redirects.asUInt.orR) { halting := true.B }
+          //val rviBranch = rviBits(6,0) === Instructions.BEQ.value.asUInt()(6,0)
+          //val rviJump = rviBits(6,0) === Instructions.JAL.value.asUInt()(6,0)
+          //val rviJALR = rviBits(6,0) === Instructions.JALR.value.asUInt()(6,0)
+          val instr_mask = Fill(fetchInstrs, true.B) >> fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,log2Up(instrBytes))
+          val instr_redirects = WireInit(VecInit(Seq.tabulate(fetchInstrs){ i => 
+                fetch_data_R((i+1)*instrWidth - 1, i*instrWidth)(6,0).isOneOf(
+                  Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0), 0.U(7.W))) })) //to do by dongdeji
+          val isRedirects = instr_mask & instr_redirects.asUInt
+          temp1 := instr_mask
+          temp2 := instr_redirects.asUInt
+          when(isRedirects.asUInt.orR) { halting := true.B }
         }
         .otherwise { fetch_state_R := fetch_s_nospace }
       }
@@ -172,17 +189,16 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
         {
           //putinto instr buff
           instr_buff_R := Mux(instr_cnt_R === 0.U, fetch_data_R,  
-            Cat(0.U(instrWidth.W), instr_buff_R(2*fetchBytes*8-1, instrWidth)) & fetch_data_R << ((instr_cnt_R-1.U) << instrAddrOffWidth) )
-          val instr_num = (fetchBytes.U - fetch_s_req_pc_R(fetchAddrOffWidth-1 ,0)) >> instrAddrOffWidth
+            Cat(0.U(instrWidth.W), instr_buff_R(2*fetchBytes*8-1, instrWidth)) & fetch_data_R << ((instr_cnt_R-1.U) << log2Up(instrBytes)) )
+          val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
           //update instr cnt
-          instr_cnt_R := Mux(instr_cnt_R === 0.U, instr_num, instr_num + instr_cnt_R - 1.U)
+          instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)
           fetch_state_R := fetch_s_req 
         }
         .otherwise { fetch_state_R := fetch_s_req }
       }
     }  //end of switch(fetch_state_R)
-
-  }
+  }// end of lazy val module = new LazyModuleImp(this)
 }
 
 

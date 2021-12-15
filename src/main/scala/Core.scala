@@ -27,7 +27,7 @@ import java.nio.ByteBuffer
 import java.nio.file.{Files,Paths}
 
 
-object ThreadALU
+object NpuALU
 {
   val SZ_ALU_FN = 4
   def FN_X    = BitPat("b????")
@@ -64,7 +64,7 @@ object ThreadALU
   def cmpEq(cmd: UInt) = !cmd(3)
 }
 
-import ThreadALU._
+import NpuALU._
 
 /**
  * Abstract trait giving defaults and other relevant values to different Decode constants/
@@ -251,7 +251,7 @@ class CUSTOMDecode extends DecodeConstants
 
 
 
-class ThreadALU extends Module with NpusParams
+class NpuALU extends Module with NpusParams
 {
   val io = IO(new Bundle {
                   val dw = Input(UInt(SZ_DW.W)) //Bits(INPUT, SZ_DW)
