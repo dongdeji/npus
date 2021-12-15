@@ -330,10 +330,9 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 }
 
 class ThreadUop extends Bundle with NpusParams {
-  val ready = Bool()
   val valid = Bool() // valid after decode
-  val tid = UInt(log2Up(numThread).W)
   val ctrl = new InstrCtrlSigs
+  val tid = UInt(log2Up(numThread).W)
   val pc = UInt(pcWidth.W) // valid after decode
   val instr = Bits(instrWidth.W) // valid after decode
   val rd_valid = Bool() // valid after alu/lsu/mul/div/fpu
@@ -370,18 +369,89 @@ class Core(implicit p: Parameters) extends LazyModule with NpusParams
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
 
-    /**********************************************************/
-    /****************** decode stage begin ********************/
+
+    /****************************************************************/
+    /**************** key pipe signal define begine******************/
+    val id_uop = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(id_uop)
+    val rr_uops = WireInit(VecInit(Seq.fill(3)(0.U.asTypeOf(new ThreadUop))));rr_uops.foreach(dontTouch(_))
+    val ex_uop = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop)
+    val wb_uop = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop)
+    val rr_uops_R = RegInit(VecInit(Seq.fill(3)(0.U.asTypeOf(new ThreadUop))));rr_uops_R.foreach(dontTouch(_))
+    val ex_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop_R)
+    val wb_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop_R)
+    rr_uops := rr_uops_R
+    ex_uop := ex_uop_R
+    wb_uop := wb_uop_R
+
+    val regfile = Module(new RegFiles);chisel3.dontTouch(regfile.io)
+    /**************** key pipe signal define end ******************/
+    /**************************************************************/
+
+    /****************************************************************/
+    /****************** instruction decode begin ********************/
     val decode_table = { Seq(new CUSTOMDecode) ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
     val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.instr.bits.instr, decode_table); chisel3.dontTouch(id_ctrl)
-    val id_rs1 = WireInit(Mux(id_ctrl.rxs1, io.instr.bits.instr(19,15), 0.U(5.W)))
-    val id_rs2 = WireInit(Mux(id_ctrl.rxs2, io.instr.bits.instr(24,20), 0.U(5.W)))
+    id_uop.valid    := io.instr.valid && id_ctrl.legal
+    id_uop.ctrl     := id_ctrl
+    id_uop.tid      := io.instr.bits.tid
+    id_uop.pc       := io.instr.bits.pc
+    id_uop.instr    := io.instr.bits.instr
+    id_uop.rd_valid := false.B
+    id_uop.rd       := Cat(io.instr.bits.tid, Mux(id_ctrl.rxs1, io.instr.bits.instr(11,7), 0.U(5.W)))
+    id_uop.rs1      := Cat(io.instr.bits.tid, Mux(id_ctrl.rxs1, io.instr.bits.instr(19,15), 0.U(5.W)))
+    id_uop.rs2      := Cat(io.instr.bits.tid, Mux(id_ctrl.rxs2, io.instr.bits.instr(24,20), 0.U(5.W)))
+    id_uop.rd_data  := 0.U
+    id_uop.rs1_data := 0.U
+    id_uop.rs2_data := 0.U
+    id_uop.resped   := false.B
 
-    /****************** decode stage begin ********************/
+    regfile.io.rd_write := false.B // to do by dongdeji
+    regfile.io.rd_data  := 0.U // to do by dongdeji
+    regfile.io.rd       := id_uop.rd
+    regfile.io.rs1      := id_uop.rs1
+    regfile.io.rs2      := id_uop.rs2
+    /****************** instruction decode end **********************/
+    /****************************************************************/
+
+
     /**********************************************************/
-    val rr_uops = RegInit(VecInit(Seq.fill(3)(0.U.asTypeOf(new ThreadUop))));rr_uops.foreach(dontTouch(_))
-    val ex_uop = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop)
-    val wb_uop = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop)
+    /****************** register read begin *******************/
+
+    /****************** register read end *********************/
+    /**********************************************************/
+
+    /***********************************************/
+    /****************** ex begin *******************/
+    val alu = Module(new NpuALU);chisel3.dontTouch(alu.io)
+    alu.io.dw := ex_uop.ctrl.alu_dw
+    alu.io.fn := ex_uop.ctrl.alu_fn
+    alu.io.in2 := MuxLookup(ex_uop.ctrl.sel_alu2, 0.S,
+                                Seq(  A2_RS2 -> ex_uop.rs2_data.asSInt,
+                                      A2_IMM -> ImmGen(ex_uop.ctrl.sel_imm, ex_uop.instr),
+                                      A2_SIZE -> Mux(/*ex_uop.rvc*/false.B, 2.S, 4.S))).asUInt
+
+    alu.io.in1 := MuxLookup(ex_uop.ctrl.sel_alu1, 0.S,
+                                Seq(  A1_RS1 -> ex_uop.rs1_data.asSInt,
+                                      A1_PC -> ex_uop.pc.asSInt)).asUInt
+    /* handle imem request */
+    val nxt_target = Mux(ex_uop.ctrl.jalr, alu.io.out/*encodeVirtualAddress(alu.io.out, alu.io.out)*/,
+                            (ex_uop.pc.asSInt + Mux(ex_uop.ctrl.branch && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop.instr),
+                                                      Mux(ex_uop.ctrl.jal, ImmGen(IMM_UJ, ex_uop.instr),
+                                                            Mux(/*ex_uop.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
+    /*val nxt_pc = RegInit(0.U.asTypeOf(Vec(numThread, UInt(iramddrlen.W)))); chisel3.dontTouch(nxt_pc)
+    for(i <- 0 until numThread)
+    { 
+      when(ex_uop.valid && (ex_uop.tid === i.U) ) 
+      { nxt_pc(i) := Mux(ex_uop.valid, nxt_target, nxt_pc(i)) } 
+    }*/
+    /****************** ex end *********************/
+    /***********************************************/
+
+    /*******************************************************/
+    /****************** write back begin *******************/
+
+    /****************** write back end *********************/
+    /*******************************************************/
 
   }
 }

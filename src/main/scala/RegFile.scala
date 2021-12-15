@@ -20,18 +20,29 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 
 
-class RegFiles(id: Int)(implicit p: Parameters) extends LazyModule 
+class RegFiles extends Module with NpusParams 
 {
-  val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
-                                      masters = Seq(AXI4MasterParameters(
-                                                      name = s"Cluster_$id",
-                                                      id   = IdRange(0, 1 << 1))))))
+  val io = IO(new Bundle {
+    val rd_write = Input(Bool()                       )
+    val rd_data  = Input(Bits(dataWidth.W)            )
+    val rd       = Input(UInt((log2Up(numThread)+5).W))
+    val rs1      = Input(UInt((log2Up(numThread)+5).W))
+    val rs2      = Input(UInt((log2Up(numThread)+5).W))
+    val rs1_data = Output(Bits(dataWidth.W)           )
+    val rs2_data = Output(Bits(dataWidth.W)           )
+  })
 
-  lazy val module = new LazyModuleImp(this) {
-    val (out, edge) = masternode.out(0)
-
-
+  val part1 = Seq.tabulate(dataWidth/8) { i => SyncReadMem(numThread*32, UInt(8.W)) }
+  val part2 = Seq.tabulate(dataWidth/8) { i => SyncReadMem(numThread*32, UInt(8.W)) }
+  
+  when(io.rd_write)
+  {
+    Seq.tabulate(dataWidth/8){ i => part1(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
+    Seq.tabulate(dataWidth/8){ i => part2(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
   }
+  // x0 is always 0
+  io.rs1_data := Mux(io.rs1(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataWidth/8){ i => part1(i).read(io.rs1)}).asUInt)
+  io.rs2_data := Mux(io.rs2(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataWidth/8){ i => part2(i).read(io.rs2)}).asUInt)
 }
 
 
