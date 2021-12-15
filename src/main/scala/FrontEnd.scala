@@ -61,12 +61,14 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
                                                       id   = IdRange(0, 1 << 1))))))
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val test = Output(UInt(8.W))
-      val thread_readys = Input(Vec(numThread, Bool()))
-      val redirect = Input(Bool())
-      val redirect_thread = Input(UInt(tidWidth.W))
-      val redirect_npc = Input(UInt(pcWidth.W))
-      val core = Output(Valid( new Bundle {
+      val ctrl = Input(new Bundle { 
+          val thread_readys = Vec(numThread, Bool()) } 
+      )
+      val redirect = Input(Valid( new Bundle {
+          val tid = UInt(tidWidth.W)
+          val npc = UInt(pcWidth.W) }
+      ))
+      val instr = Output(Valid( new Bundle {
           val tid = UInt(tidWidth.W)
           val pc = UInt(pcWidth.W)
           val instr = UInt(instrWidth.W) }
@@ -84,8 +86,8 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
     val thread_states_R = RegInit(VecInit(Seq.fill(numThread)(thread_s_ready)));thread_states_R.foreach(chisel3.dontTouch(_))
     for(i <- 0 until numThread) 
     { 
-      when(io.thread_readys(i) || (halting && (fetch_s_req_tid_R === i.U))) 
-      { thread_states_R(i) := Mux(io.thread_readys(i), thread_s_ready, thread_s_halt) } 
+      when(io.ctrl.thread_readys(i) || (halting && (fetch_s_req_tid_R === i.U))) 
+      { thread_states_R(i) := Mux(io.ctrl.thread_readys(i), thread_s_ready, thread_s_halt) } 
     }
 
     //val readys = VecInit(Seq.tabulate(numThread) { i => thread_states_R(i) === thread_s_ready } ).asUInt
@@ -98,7 +100,7 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
     val fetch_data_R = RegInit(0.U);chisel3.dontTouch(fetch_data_R)
 
     val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt(pcWidth.W))));thread_npc_R.foreach(chisel3.dontTouch(_))
-    when(io.redirect) { thread_npc_R(io.redirect_thread) := io.redirect_npc }
+    when(io.redirect.valid) { thread_npc_R(io.redirect.bits.tid) := io.redirect.bits.npc }
 
     chisel3.dontTouch(out.ar)
     chisel3.dontTouch(out.r)
@@ -117,10 +119,10 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
       pc_buff_R := pc_buff_R >> pcWidth
       instr_buff_R := instr_buff_R >> instrWidth
     }
-    io.core.valid := instr_cnt_R.orR
-    io.core.bits.tid := tid_buff_R(tidWidth - 1, 0)
-    io.core.bits.pc := pc_buff_R(pcWidth - 1, 0)
-    io.core.bits.instr := instr_buff_R(instrWidth - 1, 0)
+    io.instr.valid := instr_cnt_R.orR
+    io.instr.bits.tid := tid_buff_R(tidWidth - 1, 0)
+    io.instr.bits.pc := pc_buff_R(pcWidth - 1, 0)
+    io.instr.bits.instr := instr_buff_R(instrWidth - 1, 0)
 
     val debug1 = WireInit(0.U); chisel3.dontTouch(debug1)
     val debug2 = WireInit(0.U); chisel3.dontTouch(debug2)

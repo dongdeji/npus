@@ -30,9 +30,7 @@ class Npu(lid: Int)(implicit p: Parameters) extends LazyModule with NpusParams
   lazy val module = new LazyModuleImp(this) {
     //val (iout, iedge) = imasternode.out(0)
     //val (pout, pedge) = pmasternode.out(0)
-    core.module.io.test := front.module.io.test
-
-
+    core.module.io <> front.module.io
   }
 }
 

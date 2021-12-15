@@ -427,8 +427,20 @@ class Core(implicit p: Parameters) extends LazyModule with NpusParams
                                                       id   = IdRange(0, 1 << 1))))))
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val test = Input(UInt(8.W))
+      val ctrl = Output(new Bundle { 
+          val thread_readys = Vec(numThread, Bool()) } 
+      )
+      val redirect = Output(Valid( new Bundle {
+          val tid = UInt(tidWidth.W)
+          val npc = UInt(pcWidth.W) }
+      ))
+      val instr = Input(Valid( new Bundle {
+          val tid = UInt(tidWidth.W)
+          val pc = UInt(pcWidth.W)
+          val instr = UInt(instrWidth.W) }
+      ))
     })
+
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
 
