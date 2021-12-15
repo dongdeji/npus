@@ -256,10 +256,10 @@ class NpuALU extends Module with NpusParams
   val io = IO(new Bundle {
                   val dw = Input(UInt(SZ_DW.W)) //Bits(INPUT, SZ_DW)
                   val fn = Input(UInt(SZ_ALU_FN.W)) //Bits(INPUT, SZ_ALU_FN)
-                  val in2 = Input(UInt(dataWdth.W)) //UInt(INPUT, dataWdth)
-                  val in1 = Input(UInt(dataWdth.W)) //UInt(INPUT, dataWdth)
-                  val out = Output(UInt(dataWdth.W)) //UInt(OUTPUT, dataWdth)
-                  val adder_out = Output(UInt(dataWdth.W)) //UInt(OUTPUT, dataWdth)
+                  val in2 = Input(UInt(dataWidth.W)) //UInt(INPUT, dataWidth)
+                  val in1 = Input(UInt(dataWidth.W)) //UInt(INPUT, dataWidth)
+                  val out = Output(UInt(dataWidth.W)) //UInt(OUTPUT, dataWidth)
+                  val adder_out = Output(UInt(dataWidth.W)) //UInt(OUTPUT, dataWidth)
                   val cmp_out = Output(Bool()) //Bool(OUTPUT)
                 })
 
@@ -269,15 +269,15 @@ class NpuALU extends Module with NpusParams
   io.adder_out := io.in1 + in2_inv + isSub(io.fn)
 
   // SLT, SLTU
-  val slt = Mux(io.in1(dataWdth-1) === io.in2(dataWdth-1), io.adder_out(dataWdth-1),
-                  Mux(cmpUnsigned(io.fn), io.in2(dataWdth-1), io.in1(dataWdth-1)))
+  val slt = Mux(io.in1(dataWidth-1) === io.in2(dataWidth-1), io.adder_out(dataWidth-1),
+                  Mux(cmpUnsigned(io.fn), io.in2(dataWidth-1), io.in1(dataWidth-1)))
                   io.cmp_out := cmpInverted(io.fn) ^ Mux(cmpEq(io.fn), in1_xor_in2 === 0.U, slt)
 
   // SLL, SRL, SRA
   val (shamt, shin_r) =
-  if (dataWdth == 32) (io.in2(4,0), io.in1)
+  if (dataWidth == 32) (io.in2(4,0), io.in1)
   else {
-    require(dataWdth == 64)
+    require(dataWidth == 64)
     val shin_hi_32 = Fill(32, isSub(io.fn) && io.in1(31))
     val shin_hi = Mux(io.dw === DW_64, io.in1(63,32), shin_hi_32)
     val shamt = Cat(io.in2(5) & (io.dw === DW_64), io.in2(4,0))
@@ -285,7 +285,7 @@ class NpuALU extends Module with NpusParams
   }
 
   val shin = Mux(io.fn === FN_SR || io.fn === FN_SRA, shin_r, Reverse(shin_r))
-  val shout_r = (Cat(isSub(io.fn) & shin(dataWdth-1), shin).asSInt >> shamt)(dataWdth-1,0)
+  val shout_r = (Cat(isSub(io.fn) & shin(dataWidth-1), shin).asSInt >> shamt)(dataWidth-1,0)
   val shout_l = Reverse(shout_r)
   val shout = Mux(io.fn === FN_SR || io.fn === FN_SRA, shout_r, 0.U) |
                               Mux(io.fn === FN_SL, shout_l, 0.U)
@@ -296,8 +296,8 @@ class NpuALU extends Module with NpusParams
   val out = Mux(io.fn === FN_ADD || io.fn === FN_SUB, io.adder_out, shift_logic)
 
   io.out := out
-  if (dataWdth > 32) {
-    require(dataWdth == 64)
+  if (dataWidth > 32) {
+    require(dataWidth == 64)
     when (io.dw === DW_32) { io.out := Cat(Fill(32, out(31)), out(31,0)) }
   }
 }
@@ -337,12 +337,12 @@ class ThreadUop extends Bundle with NpusParams {
   val pc = UInt(pcWidth.W) // valid after decode
   val instr = Bits(instrWidth.W) // valid after decode
   val rd_valid = Bool() // valid after alu/lsu/mul/div/fpu
-  val rd = UInt(5.W) // valid after decode, bit40 for register index
-  val rs1 = UInt(5.W) // valid after decode, bit40 for register index
-  val rs2 = UInt(5.W) // valid after decode, bit4~0 for register index
-  val rd_data = Bits(dataWdth.W) // valid after alu/lsu/mul/div/fpu
-  val rs1_data = Bits(dataWdth.W) // valid at the end of ISSUE
-  val rs2_data = Bits(dataWdth.W) // valid at the end of ISSUE
+  val rd = UInt((log2Up(numThread)+5).W) // valid after decode, bit40 for register index, others for tid
+  val rs1 = UInt((log2Up(numThread)+5).W) // valid after decode, bit40 for register index, others for tid
+  val rs2 = UInt((log2Up(numThread)+5).W) // valid after decode, bit4~0 for register index, others for tid
+  val rd_data = Bits(dataWidth.W) // valid after alu/lsu/mul/div/fpu
+  val rs1_data = Bits(dataWidth.W) // valid at the end of ISSUE
+  val rs2_data = Bits(dataWidth.W) // valid at the end of ISSUE
   val resped = Bool() // mark mem/custom responed
 }
 
@@ -382,6 +382,7 @@ class Core(implicit p: Parameters) extends LazyModule with NpusParams
     val rr_uops = RegInit(VecInit(Seq.fill(3)(0.U.asTypeOf(new ThreadUop))));rr_uops.foreach(dontTouch(_))
     val ex_uop = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop)
     val wb_uop = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop)
+
   }
 }
 

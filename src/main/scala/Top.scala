@@ -31,7 +31,7 @@ trait NpusParams {
   val fetchInstrs: Int = 4
   val reset_vector: Int = 0x2000000
 
-  val dataWdth: Int = 64
+  val dataWidth: Int = 64
   val pcWidth = 32
 
   val fetchBytes = instrBytes*fetchInstrs
