@@ -68,6 +68,7 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
       val redirect_npc = Input(UInt(pcWidth.W))
       val core = Output(Valid( new Bundle {
           val tid = UInt(tidWidth.W)
+          val pc = UInt(pcWidth.W)
           val instr = UInt(instrWidth.W) }
       ))
     })
@@ -92,8 +93,9 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
     val rrsch = Module(new RRScheduler);chisel3.dontTouch(rrsch.io)
     rrsch.io.readys := readys
 
+    val fetch_tids_R = RegInit(0.U);chisel3.dontTouch(fetch_tids_R)
+    val fetch_pcs_R = RegInit(0.U);chisel3.dontTouch(fetch_pcs_R)
     val fetch_data_R = RegInit(0.U);chisel3.dontTouch(fetch_data_R)
-    val fetch_tid_R = RegInit(0.U);chisel3.dontTouch(fetch_tid_R)
 
     val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt(pcWidth.W))));thread_npc_R.foreach(chisel3.dontTouch(_))
     when(io.redirect) { thread_npc_R(io.redirect_thread) := io.redirect_npc }
@@ -106,20 +108,25 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
 
     val instr_cnt_R = RegInit(0.U(log2Up(2*fetchInstrs + 1).W));chisel3.dontTouch(instr_cnt_R)
     val tid_buff_R = RegInit(0.U((2*fetchInstrs*tidWidth).W))
+    val pc_buff_R = RegInit(0.U((2*fetchInstrs*pcWidth).W))
     val instr_buff_R = RegInit(0.U((2*fetchInstrs*instrWidth).W))
     when(instr_cnt_R =/= 0.U)
     {
       instr_cnt_R := instr_cnt_R - 1.U
-      instr_buff_R := instr_buff_R >> instrWidth
       tid_buff_R := tid_buff_R >> tidWidth
+      pc_buff_R := pc_buff_R >> pcWidth
+      instr_buff_R := instr_buff_R >> instrWidth
     }
     io.core.valid := instr_cnt_R.orR
     io.core.bits.tid := tid_buff_R(tidWidth - 1, 0)
+    io.core.bits.pc := pc_buff_R(pcWidth - 1, 0)
     io.core.bits.instr := instr_buff_R(instrWidth - 1, 0)
 
     val debug1 = WireInit(0.U); chisel3.dontTouch(debug1)
     val debug2 = WireInit(0.U); chisel3.dontTouch(debug2)
     val debug3 = WireInit(0.U); chisel3.dontTouch(debug3)
+    val debug4 = WireInit(0.U); chisel3.dontTouch(debug4)
+    val debug5 = WireInit(0.U); chisel3.dontTouch(debug5)
     //frontend FSM state
     val fetch_s_reset :: fetch_s_req :: fetch_s_resp :: fetch_s_ecc :: fetch_s_scan :: fetch_s_nospace :: Nil = Enum(6)
     val fetch_state_R = RegInit(fetch_s_reset);chisel3.dontTouch(fetch_state_R)
@@ -147,7 +154,10 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
         when(out.r.fire()) 
         { 
           //store instr data to register and shiftout unwanted data
-          fetch_tid_R := Fill(fetchInstrs, fetch_s_req_tid_R) >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
+          fetch_tids_R := Fill(fetchInstrs, fetch_s_req_tid_R) >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
+          val fetch_pcs_raw = VecInit(Seq.tabulate(fetchInstrs){ i => 
+                           ((fetch_s_req_pc_R >> log2Up(fetchBytes)) << log2Up(fetchBytes)) + (i*instrBytes).U }).asUInt
+          fetch_pcs_R := fetch_pcs_raw >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
           fetch_data_R := out.r.bits.data >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
           fetch_state_R := fetch_s_ecc
         } 
@@ -166,10 +176,14 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
               Cat(0.U(instrWidth.W), instr_buff_R(2*fetchInstrs*instrWidth-1, instrWidth)) 
                 | (fetch_data_R << ((instr_cnt_R-1.U) << log2Up(instrWidth)) ) )
 
-            tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tid_R,  
+            tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tids_R,  
               Cat(0.U(tidWidth.W), tid_buff_R(2*fetchInstrs*tidWidth-1, tidWidth)) 
-                | ( fetch_tid_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) ) )
-            debug3 := ( fetch_tid_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) )
+                | ( fetch_tids_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) ) )
+
+            pc_buff_R := Mux(instr_cnt_R === 0.U, fetch_pcs_R,  
+              Cat(0.U(pcWidth.W), pc_buff_R(2*fetchInstrs*pcWidth-1, pcWidth)) 
+                | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(pcWidth)) ) )
+
             val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
             //update instr cnt
             instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)
@@ -198,10 +212,14 @@ class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams
               Cat(0.U(instrWidth.W), instr_buff_R(2*fetchInstrs*instrWidth-1, instrWidth)) 
                 | (fetch_data_R << ((instr_cnt_R-1.U) << log2Up(instrWidth)) ) )
 
-            tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tid_R,  
+            tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tids_R,  
               Cat(0.U(tidWidth.W), tid_buff_R(2*fetchInstrs*tidWidth-1, tidWidth)) 
-                | ( fetch_tid_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) ) )
-            debug3 := ( fetch_tid_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) )
+                | ( fetch_tids_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) ) )
+
+            pc_buff_R := Mux(instr_cnt_R === 0.U, fetch_pcs_R,  
+              Cat(0.U(pcWidth.W), pc_buff_R(2*fetchInstrs*pcWidth-1, pcWidth)) 
+                | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(pcWidth)) ) )
+
             val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
             //update instr cnt
             instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)

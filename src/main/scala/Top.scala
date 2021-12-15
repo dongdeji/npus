@@ -28,9 +28,9 @@ trait NpusParams {
   val iramBase: BigInt = 0x2000000
   val iramSize: BigInt = 4096
   val instrBytes: Int = 4
-  val fetchInstrs: Int = 8
+  val fetchInstrs: Int = 4
   val xLenb: Int = 64
-  val reset_vector: Int = 0x2000430
+  val reset_vector: Int = 0x2000000
   val pcWidth = 32
   
   val fetchBytes = instrBytes*fetchInstrs
