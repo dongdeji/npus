@@ -413,7 +413,6 @@ class Core(implicit p: Parameters) extends LazyModule with NpusParams
     /****************** instruction decode end **********************/
     /****************************************************************/
 
-
     /**********************************************************/
     /****************** register read begin *******************/
 
@@ -438,12 +437,10 @@ class Core(implicit p: Parameters) extends LazyModule with NpusParams
                             (ex_uop.pc.asSInt + Mux(ex_uop.ctrl.branch && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop.instr),
                                                       Mux(ex_uop.ctrl.jal, ImmGen(IMM_UJ, ex_uop.instr),
                                                             Mux(/*ex_uop.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
-    /*val nxt_pc = RegInit(0.U.asTypeOf(Vec(numThread, UInt(iramddrlen.W)))); chisel3.dontTouch(nxt_pc)
-    for(i <- 0 until numThread)
-    { 
-      when(ex_uop.valid && (ex_uop.tid === i.U) ) 
-      { nxt_pc(i) := Mux(ex_uop.valid, nxt_target, nxt_pc(i)) } 
-    }*/
+    val erase_tail = RegInit(numThread.U)// to do by dongdeji
+    io.redirect.valid := (ex_uop.ctrl.branch && alu.io.cmp_out) | ex_uop.ctrl.jal | ex_uop.ctrl.jalr
+    io.redirect.bits.tid := ex_uop.tid
+    io.redirect.bits.npc := nxt_target
     /****************** ex end *********************/
     /***********************************************/
 
