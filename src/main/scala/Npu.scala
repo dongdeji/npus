@@ -20,12 +20,13 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 
 
-class Npu(lid: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
+class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
-  val front = LazyModule(new FrontEnd)
-  val core = LazyModule(new Core)
+  val front = LazyModule(new FrontEnd(ClusterId, GroupId, NpId))
+  val core = LazyModule(new Core(ClusterId, GroupId, NpId))
   val imasternode = front.masternode
   val pmasternode = core.masternode
+  val windownode = core.windowslave.slavenode
 
   lazy val module = new LazyModuleImp(this) {
     //val (iout, iedge) = imasternode.out(0)

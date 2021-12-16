@@ -53,7 +53,7 @@ class RRScheduler extends Module with NpusParams
   io.issue_tid := OHToUInt(io.issue_OH)
 }
 
-class FrontEnd(implicit p: Parameters) extends LazyModule with NpusParams 
+class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(

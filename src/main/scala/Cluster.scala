@@ -19,7 +19,7 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 
 
-class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
+class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   /* iram sequence */
   val iramxbars = Seq.tabulate(numIram) 
@@ -32,9 +32,9 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
   /* groups */
   val groupxbars = Seq.tabulate(numGroup) 
   { i => 
-    val group = LazyModule(new Group(i))
-    (group.ixbar, group.pxbar)
- }
+    val group = LazyModule(new Group(ClusterId, i))
+    (group.ixbar, group.pxbar, group.wxbar)
+  }
   /* connect irams and groups */
   for(i <- 0 until iramxbars.size; j <- 0 until groupxbars.size )
   { iramxbars(i) := groupxbars(j)._1.node }
@@ -44,9 +44,14 @@ class Cluster(id: Int)(implicit p: Parameters) extends LazyModule with NpusParam
   for(j <- 0 until groupxbars.size )
   { pxbar.node := groupxbars(j)._2.node }
 
+  /* connect window */
+  val wxbar = LazyModule(new AXI4Xbar)
+  for(j <- 0 until groupxbars.size )
+  { groupxbars(j)._3.node := wxbar.node }
+
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"Cluster_$id",
+                                                      name = s"Cluster-$ClusterId",
                                                       id   = IdRange(0, 1 << 1))))))
   val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(

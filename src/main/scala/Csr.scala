@@ -24,7 +24,7 @@ class Csrs(id: Int)(implicit p: Parameters) extends LazyModule
 {
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"Cluster_$id",
+                                                      name = s"Cluster-$id",
                                                       id   = IdRange(0, 1 << 1))))))
 
   lazy val module = new LazyModuleImp(this) {

@@ -32,17 +32,17 @@ class RegFiles extends Module with NpusParams
     val rs2_data = Output(Bits(dataWidth.W)           )
   })
 
-  val part1 = Seq.tabulate(dataWidth/8) { i => SyncReadMem(numThread*32, UInt(8.W)) }
-  val part2 = Seq.tabulate(dataWidth/8) { i => SyncReadMem(numThread*32, UInt(8.W)) }
+  val part1 = Seq.tabulate(dataBytes) { i => SyncReadMem(numThread*32, UInt(8.W)) }
+  val part2 = Seq.tabulate(dataBytes) { i => SyncReadMem(numThread*32, UInt(8.W)) }
   
   when(io.rd_write)
   {
-    Seq.tabulate(dataWidth/8){ i => part1(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
-    Seq.tabulate(dataWidth/8){ i => part2(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
+    Seq.tabulate(dataBytes){ i => part1(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
+    Seq.tabulate(dataBytes){ i => part2(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
   }
   // x0 is always 0
-  io.rs1_data := Mux(io.rs1(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataWidth/8){ i => part1(i).read(io.rs1)}).asUInt)
-  io.rs2_data := Mux(io.rs2(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataWidth/8){ i => part2(i).read(io.rs2)}).asUInt)
+  io.rs1_data := Mux(io.rs1(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataBytes){ i => part1(i).read(io.rs1)}).asUInt)
+  io.rs2_data := Mux(io.rs2(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataBytes){ i => part2(i).read(io.rs2)}).asUInt)
 }
 
 

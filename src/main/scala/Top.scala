@@ -27,11 +27,13 @@ trait NpusParams {
   val numIram: Int = 1
   val iramBase: BigInt = 0x2000000
   val iramSize: BigInt = 4096
+  val windowBytes: Int = 512
   val instrBytes: Int = 4
   val fetchInstrs: Int = 4
   val reset_vector: Int = 0x2000000
 
   val dataWidth: Int = 64
+  val dataBytes = dataWidth/8
   val pcWidth = 32
 
   val fetchBytes = instrBytes*fetchInstrs
@@ -65,7 +67,10 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
                                         masters = Seq(AXI4MasterParameters(
                                                         name = s"Cluster_test",
                                                         id   = IdRange(0, 1 << 1))))))
-
+  val wmasternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+                                        masters = Seq(AXI4MasterParameters(
+                                                        name = s"Window_test",
+                                                        id   = IdRange(0, 1 << 1))))))
   val matchslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(AddressSet(0x7000000 + 0x400, 0x3ff)),
@@ -80,11 +85,14 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
     minLatency = 1)))
   val pxbar = LazyModule(new AXI4Xbar)
   matchslavenode := pxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+  val wxbar = LazyModule(new AXI4Xbar)
+  wxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  wmasternode
 
   val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
     pxbar.node := cluster.pxbar.node
+    cluster.wxbar.node := wxbar.node
     cluster
   }
 
