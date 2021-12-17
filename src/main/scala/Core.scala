@@ -572,21 +572,23 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                                                       Mux(ex_uop_W.ctrl.jal, ImmGen(IMM_UJ, ex_uop_W.instr),
                                                             Mux(/*ex_uop_W.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
 
-    io.redirect.valid := ex_uop_W.valid && ((ex_uop_W.ctrl.branch && alu.io.cmp_out) || ex_uop_W.ctrl.jal || ex_uop_W.ctrl.jalr)
+    io.redirect.valid := ex_uop_W.valid && ((ex_uop_W.ctrl.branch && alu.io.cmp_out) || 
+                                                ex_uop_W.ctrl.jal || ex_uop_W.ctrl.jalr /*|| ex_uop_W.ctrl.acce */)
     io.redirect.bits.tid := ex_uop_W.tid
-    io.redirect.bits.npc := nxt_target
+    io.redirect.bits.npc := nxt_target // Mux(ex_uop_W.ctrl.acce, ex_uop_W.pc + 4.U, nxt_target)
     // erase instrs that following the redirected instr
-    class EraseInfo extends Bundle with NpusParams {
+    class TailEraseInfo extends Bundle with NpusParams {
       val valid = Bool() // valid after decode
       val tid = UInt(log2Up(numThread).W)
     }    
-    val eraseInfo = RegInit(0.U.asTypeOf(new EraseInfo));chisel3.dontTouch(eraseInfo)
-    when(io.redirect.valid)
-    { eraseInfo.valid := true.B; eraseInfo.tid := ex_uop_W.tid }
-    when(eraseInfo.valid && (ex_uop_R.tid === eraseInfo.tid))
+    val tailEraseInfo = RegInit(0.U.asTypeOf(new TailEraseInfo));chisel3.dontTouch(tailEraseInfo)
+    val acceReq = false.B
+    when(io.redirect.valid )
+    { tailEraseInfo.valid := true.B; tailEraseInfo.tid := ex_uop_W.tid }
+    when(tailEraseInfo.valid && (ex_uop_R.tid === tailEraseInfo.tid))
     { ex_uop_W.valid := false.B }
     .otherwise
-    { eraseInfo.valid := false.B }
+    { tailEraseInfo.valid := false.B }
     /****************** ex end *********************/
     /***********************************************/
 
