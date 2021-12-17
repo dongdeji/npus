@@ -31,7 +31,7 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
   lazy val module = new LazyModuleImp(this) {
     //val (iout, iedge) = imasternode.out(0)
     //val (pout, pedge) = pmasternode.out(0)
-    core.module.io <> front.module.io
+    front.module.io <> core.module.io
   }
 }
 
