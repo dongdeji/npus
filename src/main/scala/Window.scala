@@ -17,7 +17,8 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{GenericLogicalTreeNode}
+import freechips.rocketchip.util.{BundleMap}
 
 
 class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -50,18 +51,22 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     
     val offset_raw = VecInit(Seq.tabulate(dataBytes){ i => (io.r_offset + i.U)(offsetWith-1, 0)}).asUInt
     chisel3.dontTouch(offset_raw)
-    val wide_offset_raw = offset_raw << (io.r_offset(log2Up(dataBytes)-1, 0) << log2Up(offsetWith))
+    val offset_l = io.r_offset(log2Up(dataBytes)-1, 0)
+    val wide_offset_raw = offset_raw << (offset_l << log2Up(offsetWith))
     chisel3.dontTouch(wide_offset_raw)
-    val offset_raw_pakage = (wide_offset_raw >> offsetWith*dataBytes) | wide_offset_raw(offsetWith*dataBytes-1,0)
-    chisel3.dontTouch(offset_raw_pakage)
-    
-    val data_raw = VecInit(Seq.tabulate(dataBytes) { i => banks(i).read(offset_raw_pakage((i+1)*offsetWith-1, i*offsetWith)) }).asUInt
-    chisel3.dontTouch(data_raw)
+    val offset_pakage = (wide_offset_raw >> offsetWith*dataBytes) | wide_offset_raw(offsetWith*dataBytes-1,0)
+    chisel3.dontTouch(offset_pakage)
+    val offset_l_R = RegNext(offset_l)
+    chisel3.dontTouch(offset_l_R)
+    val data_pakage = VecInit(Seq.tabulate(dataBytes) { i => banks(i).read(offset_pakage((i+1)*offsetWith-1, i*offsetWith)) }).asUInt
+    val data_raw_l = data_pakage >> (offset_l_R << log2Up(8))
+    val data_raw_h = (data_pakage << ((dataBytes.U - offset_l_R) << log2Up(8)))(dataWidth - 1, 0)
+    io.r_data := data_raw_h | data_raw_l 
+    chisel3.dontTouch(data_raw_l)
+    chisel3.dontTouch(data_raw_h)
  
     val (in, edgeIn) = slavenode.in(0)
     chisel3.dontTouch(in)
-    in.aw.ready := true.B
-    in.w.ready := true.B
     def bigBits(x: BigInt, tail: List[Boolean] = Nil): List[Boolean] =
         if (x == 0) tail.reverse else bigBits(x >> 1, ((x & 1) == 1) :: tail)
     def mask: List[Boolean] = bigBits(address.mask >> log2Ceil(dataBytes))
@@ -71,7 +76,7 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     val w_full = RegInit(false.B)
     val w_id   = Reg(UInt())
-    //val w_echo = Reg(BundleMap(in.params.echoFields))
+    val w_echo = Reg(BundleMap(in.params.echoFields))
     val w_sel1 = RegInit(false.B)
 
     when (in.aw.fire()) { w_full := true.B }
@@ -80,7 +85,7 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     {
       w_id := in.aw.bits.id
       w_sel1 := w_sel0
-      //w_echo :<= in.aw.bits.echo
+      w_echo :<= in.aw.bits.echo
     }
 
     val wdata = VecInit.tabulate(dataBytes) { i => in.w.bits.data(8*(i+1)-1, 8*i) }
@@ -90,7 +95,13 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       { banks(i).write(in.aw.bits.addr >> log2Ceil(dataBytes), wdata(i)) }
     }
 
-    //io.r_data := VecInit(Seq.tabulate(dataBytes){ i => part1(i).read(io.rs1)})
+    in.aw.ready := in. w.valid && (in.b.ready || !w_full)
+    in.w.ready  := in.aw.valid && (in.b.ready || !w_full)
+
+    in.b.valid     := w_full
+    in.b.bits.id   := w_id
+    in.b.bits.resp := Mux(w_sel1, AXI4Parameters.RESP_OKAY, AXI4Parameters.RESP_DECERR)
+    in.b.bits.echo :<= w_echo
   }
 }
 

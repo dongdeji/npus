@@ -348,15 +348,37 @@ class ThreadUop extends Bundle with NpusParams {
 class Bypass extends Module with NpusParams
 {
   val io = IO(new Bundle {
-                  val bypass_uop = Input(new ThreadUop)
+                  val rr_uop_R = Input(new ThreadUop)
                   val ex_uop_W = Input(new ThreadUop)
                   val wb_uop_W = Input(new ThreadUop)
                   val rs1_data = Output(UInt(dataWidth.W))
                   val rs2_data = Output(UInt(dataWidth.W))
                 })
   chisel3.dontTouch(io)
-  
-  //io.rs1_data := (io.bypass_uop.rs1 =/= 0.U) && (io.bypass_uop.rs1 === io.ex_uop_W.rd) && io.ex_uop_W.rd_valid
+  val rs1_bypass_ex = (io.rr_uop_R.rs1 =/= 0.U) && (io.rr_uop_R.rs1 === io.ex_uop_W.rd) && io.ex_uop_W.rd_valid
+  val rs1_bypass_wb = (io.rr_uop_R.rs1 =/= 0.U) && (io.rr_uop_R.rs1 === io.wb_uop_W.rd) && io.wb_uop_W.rd_valid
+  val rs2_bypass_ex = (io.rr_uop_R.rs2 =/= 0.U) && (io.rr_uop_R.rs2 === io.ex_uop_W.rd) && io.ex_uop_W.rd_valid
+  val rs2_bypass_wb = (io.rr_uop_R.rs2 =/= 0.U) && (io.rr_uop_R.rs2 === io.wb_uop_W.rd) && io.wb_uop_W.rd_valid
+
+  chisel3.dontTouch(rs1_bypass_ex)
+  chisel3.dontTouch(rs1_bypass_wb)
+  chisel3.dontTouch(rs2_bypass_ex)
+  chisel3.dontTouch(rs2_bypass_wb)
+
+  when(rs1_bypass_ex) // high priority
+  { io.rs1_data := io.ex_uop_W.rd_data } 
+  .elsewhen(rs1_bypass_wb) // high priority
+  { io.rs1_data := io.wb_uop_W.rd_data }
+  .otherwise
+  { io.rs1_data := io.rr_uop_R.rs1_data}
+
+  when(rs2_bypass_ex) // high priority
+  { io.rs2_data := io.ex_uop_W.rd_data } 
+  .elsewhen(rs2_bypass_wb) // high priority
+  { io.rs2_data := io.wb_uop_W.rd_data }
+  .otherwise
+  { io.rs2_data := io.rr_uop_R.rs2_data}
+
 }
 
 class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -365,7 +387,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Core",
                                                       id   = IdRange(0, 1 << 1))))))
-  val windowslave = LazyModule(new Window(ClusterId, GroupId, NpId))
+  val window = LazyModule(new Window(ClusterId, GroupId, NpId))
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
@@ -401,10 +423,16 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val wb_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop_R)
 
     // default connection
-    rr1_uop_R := rr0_uop_W  ; rr0_uop_W   := rr0_uop_R; rr0_uop_R := id_uop_W   ;
-    rr2_uop_W   := rr2_uop_R; rr2_uop_R := rr1_uop_W  ; rr1_uop_W   := rr1_uop_R; 
-    wb_uop_R  := ex_uop_W   ; ex_uop_W    := ex_uop_R ; ex_uop_R := rr2_uop_W   ; 
-    wb_uop_W    := wb_uop_R ; 
+    rr0_uop_R := id_uop_W
+    rr0_uop_W := rr0_uop_R
+    rr1_uop_R := rr0_uop_W
+    rr1_uop_W := rr1_uop_R
+    rr2_uop_R := rr1_uop_W
+    rr2_uop_W := rr2_uop_R
+    ex_uop_R  := rr2_uop_W
+    ex_uop_W  := ex_uop_R
+    wb_uop_R  := ex_uop_W 
+    wb_uop_W  := wb_uop_R
 
     /**************** key pipe signal define end ******************/
     /**************************************************************/
@@ -436,8 +464,31 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     regfile.io.rs1 :=  id_uop_W.rs1
     regfile.io.rs2 :=  id_uop_W.rs2
     
-    windowslave.module.io.r_offset := 0.U // to do by dongdeji
+    window.module.io.r_offset := 0.U // to do by dongdeji
     
+    //register read stage 0 bypass check
+    val rr0_bypass = Module(new Bypass)
+    rr0_bypass.io.rr_uop_R := rr0_uop_R
+    rr0_bypass.io.ex_uop_W := ex_uop_W
+    rr0_bypass.io.wb_uop_W := wb_uop_W
+    rr0_uop_W.rs1_data := rr0_bypass.io.rs1_data
+    rr0_uop_W.rs2_data := rr0_bypass.io.rs2_data
+
+    //register read stage 1 bypass check
+    val rr1_bypass = Module(new Bypass)
+    rr1_bypass.io.rr_uop_R := rr1_uop_R
+    rr1_bypass.io.ex_uop_W := ex_uop_W
+    rr1_bypass.io.wb_uop_W := wb_uop_W
+    rr1_uop_W.rs1_data := rr1_bypass.io.rs1_data
+    rr1_uop_W.rs2_data := rr1_bypass.io.rs2_data
+
+    //register read stage 2 bypass check
+    val rr2_bypass = Module(new Bypass)
+    rr2_bypass.io.rr_uop_R := rr2_uop_R
+    rr2_bypass.io.ex_uop_W := ex_uop_W
+    rr2_bypass.io.wb_uop_W := wb_uop_W
+    rr2_uop_W.rs1_data := rr2_bypass.io.rs1_data
+    rr2_uop_W.rs2_data := rr2_bypass.io.rs2_data
 
     /****************** register read end *********************/
     /**********************************************************/
