@@ -69,7 +69,12 @@ class AccInfBundle extends Bundle with NpusParams
 
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
-  val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+  val pmasternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+                                      masters = Seq(AXI4MasterParameters(
+                                                      name = s"Core",
+                                                      id = IdRange(0, 1 << 1))))))
+
+  val rmasternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Core",
                                                       id = IdRange(0, 1 << 1))))))
@@ -78,7 +83,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       val core = Flipped(new AccInfBundle)
     })
     chisel3.dontTouch(io)
-    val (out, edge) = masternode.out(0)
+    val (out, edge) = pmasternode.out(0)
 
     val req_valid = RegNext(io.core.req.valid)
     val req_cmd = RegNext(io.core.req.bits.cmd)

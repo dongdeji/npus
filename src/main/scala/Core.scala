@@ -95,6 +95,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 {
 
   val window = LazyModule(new Window(ClusterId, GroupId, NpId))
+  val regfile = LazyModule(new RegFiles(ClusterId, GroupId, NpId))
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
@@ -155,9 +156,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /**********************************************************/
     /****************** register read begin *******************/
-    val regfile = Module(new RegFiles);chisel3.dontTouch(regfile.io)
-    regfile.io.rs1 :=  id_uop_W.rs1
-    regfile.io.rs2 :=  id_uop_W.rs2
+    regfile.module.io.rs1 :=  id_uop_W.rs1
+    regfile.module.io.rs2 :=  id_uop_W.rs2
     
     window.module.io.r_offset := 0.U // to do by dongdeji
     
@@ -196,8 +196,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /***********************************************/
     /****************** ex begin *******************/
-    ex_uop_W.rs1_data := Mux(ex_uop_R.rs1_valid, ex_uop_R.rs1_data, regfile.io.rs1_data)
-    ex_uop_W.rs2_data := Mux(ex_uop_R.rs2_valid, ex_uop_R.rs2_data, regfile.io.rs2_data)
+    ex_uop_W.rs1_data := Mux(ex_uop_R.rs1_valid, ex_uop_R.rs1_data, regfile.module.io.rs1_data)
+    ex_uop_W.rs2_data := Mux(ex_uop_R.rs2_valid, ex_uop_R.rs2_data, regfile.module.io.rs2_data)
 
     val alu = Module(new NpuALU);chisel3.dontTouch(alu.io)
     alu.io.dw := ex_uop_W.ctrl.alu_dw
@@ -245,17 +245,11 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /****************** ex end *********************/
     /***********************************************/
 
-    /***********************************************/
-    /****************** mem begin ******************/
-
-    /****************** mem end ********************/
-    /***********************************************/
-
     /*******************************************************/
     /****************** write back begin *******************/
-    regfile.io.rd_write := wb_uop_W.valid & wb_uop_W.ctrl.legal & wb_uop_W.rd_valid
-    regfile.io.rd_data  := wb_uop_W.rd_data
-    regfile.io.rd       := wb_uop_W.rd
+    regfile.module.io.rd_write := wb_uop_W.valid & wb_uop_W.ctrl.legal & wb_uop_W.rd_valid
+    regfile.module.io.rd_data  := wb_uop_W.rd_data
+    regfile.module.io.rd       := wb_uop_W.rd
     /****************** write back end *********************/
     /*******************************************************/
 

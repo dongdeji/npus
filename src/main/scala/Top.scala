@@ -39,6 +39,12 @@ trait NpusParams {
   val tidWidth = log2Up(numThread)
 }
 
+trait NpusUtil {
+    def bigBits(x: BigInt, tail: List[Boolean] = Nil): List[Boolean] =
+        if (x == 0) tail.reverse else bigBits(x >> 1, ((x & 1) == 1) :: tail)
+    def mask(address: AddressSet, dataBytes:Int): List[Boolean] = bigBits(address.mask >> log2Ceil(dataBytes))
+}
+
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselGeneratorAnnotation

@@ -18,7 +18,7 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{GenericLogicalTre
 import freechips.rocketchip.util.{BundleMap}
 
 
-class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
+class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams with NpusUtil
 {
   val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
   val address = AddressSet(0x6000000 + 0x400*Id, 0x3ff)
@@ -61,14 +61,12 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     io.r_data := data_raw_h | data_raw_l 
     chisel3.dontTouch(data_raw_l)
     chisel3.dontTouch(data_raw_h)
- 
+
+    /********** handle axi4 write interface begin **********/
     val (in, edgeIn) = slavenode.in(0)
     chisel3.dontTouch(in)
-    def bigBits(x: BigInt, tail: List[Boolean] = Nil): List[Boolean] =
-        if (x == 0) tail.reverse else bigBits(x >> 1, ((x & 1) == 1) :: tail)
-    def mask: List[Boolean] = bigBits(address.mask >> log2Ceil(dataBytes))
 
-    val w_addr = Cat((mask zip (in.aw.bits.addr >> log2Ceil(dataBytes)).asBools).filter(_._1).map(_._2).reverse)
+    val w_addr = Cat((mask(address, dataBytes) zip (in.aw.bits.addr >> log2Ceil(dataBytes)).asBools).filter(_._1).map(_._2).reverse)
     val w_sel0 = address.contains(in.aw.bits.addr)
 
     val w_full = RegInit(false.B)
@@ -99,6 +97,8 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     in.b.bits.id   := w_id
     in.b.bits.resp := Mux(w_sel1, AXI4Parameters.RESP_OKAY, AXI4Parameters.RESP_DECERR)
     in.b.bits.echo :<= w_echo
+    /********** handle axi4 write interface end **********/
+
   }
 }
 

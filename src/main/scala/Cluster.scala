@@ -70,8 +70,8 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
   lazy val module = new LazyModuleImp(this) {
     chisel3.dontTouch(clock)
     chisel3.dontTouch(reset)
-    val (out, outedge) = masternode.out(0)
-    val (in, inedge) = slavenode.in(0)
+    val (out, edgeOut) = masternode.out(0)
+    val (in, edgeIn) = slavenode.in(0)
   }
 }
 
