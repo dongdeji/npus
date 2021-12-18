@@ -27,7 +27,6 @@ class RrBypassMux extends Module with NpusParams
   val io = IO(new Bundle {
                   val rr_uop_R = Input(new ThreadUop)
                   val ex_uop_W = Input(new ThreadUop)
-                  val mem_uop_W = Input(new ThreadUop)
                   val wb_uop_W = Input(new ThreadUop)
                   val rs1_bypassed = Output(Bool())
                   val rs2_bypassed = Output(Bool())
@@ -36,86 +35,59 @@ class RrBypassMux extends Module with NpusParams
                 })
   chisel3.dontTouch(io)
   val rs1_bypass_ex  = (io.rr_uop_R.rs1 =/= 0.U) && (io.rr_uop_R.rs1 === io.ex_uop_W.rd ) && io.ex_uop_W.rd_valid
-  val rs1_bypass_mem = (io.rr_uop_R.rs1 =/= 0.U) && (io.rr_uop_R.rs1 === io.mem_uop_W.rd) && io.mem_uop_W.rd_valid
   val rs1_bypass_wb  = (io.rr_uop_R.rs1 =/= 0.U) && (io.rr_uop_R.rs1 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
   val rs2_bypass_ex  = (io.rr_uop_R.rs2 =/= 0.U) && (io.rr_uop_R.rs2 === io.ex_uop_W.rd ) && io.ex_uop_W.rd_valid
-  val rs2_bypass_mem = (io.rr_uop_R.rs2 =/= 0.U) && (io.rr_uop_R.rs2 === io.mem_uop_W.rd) && io.mem_uop_W.rd_valid
   val rs2_bypass_wb  = (io.rr_uop_R.rs2 =/= 0.U) && (io.rr_uop_R.rs2 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
 
   chisel3.dontTouch(rs1_bypass_ex)
-  chisel3.dontTouch(rs1_bypass_mem)
   chisel3.dontTouch(rs1_bypass_wb)
   chisel3.dontTouch(rs2_bypass_ex)
-  chisel3.dontTouch(rs2_bypass_mem)
   chisel3.dontTouch(rs2_bypass_wb)
 
   when(rs1_bypass_ex) // high priority
   { io.rs1_data := io.ex_uop_W.rd_data } 
-  .elsewhen(rs1_bypass_mem) 
-  { io.rs1_data := io.mem_uop_W.rd_data }
   .elsewhen(rs1_bypass_wb) 
   { io.rs1_data := io.wb_uop_W.rd_data }
   .otherwise// low priority
   { io.rs1_data := io.rr_uop_R.rs1_data}
 
-  when(rs1_bypass_ex || rs1_bypass_mem || rs1_bypass_wb)
+  when(rs1_bypass_ex || rs1_bypass_wb)
   { io.rs1_bypassed := true.B }
   .otherwise
   { io.rs1_bypassed := false.B }
 
   when(rs2_bypass_ex) // high priority
   { io.rs2_data := io.ex_uop_W.rd_data } 
-  .elsewhen(rs2_bypass_mem) 
-  { io.rs2_data := io.mem_uop_W.rd_data }
   .elsewhen(rs2_bypass_wb) 
   { io.rs2_data := io.wb_uop_W.rd_data }
   .otherwise// low priority
   { io.rs2_data := io.rr_uop_R.rs2_data}
 
-  when(rs2_bypass_ex || rs2_bypass_mem || rs2_bypass_wb)
+  when(rs2_bypass_ex || rs2_bypass_wb)
   { io.rs2_bypassed := true.B }
   .otherwise
   { io.rs2_bypassed := false.B }
 }
 
-class ExBypassMux extends Module with NpusParams
+class ExMux extends Module with NpusParams
 {
   val io = IO(new Bundle {
                   val ex_uop_R = Input(new ThreadUop)
-                  val mem_uop_W = Input(new ThreadUop)
-                  val wb_uop_W = Input(new ThreadUop)
                   val reg_rs1_data = Input(UInt(dataWidth.W))
                   val reg_rs2_data = Input(UInt(dataWidth.W))
                   val rs1_data = Output(UInt(dataWidth.W))
                   val rs2_data = Output(UInt(dataWidth.W))
                 })
   chisel3.dontTouch(io)
-  val rs1_bypass_mem = (io.ex_uop_R.rs1 =/= 0.U) && (io.ex_uop_R.rs1 === io.mem_uop_W.rd) && io.mem_uop_W.rd_valid
-  val rs1_bypass_wb  = (io.ex_uop_R.rs1 =/= 0.U) && (io.ex_uop_R.rs1 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
-  val rs2_bypass_mem = (io.ex_uop_R.rs2 =/= 0.U) && (io.ex_uop_R.rs2 === io.mem_uop_W.rd) && io.mem_uop_W.rd_valid
-  val rs2_bypass_wb  = (io.ex_uop_R.rs2 =/= 0.U) && (io.ex_uop_R.rs2 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
 
-  chisel3.dontTouch(rs1_bypass_mem)
-  chisel3.dontTouch(rs1_bypass_wb)
-  chisel3.dontTouch(rs2_bypass_mem)
-  chisel3.dontTouch(rs2_bypass_wb)
-
-  when(rs1_bypass_mem) // high priority
-  { io.rs1_data := io.mem_uop_W.rd_data }
-  .elsewhen(rs1_bypass_wb) 
-  { io.rs1_data := io.wb_uop_W.rd_data }
-  .elsewhen(io.ex_uop_R.rs1_valid)
+  when(io.ex_uop_R.rs1_valid)
   { io.rs1_data := io.ex_uop_R.rs1_data }
-  .otherwise// low priority
+  .otherwise
   { io.rs1_data := io.reg_rs1_data }
 
-  when(rs2_bypass_mem) // high priority
-  { io.rs2_data := io.mem_uop_W.rd_data }
-  .elsewhen(rs2_bypass_wb) 
-  { io.rs2_data := io.wb_uop_W.rd_data }
-  .elsewhen(io.ex_uop_R.rs2_valid)
+  when(io.ex_uop_R.rs2_valid)
   { io.rs2_data := io.ex_uop_R.rs2_data}
-  .otherwise// low priority
+  .otherwise
   { io.rs2_data := io.reg_rs2_data }
 }
 
@@ -137,14 +109,12 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val rr1_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr1_uop_R)
     val rr2_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr2_uop_R)
     val ex_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop_R)
-    val mem_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(mem_uop_R)
     val wb_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop_R)
     val id_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(id_uop_W)
     val rr0_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr0_uop_W)
     val rr1_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr1_uop_W)
     val rr2_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr2_uop_W)
     val ex_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop_W)
-    val mem_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(mem_uop_W)
     val wb_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop_W)
 
     // default connection
@@ -156,9 +126,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr2_uop_W := rr2_uop_R
     ex_uop_R  := rr2_uop_W
     ex_uop_W  := ex_uop_R
-    mem_uop_R := ex_uop_W
-    mem_uop_W := mem_uop_R
-    wb_uop_R  := mem_uop_W 
+    wb_uop_R  := ex_uop_W 
     wb_uop_W  := wb_uop_R
 
     /**************** key pipe signal define end ******************/
@@ -197,7 +165,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val rr0_bypass_mux = Module(new RrBypassMux)
     rr0_bypass_mux.io.rr_uop_R := rr0_uop_R
     rr0_bypass_mux.io.ex_uop_W := ex_uop_W
-    rr0_bypass_mux.io.mem_uop_W := mem_uop_W
     rr0_bypass_mux.io.wb_uop_W := wb_uop_W
     rr0_uop_W.rs1_valid := rr0_bypass_mux.io.rs1_bypassed
     rr0_uop_W.rs1_data := rr0_bypass_mux.io.rs1_data
@@ -208,7 +175,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val rr1_bypass_mux = Module(new RrBypassMux)
     rr1_bypass_mux.io.rr_uop_R := rr1_uop_R
     rr1_bypass_mux.io.ex_uop_W := ex_uop_W
-    rr1_bypass_mux.io.mem_uop_W := mem_uop_W
     rr1_bypass_mux.io.wb_uop_W := wb_uop_W
     rr1_uop_W.rs1_valid := rr1_bypass_mux.io.rs1_bypassed
     rr1_uop_W.rs1_data := rr1_bypass_mux.io.rs1_data
@@ -219,7 +185,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val rr2_bypass_mux = Module(new RrBypassMux)
     rr2_bypass_mux.io.rr_uop_R := rr2_uop_R
     rr2_bypass_mux.io.ex_uop_W := ex_uop_W
-    rr2_bypass_mux.io.mem_uop_W := mem_uop_W
     rr2_bypass_mux.io.wb_uop_W := wb_uop_W
     rr2_uop_W.rs1_valid := rr2_bypass_mux.io.rs1_bypassed
     rr2_uop_W.rs1_data := rr2_bypass_mux.io.rs1_data
@@ -231,15 +196,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /***********************************************/
     /****************** ex begin *******************/
-    //register read stage 2 bypass check
-    val ex_bypass_mux = Module(new ExBypassMux)
-    ex_bypass_mux.io.ex_uop_R := ex_uop_R
-    ex_bypass_mux.io.mem_uop_W := mem_uop_W
-    ex_bypass_mux.io.wb_uop_W := wb_uop_W
-    ex_bypass_mux.io.reg_rs1_data := regfile.io.rs1_data
-    ex_bypass_mux.io.reg_rs2_data := regfile.io.rs2_data
-    ex_uop_W.rs1_data := ex_bypass_mux.io.rs1_data
-    ex_uop_W.rs2_data := ex_bypass_mux.io.rs2_data
+    ex_uop_W.rs1_data := Mux(ex_uop_R.rs1_valid, ex_uop_R.rs1_data, regfile.io.rs1_data)
+    ex_uop_W.rs2_data := Mux(ex_uop_R.rs2_valid, ex_uop_R.rs2_data, regfile.io.rs2_data)
 
     val alu = Module(new NpuALU);chisel3.dontTouch(alu.io)
     alu.io.dw := ex_uop_W.ctrl.alu_dw
