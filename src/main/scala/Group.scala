@@ -32,9 +32,9 @@ class Group(ClusterId:Int, GroupId:Int)(implicit p: Parameters) extends LazyModu
   val npus = Seq.tabulate(numNpu)
   { i => 
     val npu = LazyModule(new Npu(ClusterId, GroupId, i)) 
-    ixbar.node := npu.imasternode
-    pxbar.node := npu.pmasternode
-    npu.windownode := wxbar.node
+    ixbar.node := npu.ixbar.node
+    pxbar.node := npu.pxbar.node
+    npu.wxbar.node := wxbar.node
   }
 
   lazy val module = new LazyModuleImp(this) {

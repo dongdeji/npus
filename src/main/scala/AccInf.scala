@@ -74,10 +74,13 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
                                                       name = s"Core",
                                                       id = IdRange(0, 1 << 1))))))
 
+  val rxbar = LazyModule(new AXI4Xbar)
   val rmasternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Core",
                                                       id = IdRange(0, 1 << 1))))))
+  rxbar.node := rmasternode
+  
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
