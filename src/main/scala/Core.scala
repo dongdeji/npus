@@ -275,6 +275,15 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     { ex_uop_W.valid := false.B }
     .otherwise
     { tailEraseInfo.valid := false.B }
+    
+    io.accinf.uop := ex_uop_W
+    io.accinf.req.valid := ex_uop_W.valid && (ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) 
+    io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
+    io.accinf.req.bits.size := ex_uop_W.instr(13,12)
+    io.accinf.req.bits.signed := !ex_uop_W.instr(14)
+    io.accinf.req.bits.data := ex_uop_W.rs2_data
+    io.accinf.req.bits.addr := alu.io.adder_out
+    io.accinf.req.bits.tid := ex_uop_W.tid
     /****************** ex end *********************/
     /***********************************************/
 

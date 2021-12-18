@@ -50,6 +50,7 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 
 class AccInfBundle extends Bundle with NpusParams 
 {
+  val uop = Output( new ThreadUop )
   val req = Valid( new Bundle {
                     val cmd = UInt(M_SZ.W) /* dmem_req.ctrl.mem_cmd */
                     val size = UInt(2.W) /* dmem_req.inst_32(13,12) */
@@ -90,7 +91,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     wdata := (new StoreGen(io.core.req.bits.size, 0.U, io.core.req.bits.data, 8).data).asTypeOf(Vec(dataBytes, UInt(8.W)))
 
     val dsize = WireInit(1.U << io.core.req.bits.size); chisel3.dontTouch(dsize)
-    val addr_h = io.core.req.bits.addr(log2Up(ramDepth) - 1, log2Up(dataBytes))
+    val addr_h = Cat(io.core.req.bits.tid, io.core.req.bits.addr(log2Up(ramDepth) - log2Up(numThread) - 1, log2Up(dataBytes)))
     val addr_l = io.core.req.bits.addr(log2Up(dataBytes)-1, 0)
     val unmask_l = WireInit((-1.S(dataBytes.W) >> addr_l) << addr_l); chisel3.dontTouch(unmask_l)
     val unmask_h = WireInit((-1.S(dataBytes.W) >> (addr_l + dsize)) << (addr_l + dsize)); chisel3.dontTouch(unmask_h)
@@ -110,6 +111,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     io.core.resp.valid := req_valid
     io.core.resp.bits.addr := req_addr
     io.core.resp.bits.tid := req_tid 
+
+    // handle acc req
+    val uops_R = RegInit(0.U.asTypeOf(Vec(numThread, new ThreadUop)))
+    Seq.tabulate(numThread) { i => when(io.core.req.valid && (i.U === io.core.req.bits.tid)) { uops_R(i) := io.core.uop } }
 
   }
 }
