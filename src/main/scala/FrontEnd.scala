@@ -66,18 +66,18 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       )
       val redirect = Input(Valid( new Bundle {
           val tid = UInt(tidWidth.W)
-          val npc = UInt(pcWidth.W) }
+          val npc = UInt(addrWidth.W) }
       ))
       val instr = Output(Valid( new Bundle {
           val tid = UInt(tidWidth.W)
-          val pc = UInt(pcWidth.W)
+          val pc = UInt(addrWidth.W)
           val instr = UInt(instrWidth.W) }
       ))
     })
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
 
-    val fetch_s_req_pc_R = RegInit(0.U(pcWidth.W))
+    val fetch_s_req_pc_R = RegInit(0.U(addrWidth.W))
     val fetch_s_req_tid_R = RegInit(0.U(tidWidth.W))
     val halting = WireInit(false.B)
 
@@ -99,7 +99,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val fetch_pcs_R = RegInit(0.U);chisel3.dontTouch(fetch_pcs_R)
     val fetch_data_R = RegInit(0.U);chisel3.dontTouch(fetch_data_R)
 
-    val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt(pcWidth.W))));thread_npc_R.foreach(chisel3.dontTouch(_))
+    val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt(addrWidth.W))));thread_npc_R.foreach(chisel3.dontTouch(_))
     when(io.redirect.valid) { thread_npc_R(io.redirect.bits.tid) := io.redirect.bits.npc }
 
     chisel3.dontTouch(out.ar)
@@ -110,18 +110,18 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
 
     val instr_cnt_R = RegInit(0.U(log2Up(2*fetchInstrs + 1).W));chisel3.dontTouch(instr_cnt_R)
     val tid_buff_R = RegInit(0.U((2*fetchInstrs*tidWidth).W))
-    val pc_buff_R = RegInit(0.U((2*fetchInstrs*pcWidth).W))
+    val pc_buff_R = RegInit(0.U((2*fetchInstrs*addrWidth).W))
     val instr_buff_R = RegInit(0.U((2*fetchInstrs*instrWidth).W))
     when(instr_cnt_R =/= 0.U)
     {
       instr_cnt_R := instr_cnt_R - 1.U
       tid_buff_R := tid_buff_R >> tidWidth
-      pc_buff_R := pc_buff_R >> pcWidth
+      pc_buff_R := pc_buff_R >> addrWidth
       instr_buff_R := instr_buff_R >> instrWidth
     }
     io.instr.valid := instr_cnt_R.orR
     io.instr.bits.tid := tid_buff_R(tidWidth - 1, 0)
-    io.instr.bits.pc := pc_buff_R(pcWidth - 1, 0)
+    io.instr.bits.pc := pc_buff_R(addrWidth - 1, 0)
     io.instr.bits.instr := instr_buff_R(instrWidth - 1, 0)
 
     val debug1 = WireInit(0.U); chisel3.dontTouch(debug1)
@@ -183,8 +183,8 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
                 | ( fetch_tids_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) ) )
 
             pc_buff_R := Mux(instr_cnt_R === 0.U, fetch_pcs_R,  
-              Cat(0.U(pcWidth.W), pc_buff_R(2*fetchInstrs*pcWidth-1, pcWidth)) 
-                | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(pcWidth)) ) )
+              Cat(0.U(addrWidth.W), pc_buff_R(2*fetchInstrs*addrWidth-1, addrWidth)) 
+                | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(addrWidth)) ) )
 
             val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
             //update instr cnt
@@ -219,8 +219,8 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
                 | ( fetch_tids_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) ) )
 
             pc_buff_R := Mux(instr_cnt_R === 0.U, fetch_pcs_R,  
-              Cat(0.U(pcWidth.W), pc_buff_R(2*fetchInstrs*pcWidth-1, pcWidth)) 
-                | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(pcWidth)) ) )
+              Cat(0.U(addrWidth.W), pc_buff_R(2*fetchInstrs*addrWidth-1, addrWidth)) 
+                | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(addrWidth)) ) )
 
             val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
             //update instr cnt

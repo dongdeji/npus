@@ -24,8 +24,9 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
 {
   val front = LazyModule(new FrontEnd(ClusterId, GroupId, NpId))
   val core = LazyModule(new Core(ClusterId, GroupId, NpId))
+  val acceinf = LazyModule(new AcceInf(ClusterId, GroupId, NpId))
   val imasternode = front.masternode
-  val pmasternode = core.masternode
+  val pmasternode = acceinf.masternode
   val windownode = core.window.slavenode
 
   lazy val module = new LazyModuleImp(this) {

@@ -307,7 +307,7 @@ class ThreadUop extends Bundle with NpusParams {
   val valid = Bool() // valid after decode
   val ctrl = new InstrCtrlSigs
   val tid = UInt(log2Up(numThread).W)
-  val pc = UInt(pcWidth.W) // valid after decode
+  val pc = UInt(addrWidth.W) // valid after decode
   val instr = Bits(instrWidth.W) // valid after decode
   val rd_valid = Bool() // valid after alu/lsu
   val rs1_valid = Bool() // true if bypassed
@@ -420,10 +420,7 @@ class ExBypassMux extends Module with NpusParams
 
 class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
-  val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
-                                      masters = Seq(AXI4MasterParameters(
-                                                      name = s"Core",
-                                                      id   = IdRange(0, 1 << 1))))))
+  
   val window = LazyModule(new Window(ClusterId, GroupId, NpId))
 
   lazy val module = new LazyModuleImp(this) {
@@ -433,17 +430,15 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
       )
       val redirect = Output(Valid( new Bundle {
           val tid = UInt(tidWidth.W)
-          val npc = UInt(pcWidth.W) }
+          val npc = UInt(addrWidth.W) }
       ))
       val instr = Input(Valid( new Bundle {
           val tid = UInt(tidWidth.W)
-          val pc = UInt(pcWidth.W)
+          val pc = UInt(addrWidth.W)
           val instr = UInt(instrWidth.W) }
       ))
     })
     chisel3.dontTouch(io)
-    val (out, edge) = masternode.out(0)
-
 
     /****************************************************************/
     /**************** key pipe signal define begine******************/

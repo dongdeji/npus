@@ -61,12 +61,12 @@ class AcceInfBundle extends Bundle with NpusParams
                     val size = UInt(2.W) /* dmem_req.inst_32(13,12) */
                     val signed = UInt(1.W) /* !dmem_req.inst_32(14) */
                     val data = UInt(dataWidth.W)
-                    val addr = UInt(32.W)
+                    val addr = UInt(addrWidth.W)
                     val tid = UInt(log2Up(numThread).W) })
 
   val resp = Flipped( Valid( new Bundle {
                     val data = UInt(dataWidth.W)
-                    val addr = UInt(32.W)
+                    val addr = UInt(addrWidth.W)
                     val tid = UInt(log2Up(numThread).W) }))
 
   override def cloneType: this.type = (new AcceInfBundle).asInstanceOf[this.type]
@@ -78,8 +78,6 @@ class AcceInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ext
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"Core",
                                                       id = IdRange(0, 1 << 1))))))
-  val window = LazyModule(new Window(ClusterId, GroupId, NpId))
-
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val core = Flipped(new AcceInfBundle) 
@@ -87,6 +85,37 @@ class AcceInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ext
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
 
+    val req_valid = RegNext(io.core.req.valid)
+    val req_cmd = RegNext(io.core.req.bits.cmd)
+    val req_addr = RegNext(io.core.req.bits.addr)
+    val req_tid = RegNext(io.core.req.bits.tid)
+    val ramDepth = dmemBytes/dataBytes
+    val bankrams = (0 until dataBytes ).map{ i => SyncReadMem(ramDepth, UInt(8.W)) }
+
+    val wdata = Wire(Vec(dataBytes, UInt(8.W))); chisel3.dontTouch(wdata)
+    wdata := (new StoreGen(io.core.req.bits.size, 0.U, io.core.req.bits.data, 8).data).asTypeOf(Vec(dataBytes, UInt(8.W)))
+
+    val dsize = WireInit(1.U << io.core.req.bits.size); chisel3.dontTouch(dsize)
+    val addr_h = io.core.req.bits.addr(log2Up(ramDepth) - 1, log2Up(dataBytes))
+    val addr_l = io.core.req.bits.addr(log2Up(dataBytes)-1, 0)
+    val unmask_l = WireInit((-1.S(dataBytes.W) >> addr_l) << addr_l); chisel3.dontTouch(unmask_l)
+    val unmask_h = WireInit((-1.S(dataBytes.W) >> (addr_l + dsize)) << (addr_l + dsize)); chisel3.dontTouch(unmask_h)
+    val dmask = WireInit((~unmask_h & unmask_l)(dataBytes -1, 0)); chisel3.dontTouch(dmask)
+    val enmask = WireInit(Fill(dataBytes, io.core.req.valid && io.core.req.bits.cmd.isOneOf(M_XRD, M_XWR)) & dmask); chisel3.dontTouch(enmask)
+
+    Seq.tabulate(dataBytes){ i =>
+      when(enmask(i) && io.core.req.bits.cmd.isOneOf(M_XWR))
+      { bankrams(i).write(addr_h, wdata(i)) }
+    }
+
+    val renmask = RegNext(enmask)
+    val rdatas = Seq.tabulate(dataBytes) { i => Mux(renmask(i).asBool, bankrams(i).read(addr_h), 0.U) }
+    val rdata = WireInit(Cat(rdatas.reverse))
+
+    io.core.resp.bits.data := rdata >> (req_addr(log2Up(dataBytes)-1, 0) << 3)
+    io.core.resp.valid := req_valid
+    io.core.resp.bits.addr := req_addr
+    io.core.resp.bits.tid := req_tid 
 
   }
 }
