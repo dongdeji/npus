@@ -32,9 +32,8 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
 
   core.regfile.slavenode := accinf.rxbar.node
 
-  lazy val module = new LazyModuleImp(this) {
-    //val (iout, iedge) = imasternode.out(0)
-    //val (pout, pedge) = pmasternode.out(0)
+  lazy val module = new LazyModuleImp(this) 
+  {
     core.module.io.frontend <> front.module.io.core
     accinf.module.io.core <> core.module.io.accinf
   }

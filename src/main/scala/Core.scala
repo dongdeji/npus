@@ -97,7 +97,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
   val window = LazyModule(new Window(ClusterId, GroupId, NpId))
   val regfile = LazyModule(new RegFiles(ClusterId, GroupId, NpId))
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) 
+  {
     val io = IO(new Bundle {
       val frontend = Flipped(new FrontEndBundle)
       val accinf = new AccInfBundle

@@ -25,7 +25,8 @@ class Csrs(id: Int)(implicit p: Parameters) extends LazyModule
                                                       name = s"Cluster-$id",
                                                       id   = IdRange(0, 1 << 1))))))
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) 
+  {
     val (out, edge) = masternode.out(0)
 
 

@@ -75,7 +75,8 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"FrontEnd",
                                                       id   = IdRange(0, 1 << 1))))))
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) 
+  {
     val io = IO(new Bundle {
       val core = new FrontEndBundle
     })

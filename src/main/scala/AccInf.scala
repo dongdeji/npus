@@ -80,8 +80,9 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
                                                       name = s"Core",
                                                       id = IdRange(0, 1 << 1))))))
   rxbar.node := rmasternode
-  
-  lazy val module = new LazyModuleImp(this) {
+
+  lazy val module = new LazyModuleImp(this) 
+  {
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
     })

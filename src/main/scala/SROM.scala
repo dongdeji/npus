@@ -49,7 +49,8 @@ class AXI4ROM(
     requestKeys = if (wcorrupt) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) 
+  {
     val (in, edgeIn) = node.in(0)
 
     private lazy val img_contents = {

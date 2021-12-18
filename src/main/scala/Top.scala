@@ -99,7 +99,8 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
     cluster
   }
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) 
+  {
     val io = IO(new Bundle {
       val success = Output(Bool())
       val start = Input(Bool())

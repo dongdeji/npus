@@ -37,7 +37,8 @@ class Group(ClusterId:Int, GroupId:Int)(implicit p: Parameters) extends LazyModu
     npu.wxbar.node := wxbar.node
   }
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) 
+  {
     val io = IO(new Bundle {
       val clock = Input(Clock())
       val reset = Input(Bool())

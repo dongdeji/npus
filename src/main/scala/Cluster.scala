@@ -67,7 +67,8 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
 
   slavenode := pxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new LazyModuleImp(this) 
+  {
     chisel3.dontTouch(clock)
     chisel3.dontTouch(reset)
     val (out, edgeOut) = masternode.out(0)
