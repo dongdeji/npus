@@ -1,7 +1,5 @@
 /*
- * 
- * A UART is a serial port, also called an RS232 interface.
- * 
+ to do
  */
 
 package npus
@@ -23,8 +21,6 @@ import freechips.rocketchip.rocket._
 import freechips.rocketchip.rocket.Instructions._
 import freechips.rocketchip.tile._
 import chisel3.experimental.chiselName
-import java.nio.ByteBuffer
-import java.nio.file.{Files,Paths}
 
 
 class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8) 
@@ -36,13 +32,11 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 
   def mask = {
       var res = 1.U
-
       for (i <- 0 until log2Up(maxSize)) {
         val upper = Mux(addr(i), res, 0.U) | Mux(size >= (i+1).U, ((BigInt(1) << (1 << i))-1).U, 0.U)
         val lower = Mux(addr(i), 0.U, res)
         res = Cat(upper, lower)
       }
-
       res
   }
   protected def genData(i: Int): UInt =

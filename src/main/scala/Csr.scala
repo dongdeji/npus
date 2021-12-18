@@ -1,7 +1,5 @@
 /*
- * 
- * A UART is a serial port, also called an RS232 interface.
- * 
+ to do
  */
 
 package npus

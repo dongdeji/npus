@@ -1,11 +1,8 @@
 /*
- * 
- * A UART is a serial port, also called an RS232 interface.
- * 
+ to do
  */
 
 package npus
-
 
 import chisel3._
 import chisel3.util._

@@ -1,7 +1,5 @@
 /*
- * 
- * A UART is a serial port, also called an RS232 interface.
- * 
+ to do
  */
 
 package npus
@@ -15,8 +13,6 @@ import freechips.rocketchip.rocket.Instructions._
 import freechips.rocketchip.diplomacy.{ AddressSet, LazyModule, LazyModuleImp, RegionType, LazyRawModuleImp }
 import freechips.rocketchip.tile._
 import chisel3.experimental.chiselName
-import java.nio.ByteBuffer
-import java.nio.file.{Files,Paths}
 
 
 trait NpusParams {
