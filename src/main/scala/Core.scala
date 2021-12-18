@@ -420,24 +420,15 @@ class ExBypassMux extends Module with NpusParams
 
 class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
-  
+
   val window = LazyModule(new Window(ClusterId, GroupId, NpId))
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val ctrl = Output(new Bundle { 
-          val thread_readys = Vec(numThread, Bool()) } 
-      )
-      val redirect = Output(Valid( new Bundle {
-          val tid = UInt(tidWidth.W)
-          val npc = UInt(addrWidth.W) }
-      ))
-      val instr = Input(Valid( new Bundle {
-          val tid = UInt(tidWidth.W)
-          val pc = UInt(addrWidth.W)
-          val instr = UInt(instrWidth.W) }
-      ))
+      val frontend = Flipped(new FrontEndBundle)
+      val accinf = new AccInfBundle
     })
+
     chisel3.dontTouch(io)
 
     /****************************************************************/
@@ -476,16 +467,16 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /****************************************************************/
     /****************** instruction decode begin ********************/
     val decode_table = { Seq(new CUSTOMDecode) ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
-    val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.instr.bits.instr, decode_table); chisel3.dontTouch(id_ctrl)
-    id_uop_W.valid    := io.instr.valid && id_ctrl.legal
+    val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.frontend.instr.bits.instr, decode_table); chisel3.dontTouch(id_ctrl)
+    id_uop_W.valid    := io.frontend.instr.valid && id_ctrl.legal
     id_uop_W.ctrl     := id_ctrl
-    id_uop_W.tid      := io.instr.bits.tid
-    id_uop_W.pc       := io.instr.bits.pc
-    id_uop_W.instr    := io.instr.bits.instr
+    id_uop_W.tid      := io.frontend.instr.bits.tid
+    id_uop_W.pc       := io.frontend.instr.bits.pc
+    id_uop_W.instr    := io.frontend.instr.bits.instr
     id_uop_W.rd_valid := false.B
-    id_uop_W.rd       := Cat(io.instr.bits.tid, Mux(id_ctrl.rxs1, io.instr.bits.instr(11,7), 0.U(5.W)))
-    id_uop_W.rs1      := Cat(io.instr.bits.tid, Mux(id_ctrl.rxs1, io.instr.bits.instr(19,15), 0.U(5.W)))
-    id_uop_W.rs2      := Cat(io.instr.bits.tid, Mux(id_ctrl.rxs2, io.instr.bits.instr(24,20), 0.U(5.W)))
+    id_uop_W.rd       := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(11,7), 0.U(5.W)))
+    id_uop_W.rs1      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(19,15), 0.U(5.W)))
+    id_uop_W.rs2      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs2, io.frontend.instr.bits.instr(24,20), 0.U(5.W)))
     id_uop_W.rd_data  := 0.U
     id_uop_W.rs1_data := 0.U
     id_uop_W.rs2_data := 0.U
@@ -567,10 +558,10 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                                                       Mux(ex_uop_W.ctrl.jal, ImmGen(IMM_UJ, ex_uop_W.instr),
                                                             Mux(/*ex_uop_W.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
 
-    io.redirect.valid := ex_uop_W.valid && ((ex_uop_W.ctrl.branch && alu.io.cmp_out) || 
+    io.frontend.redirect.valid := ex_uop_W.valid && ((ex_uop_W.ctrl.branch && alu.io.cmp_out) || 
                                                 ex_uop_W.ctrl.jal || ex_uop_W.ctrl.jalr /*|| ex_uop_W.ctrl.acce */)
-    io.redirect.bits.tid := ex_uop_W.tid
-    io.redirect.bits.npc := nxt_target // Mux(ex_uop_W.ctrl.acce, ex_uop_W.pc + 4.U, nxt_target)
+    io.frontend.redirect.bits.tid := ex_uop_W.tid
+    io.frontend.redirect.bits.npc := nxt_target // Mux(ex_uop_W.ctrl.acce, ex_uop_W.pc + 4.U, nxt_target)
     // erase instrs that following the redirected instr
     class TailEraseInfo extends Bundle with NpusParams {
       val valid = Bool() // valid after decode
@@ -578,7 +569,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     }    
     val tailEraseInfo = RegInit(0.U.asTypeOf(new TailEraseInfo));chisel3.dontTouch(tailEraseInfo)
     val acceReq = false.B
-    when(io.redirect.valid )
+    when(io.frontend.redirect.valid )
     { tailEraseInfo.valid := true.B; tailEraseInfo.tid := ex_uop_W.tid }
     when(tailEraseInfo.valid && (ex_uop_R.tid === tailEraseInfo.tid))
     { ex_uop_W.valid := false.B }

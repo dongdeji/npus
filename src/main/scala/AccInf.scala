@@ -54,7 +54,7 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 }
 
 
-class AcceInfBundle extends Bundle with NpusParams 
+class AccInfBundle extends Bundle with NpusParams 
 {
   val req = Valid( new Bundle {
                     val cmd = UInt(M_SZ.W) /* dmem_req.ctrl.mem_cmd */
@@ -64,15 +64,15 @@ class AcceInfBundle extends Bundle with NpusParams
                     val addr = UInt(addrWidth.W)
                     val tid = UInt(log2Up(numThread).W) })
 
-  val resp = Flipped( Valid( new Bundle {
+  val resp = Flipped(Valid( new Bundle {
                     val data = UInt(dataWidth.W)
                     val addr = UInt(addrWidth.W)
                     val tid = UInt(log2Up(numThread).W) }))
 
-  override def cloneType: this.type = (new AcceInfBundle).asInstanceOf[this.type]
+  override def cloneType: this.type = (new AccInfBundle).asInstanceOf[this.type]
 }
 
-class AcceInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
+class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
@@ -80,7 +80,7 @@ class AcceInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ext
                                                       id = IdRange(0, 1 << 1))))))
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val core = Flipped(new AcceInfBundle) 
+      val core = Flipped(new AccInfBundle)
     })
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)

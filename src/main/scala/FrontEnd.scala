@@ -53,6 +53,24 @@ class RRScheduler extends Module with NpusParams
   io.issue_tid := OHToUInt(io.issue_OH)
 }
 
+class FrontEndBundle extends Bundle with NpusParams
+{
+  val ctrl = Input(new Bundle { 
+      val thread_readys = Vec(numThread, Bool()) } 
+  )
+  val redirect = Input(Valid( new Bundle {
+      val tid = UInt(tidWidth.W)
+      val npc = UInt(addrWidth.W) }
+  ))
+  val instr = Output(Valid( new Bundle {
+      val tid = UInt(tidWidth.W)
+      val pc = UInt(addrWidth.W)
+      val instr = UInt(instrWidth.W) }
+  ))
+
+  override def cloneType: this.type = (new FrontEndBundle).asInstanceOf[this.type]
+}
+
 class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
@@ -61,18 +79,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
                                                       id   = IdRange(0, 1 << 1))))))
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val ctrl = Input(new Bundle { 
-          val thread_readys = Vec(numThread, Bool()) } 
-      )
-      val redirect = Input(Valid( new Bundle {
-          val tid = UInt(tidWidth.W)
-          val npc = UInt(addrWidth.W) }
-      ))
-      val instr = Output(Valid( new Bundle {
-          val tid = UInt(tidWidth.W)
-          val pc = UInt(addrWidth.W)
-          val instr = UInt(instrWidth.W) }
-      ))
+      val core = new FrontEndBundle
     })
     chisel3.dontTouch(io)
     val (out, edge) = masternode.out(0)
@@ -86,8 +93,8 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val thread_states_R = RegInit(VecInit(Seq.fill(numThread)(thread_s_ready)));thread_states_R.foreach(chisel3.dontTouch(_))
     for(i <- 0 until numThread) 
     { 
-      when(io.ctrl.thread_readys(i) || (halting && (fetch_s_req_tid_R === i.U))) 
-      { thread_states_R(i) := Mux(io.ctrl.thread_readys(i), thread_s_ready, thread_s_halt) } 
+      when(io.core.ctrl.thread_readys(i) || (halting && (fetch_s_req_tid_R === i.U))) 
+      { thread_states_R(i) := Mux(io.core.ctrl.thread_readys(i), thread_s_ready, thread_s_halt) } 
     }
 
     //val readys = VecInit(Seq.tabulate(numThread) { i => thread_states_R(i) === thread_s_ready } ).asUInt
@@ -100,7 +107,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val fetch_data_R = RegInit(0.U);chisel3.dontTouch(fetch_data_R)
 
     val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt(addrWidth.W))));thread_npc_R.foreach(chisel3.dontTouch(_))
-    when(io.redirect.valid) { thread_npc_R(io.redirect.bits.tid) := io.redirect.bits.npc }
+    when(io.core.redirect.valid) { thread_npc_R(io.core.redirect.bits.tid) := io.core.redirect.bits.npc }
 
     chisel3.dontTouch(out.ar)
     chisel3.dontTouch(out.r)
@@ -119,10 +126,10 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       pc_buff_R := pc_buff_R >> addrWidth
       instr_buff_R := instr_buff_R >> instrWidth
     }
-    io.instr.valid := instr_cnt_R.orR
-    io.instr.bits.tid := tid_buff_R(tidWidth - 1, 0)
-    io.instr.bits.pc := pc_buff_R(addrWidth - 1, 0)
-    io.instr.bits.instr := instr_buff_R(instrWidth - 1, 0)
+    io.core.instr.valid := instr_cnt_R.orR
+    io.core.instr.bits.tid := tid_buff_R(tidWidth - 1, 0)
+    io.core.instr.bits.pc := pc_buff_R(addrWidth - 1, 0)
+    io.core.instr.bits.instr := instr_buff_R(instrWidth - 1, 0)
 
     val debug1 = WireInit(0.U); chisel3.dontTouch(debug1)
     val debug2 = WireInit(0.U); chisel3.dontTouch(debug2)
