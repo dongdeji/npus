@@ -53,18 +53,15 @@ class RRScheduler extends Module with NpusParams
 
 class FrontEndBundle extends Bundle with NpusParams
 {
-  val ctrl = Input(new Bundle { 
-      val thread_readys = Vec(numThread, Bool()) } 
-  )
-  val redirect = Input(Valid( new Bundle {
-      val tid = UInt(tidWidth.W)
-      val npc = UInt(addrWidth.W) }
-  ))
   val instr = Output(Valid( new Bundle {
       val tid = UInt(tidWidth.W)
       val pc = UInt(addrWidth.W)
-      val instr = UInt(instrWidth.W) }
-  ))
+      val instr = UInt(instrWidth.W) } ))
+  val redirect = Input(Valid( new Bundle {
+      val tid = UInt(tidWidth.W)
+      val npc = UInt(addrWidth.W) } ))
+  val readys = Input(Valid(new Bundle { 
+      val thread = UInt(numThread.W) } ))
 
   override def cloneType: this.type = (new FrontEndBundle).asInstanceOf[this.type]
 }
@@ -92,8 +89,9 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val thread_states_R = RegInit(VecInit(Seq.fill(numThread)(thread_s_ready)));thread_states_R.foreach(chisel3.dontTouch(_))
     for(i <- 0 until numThread) 
     { 
-      when(io.core.ctrl.thread_readys(i) || (halting && (fetch_s_req_tid_R === i.U))) 
-      { thread_states_R(i) := Mux(io.core.ctrl.thread_readys(i), thread_s_ready, thread_s_halt) } 
+      assert(Cat((io.core.readys.valid && io.core.readys.bits.thread(i)).asUInt, (halting && (fetch_s_req_tid_R === i.U)).asUInt) =/= 3.U)
+      when((io.core.readys.valid && io.core.readys.bits.thread(i)) || (halting && (fetch_s_req_tid_R === i.U))) 
+      { thread_states_R(i) := Mux(io.core.readys.bits.thread(i), thread_s_ready, thread_s_halt) } 
     }
 
     //val readys = VecInit(Seq.tabulate(numThread) { i => thread_states_R(i) === thread_s_ready } ).asUInt

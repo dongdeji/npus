@@ -75,7 +75,7 @@ abstract trait DecodeConstants {
 
 class InstrCtrlSigs extends Bundle {
   val legal = Bool()
-  val fp = Bool()
+  val halt = Bool()
   val acc = Bool()
   val br = Bool()
   val jal = Bool()
@@ -94,14 +94,14 @@ class InstrCtrlSigs extends Bundle {
 
   def default: List[BitPat] =
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   | fp    | jalr    |     sel_alu1  |      alu_dw                       
+                        //   | halt  | jalr    |     sel_alu1  |      alu_dw                       
                         //   | | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   | | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
                         List(N,X,X,X,X,X,X,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   X,CSR.X)
 
   def decode(inst: UInt, table: Iterable[(BitPat, List[BitPat])]) = {
     val decoder = DecodeLogic(inst, default, table)
-    val sigs = Seq(legal, fp, acc, br, jal, jalr, rxs2, rxs1, sel_alu2,
+    val sigs = Seq(legal, halt, acc, br, jal, jalr, rxs2, rxs1, sel_alu2,
                    sel_alu1, sel_imm, alu_dw, alu_fn, mem, mem_cmd, wxd, csr)
     sigs zip decoder map {case(s,d) => s := d}
     this
@@ -112,18 +112,18 @@ class IDecode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   | fp    | jalr    |     sel_alu1  |      alu_dw                       
+                        //   | halt  | jalr    |     sel_alu1  |      alu_dw                       
                         //   | | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   | | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
-    BNE->               List(Y,N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE,   N,M_X,   N,CSR.N),
-    BEQ->               List(Y,N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SEQ,   N,M_X,   N,CSR.N),
-    BLT->               List(Y,N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLT,   N,M_X,   N,CSR.N),
-    BLTU->              List(Y,N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLTU,  N,M_X,   N,CSR.N),
-    BGE->               List(Y,N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGE,   N,M_X,   N,CSR.N),
-    BGEU->              List(Y,N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGEU,  N,M_X,   N,CSR.N),
+    BNE->               List(Y,Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE,   N,M_X,   N,CSR.N),
+    BEQ->               List(Y,Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SEQ,   N,M_X,   N,CSR.N),
+    BLT->               List(Y,Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLT,   N,M_X,   N,CSR.N),
+    BLTU->              List(Y,Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLTU,  N,M_X,   N,CSR.N),
+    BGE->               List(Y,Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGE,   N,M_X,   N,CSR.N),
+    BGEU->              List(Y,Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGEU,  N,M_X,   N,CSR.N),
 
-    JAL->               List(Y,N,N,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    JALR->              List(Y,N,N,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
+    JAL->               List(Y,Y,N,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
+    JALR->              List(Y,Y,N,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
     AUIPC->             List(Y,N,N,N,N,N,N,N,  A2_IMM, A1_PC,  IMM_U, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
 
     LB->                List(Y,N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
@@ -153,19 +153,19 @@ class IDecode extends DecodeConstants
     SRL->               List(Y,N,N,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SR,    N,M_X,   Y,CSR.N),
     SRA->               List(Y,N,N,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SRA,   N,M_X,   Y,CSR.N),
 
-    FENCE->             List(Y,N,N,N,N,N,N,N,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.N),
+    //FENCE->             List(Y,Y,N,N,N,N,N,N,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.N),
 
-    SCALL->             List(Y,N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    SBREAK->            List(Y,N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    MRET->              List(Y,N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    WFI->               List(Y,N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    CEASE->             List(Y,N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    CSRRW->             List(Y,N,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
-    CSRRS->             List(Y,N,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
-    CSRRC->             List(Y,N,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C),
-    CSRRWI->            List(Y,N,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
-    CSRRSI->            List(Y,N,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
-    CSRRCI->            List(Y,N,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C))
+    SCALL->             List(Y,Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    SBREAK->            List(Y,Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    MRET->              List(Y,Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    WFI->               List(Y,Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    CEASE->             List(Y,Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    CSRRW->             List(Y,Y,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
+    CSRRS->             List(Y,Y,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
+    CSRRC->             List(Y,Y,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C),
+    CSRRWI->            List(Y,Y,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
+    CSRRSI->            List(Y,Y,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
+    CSRRCI->            List(Y,Y,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C))
 }
 
 
@@ -173,7 +173,7 @@ class I64Decode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   | fp    | jalr    |     sel_alu1  |      alu_dw                       
+                        //   | halt  | jalr    |     sel_alu1  |      alu_dw                       
                         //   | | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   | | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
     LD->                List(Y,N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
@@ -200,7 +200,7 @@ class CUSTOMDecode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   | fp    | jalr    |     sel_alu1  |      alu_dw                       
+                        //   | halt  | jalr    |     sel_alu1  |      alu_dw                       
                         //   | | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   | | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
     CUSTOM0->           List(Y,N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),

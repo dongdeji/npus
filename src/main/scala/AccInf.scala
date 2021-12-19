@@ -57,12 +57,13 @@ class AccInfBundle extends Bundle with NpusParams
                     val signed = UInt(1.W) /* !dmem_req.inst_32(14) */
                     val data = UInt(dataWidth.W)
                     val addr = UInt(addrWidth.W)
-                    val tid = UInt(log2Up(numThread).W) })
-
+                    val tid = UInt(log2Up(numThread).W) } )
   val resp = Flipped(Valid( new Bundle {
                     val data = UInt(dataWidth.W)
                     val addr = UInt(addrWidth.W)
-                    val tid = UInt(log2Up(numThread).W) }))
+                    val tid = UInt(log2Up(numThread).W) } ))
+  val readys = Input(Valid(new Bundle { 
+      val thread = UInt(numThread.W) } ))
 
   override def cloneType: this.type = (new AccInfBundle).asInstanceOf[this.type]
 }

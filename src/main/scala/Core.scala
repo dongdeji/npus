@@ -69,28 +69,6 @@ class RrBypassMux extends Module with NpusParams
   { io.rs2_bypassed := false.B }
 }
 
-class ExMux extends Module with NpusParams
-{
-  val io = IO(new Bundle {
-                  val ex_uop_R = Input(new ThreadUop)
-                  val reg_rs1_data = Input(UInt(dataWidth.W))
-                  val reg_rs2_data = Input(UInt(dataWidth.W))
-                  val rs1_data = Output(UInt(dataWidth.W))
-                  val rs2_data = Output(UInt(dataWidth.W))
-                })
-  chisel3.dontTouch(io)
-
-  when(io.ex_uop_R.rs1_valid)
-  { io.rs1_data := io.ex_uop_R.rs1_data }
-  .otherwise
-  { io.rs1_data := io.reg_rs1_data }
-
-  when(io.ex_uop_R.rs2_valid)
-  { io.rs2_data := io.ex_uop_R.rs2_data}
-  .otherwise
-  { io.rs2_data := io.reg_rs2_data }
-}
-
 class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
 
@@ -251,6 +229,12 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     regfile.module.io.rd_write := wb_uop_W.valid & wb_uop_W.ctrl.legal & wb_uop_W.rd_valid
     regfile.module.io.rd_data  := wb_uop_W.rd_data
     regfile.module.io.rd       := wb_uop_W.rd
+
+    val wb_uop_halt = wb_uop_W.valid && wb_uop_W.ctrl.legal && wb_uop_W.ctrl.halt
+    io.frontend.readys.valid := wb_uop_halt | io.accinf.readys.valid
+    io.frontend.readys.bits.thread :=  (Fill(numThread, io.accinf.readys.valid) & io.accinf.readys.bits.thread) | 
+                                       (Fill(numThread, wb_uop_halt) & UIntToOH(wb_uop_W.tid))
+
     /****************** write back end *********************/
     /*******************************************************/
 
