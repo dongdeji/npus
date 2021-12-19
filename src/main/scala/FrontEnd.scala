@@ -94,8 +94,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       { thread_states_R(i) := Mux(io.core.readys.bits.thread(i), thread_s_ready, thread_s_halt) } 
     }
 
-    //val readys = VecInit(Seq.tabulate(numThread) { i => thread_states_R(i) === thread_s_ready } ).asUInt
-    val readys = 2.U //to do by dongdeji
+    val readys = VecInit(Seq.tabulate(numThread) { i => thread_states_R(i) === thread_s_ready } ).asUInt
     val rrsch = Module(new RRScheduler);chisel3.dontTouch(rrsch.io)
     rrsch.io.readys := readys
 
@@ -112,7 +111,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     out.ar.valid := false.B
     out.ar.bits.id := 1.U
 
-    val instr_cnt_R = RegInit(0.U(log2Up(2*fetchInstrs + 1).W));chisel3.dontTouch(instr_cnt_R)
+    val instr_cnt_R = RegInit(0.U(log2Ceil(2*fetchInstrs + 1).W));chisel3.dontTouch(instr_cnt_R)
     val tid_buff_R = RegInit(0.U((2*fetchInstrs*tidWidth).W))
     val pc_buff_R = RegInit(0.U((2*fetchInstrs*addrWidth).W))
     val instr_buff_R = RegInit(0.U((2*fetchInstrs*instrWidth).W))
@@ -152,7 +151,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
         for(i <- 0 until numThread) 
         { 
           when(out.ar.fire() && i.U === rrsch.io.issue_tid) 
-          { thread_npc_R(i) := ((thread_npc_R(i) >> log2Up(fetchBytes)) + 1.U ) << log2Up(fetchBytes) } 
+          { thread_npc_R(i) := ((thread_npc_R(i) >> log2Ceil(fetchBytes)) + 1.U ) << log2Ceil(fetchBytes) } 
         }
       }
       is(fetch_s_resp) 
@@ -160,11 +159,11 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
         when(out.r.fire()) 
         { 
           //store instr data to register and shiftout unwanted data
-          fetch_tids_R := Fill(fetchInstrs, fetch_s_req_tid_R) >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
+          fetch_tids_R := Fill(fetchInstrs, fetch_s_req_tid_R) >> (fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0) << log2Ceil(8))
           val fetch_pcs_raw = VecInit(Seq.tabulate(fetchInstrs){ i => 
-                           ((fetch_s_req_pc_R >> log2Up(fetchBytes)) << log2Up(fetchBytes)) + (i*instrBytes).U }).asUInt
-          fetch_pcs_R := fetch_pcs_raw >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
-          fetch_data_R := out.r.bits.data >> (fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0) << log2Up(8))
+                           ((fetch_s_req_pc_R >> log2Ceil(fetchBytes)) << log2Ceil(fetchBytes)) + (i*instrBytes).U }).asUInt
+          fetch_pcs_R := fetch_pcs_raw >> (fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0) << log2Ceil(8))
+          fetch_data_R := out.r.bits.data >> (fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0) << log2Ceil(8))
           fetch_state_R := fetch_s_ecc
         } 
       }
@@ -180,7 +179,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
             //putinto instr buff
             instr_buff_R := Mux(instr_cnt_R === 0.U, fetch_data_R,  
               Cat(0.U(instrWidth.W), instr_buff_R(2*fetchInstrs*instrWidth-1, instrWidth)) 
-                | (fetch_data_R << ((instr_cnt_R-1.U) << log2Up(instrWidth)) ) )
+                | (fetch_data_R << ((instr_cnt_R-1.U) << log2Ceil(instrWidth)) ) )
 
             tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tids_R,  
               Cat(0.U(tidWidth.W), tid_buff_R(2*fetchInstrs*tidWidth-1, tidWidth)) 
@@ -190,14 +189,14 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
               Cat(0.U(addrWidth.W), pc_buff_R(2*fetchInstrs*addrWidth-1, addrWidth)) 
                 | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(addrWidth)) ) )
 
-            val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
+            val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0)) >> log2Ceil(instrBytes)
             //update instr cnt
             instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)
           }
 
           fetch_state_R := fetch_s_req 
           //check redirect instr
-          val instr_mask = Fill(fetchInstrs, true.B) >> fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,log2Up(instrBytes))
+          val instr_mask = Fill(fetchInstrs, true.B) >> fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,log2Ceil(instrBytes))
           val instr_redirects = WireInit(VecInit(Seq.tabulate(fetchInstrs){ i => 
                 fetch_data_R((i+1)*instrWidth - 1, i*instrWidth)(6,0).isOneOf(
                   Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0))) })) //to do by dongdeji
@@ -209,14 +208,14 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
         .otherwise { fetch_state_R := fetch_s_nospace }
       }
       is(fetch_s_nospace) 
-      { //TBD by dongdeji
+      {
         when(instr_cnt_R <= (instr_buff_R.getWidth/instrWidth - fetchInstrs + 1).U) 
         {
           {// this part is the same with fetch_s_scan's corresponding part
             //putinto instr buff
             instr_buff_R := Mux(instr_cnt_R === 0.U, fetch_data_R,  
               Cat(0.U(instrWidth.W), instr_buff_R(2*fetchInstrs*instrWidth-1, instrWidth)) 
-                | (fetch_data_R << ((instr_cnt_R-1.U) << log2Up(instrWidth)) ) )
+                | (fetch_data_R << ((instr_cnt_R-1.U) << log2Ceil(instrWidth)) ) )
 
             tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tids_R,  
               Cat(0.U(tidWidth.W), tid_buff_R(2*fetchInstrs*tidWidth-1, tidWidth)) 
@@ -226,7 +225,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
               Cat(0.U(addrWidth.W), pc_buff_R(2*fetchInstrs*addrWidth-1, addrWidth)) 
                 | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(addrWidth)) ) )
 
-            val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Up(fetchBytes)-1 ,0)) >> log2Up(instrBytes)
+            val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0)) >> log2Ceil(instrBytes)
             //update instr cnt
             instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)
           }

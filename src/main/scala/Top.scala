@@ -16,10 +16,10 @@ import chisel3.experimental.chiselName
 
 
 trait NpusParams {
-  val numCluster: Int = 2
-  val numGroup: Int = 2
-  val numNpu: Int = 2
-  val numThread: Int = 2
+  val numCluster: Int = 1
+  val numGroup: Int = 1
+  val numNpu: Int = 1
+  val numThread: Int = 1
   val numIram: Int = 1
   val iramBase: BigInt = 0x2000000
   val iramSize: BigInt = 4096

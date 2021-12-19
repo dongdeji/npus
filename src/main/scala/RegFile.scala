@@ -40,9 +40,9 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val io = IO(new Bundle {
       val rd_write = Input(Bool()                       )
       val rd_data  = Input(Bits(dataWidth.W)            )
-      val rd       = Input(UInt((log2Up(numThread)+5).W))
-      val rs1      = Input(UInt((log2Up(numThread)+5).W))
-      val rs2      = Input(UInt((log2Up(numThread)+5).W))
+      val rd       = Input(UInt((log2Ceil(numThread)+5).W))
+      val rs1      = Input(UInt((log2Ceil(numThread)+5).W))
+      val rs2      = Input(UInt((log2Ceil(numThread)+5).W))
       val rs1_data = Output(Bits(dataWidth.W)           )
       val rs2_data = Output(Bits(dataWidth.W)           )
     })

@@ -25,14 +25,14 @@ import chisel3.experimental.chiselName
 
 class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8) 
 {
-  val size = typ(log2Up(log2Up(maxSize)+1)-1,0)
+  val size = typ(log2Ceil(log2Ceil(maxSize)+1)-1,0)
 
   def misaligned =
-          (addr & ((1.U << size) - 1.U)(log2Up(maxSize)-1,0)).orR
+          (addr & ((1.U << size) - 1.U)(log2Ceil(maxSize)-1,0)).orR
 
   def mask = {
       var res = 1.U
-      for (i <- 0 until log2Up(maxSize)) {
+      for (i <- 0 until log2Ceil(maxSize)) {
         val upper = Mux(addr(i), res, 0.U) | Mux(size >= (i+1).U, ((BigInt(1) << (1 << i))-1).U, 0.U)
         val lower = Mux(addr(i), 0.U, res)
         res = Cat(upper, lower)
@@ -40,8 +40,8 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
       res
   }
   protected def genData(i: Int): UInt =
-            if (i >= log2Up(maxSize)) dat
-            else Mux(size === i.U, Fill(1 << (log2Up(maxSize)-i), dat((8 << i)-1,0)), genData(i+1))
+            if (i >= log2Ceil(maxSize)) dat
+            else Mux(size === i.U, Fill(1 << (log2Ceil(maxSize)-i), dat((8 << i)-1,0)), genData(i+1))
 
   def data = genData(0)
   def wordData = genData(2)
@@ -101,8 +101,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     wdata := (new StoreGen(io.core.req.bits.size, 0.U, io.core.req.bits.data, 8).data).asTypeOf(Vec(dataBytes, UInt(8.W)))
 
     val dsize = WireInit(1.U << io.core.req.bits.size); chisel3.dontTouch(dsize)
-    val addr_h = Cat(io.core.req.bits.tid, io.core.req.bits.addr(log2Up(ramDepth) - log2Up(numThread) - 1, log2Up(dataBytes)))
-    val addr_l = io.core.req.bits.addr(log2Up(dataBytes)-1, 0)
+    val addr_h = Cat(io.core.req.bits.tid, io.core.req.bits.addr(log2Ceil(ramDepth) - log2Ceil(numThread) - 1, log2Ceil(dataBytes)))
+    val addr_l = io.core.req.bits.addr(log2Ceil(dataBytes)-1, 0)
     val unmask_l = WireInit((-1.S(dataBytes.W) >> addr_l) << addr_l); chisel3.dontTouch(unmask_l)
     val unmask_h = WireInit((-1.S(dataBytes.W) >> (addr_l + dsize)) << (addr_l + dsize)); chisel3.dontTouch(unmask_h)
     val dmask = WireInit((~unmask_h & unmask_l)(dataBytes -1, 0)); chisel3.dontTouch(dmask)
@@ -117,7 +117,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val rdatas = Seq.tabulate(dataBytes) { i => Mux(renmask(i).asBool, bankrams(i).read(addr_h), 0.U) }
     val rdata = WireInit(Cat(rdatas.reverse))
 
-    io.core.resp.bits.data := rdata >> (req_addr(log2Up(dataBytes)-1, 0) << 3)
+    io.core.resp.bits.data := rdata >> (req_addr(log2Ceil(dataBytes)-1, 0) << log2Ceil(8))
     io.core.resp.valid := req_valid
     io.core.resp.bits.addr := req_addr
     io.core.resp.bits.tid := req_tid 

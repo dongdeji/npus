@@ -286,15 +286,15 @@ class NpuALU extends Module with NpusParams
 class ThreadUop extends Bundle with NpusParams {
   val valid = Bool() // valid after decode
   val ctrl = new InstrCtrlSigs
-  val tid = UInt(log2Up(numThread).W)
+  val tid = UInt(log2Ceil(numThread).W)
   val pc = UInt(addrWidth.W) // valid after decode
   val instr = Bits(instrWidth.W) // valid after decode
   val rd_valid = Bool() // valid after alu/lsu
   val rs1_valid = Bool() // true if bypassed
   val rs2_valid = Bool() // true if bypassed
-  val rd = UInt((log2Up(numThread)+5).W) // valid after decode, bit40 for register index, others for tid
-  val rs1 = UInt((log2Up(numThread)+5).W) // valid after decode, bit40 for register index, others for tid
-  val rs2 = UInt((log2Up(numThread)+5).W) // valid after decode, bit4~0 for register index, others for tid
+  val rd = UInt((log2Ceil(numThread)+5).W) // valid after decode, bit40 for register index, others for tid
+  val rs1 = UInt((log2Ceil(numThread)+5).W) // valid after decode, bit40 for register index, others for tid
+  val rs2 = UInt((log2Ceil(numThread)+5).W) // valid after decode, bit4~0 for register index, others for tid
   val rd_data = Bits(dataWidth.W) // valid after alu/lsu/mul/div/fpu
   val rs1_data = Bits(dataWidth.W) // valid at the end of ISSUE
   val rs2_data = Bits(dataWidth.W) // valid at the end of ISSUE

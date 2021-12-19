@@ -37,7 +37,7 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
   lazy val module = new LazyModuleImp(this) 
   {
-    val offsetWith = 1 << log2Up(log2Up(windowBytes))
+    val offsetWith = 1 << log2Ceil(log2Ceil(windowBytes))
     val io = IO(new Bundle {
       val r_offset = Input(UInt(offsetWith.W))
       val r_data   = Output(UInt(dataWidth.W))
@@ -48,16 +48,16 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     
     val offset_raw = VecInit(Seq.tabulate(dataBytes){ i => (io.r_offset + i.U)(offsetWith-1, 0)}).asUInt
     chisel3.dontTouch(offset_raw)
-    val offset_l = io.r_offset(log2Up(dataBytes)-1, 0)
-    val wide_offset_raw = offset_raw << (offset_l << log2Up(offsetWith))
+    val offset_l = io.r_offset(log2Ceil(dataBytes)-1, 0)
+    val wide_offset_raw = offset_raw << (offset_l << log2Ceil(offsetWith))
     chisel3.dontTouch(wide_offset_raw)
     val offset_pakage = (wide_offset_raw >> offsetWith*dataBytes) | wide_offset_raw(offsetWith*dataBytes-1,0)
     chisel3.dontTouch(offset_pakage)
     val offset_l_R = RegNext(offset_l)
     chisel3.dontTouch(offset_l_R)
     val data_pakage = VecInit(Seq.tabulate(dataBytes) { i => banks(i).read(offset_pakage((i+1)*offsetWith-1, i*offsetWith)) }).asUInt
-    val data_raw_l = data_pakage >> (offset_l_R << log2Up(8))
-    val data_raw_h = (data_pakage << ((dataBytes.U - offset_l_R) << log2Up(8)))(dataWidth - 1, 0)
+    val data_raw_l = data_pakage >> (offset_l_R << log2Ceil(8))
+    val data_raw_h = (data_pakage << ((dataBytes.U - offset_l_R) << log2Ceil(8)))(dataWidth - 1, 0)
     io.r_data := data_raw_h | data_raw_l 
     chisel3.dontTouch(data_raw_l)
     chisel3.dontTouch(data_raw_h)
