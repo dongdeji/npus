@@ -46,25 +46,20 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       val rs1_data = Output(Bits(dataWidth.W)           )
       val rs2_data = Output(Bits(dataWidth.W)           )
     })
-    
-    val banks1 = Seq.tabulate(dataBytes) { i => SyncReadMem(numThread*32, UInt(8.W)) }
-    val banks2 = Seq.tabulate(dataBytes) { i => SyncReadMem(numThread*32, UInt(8.W)) }
+    chisel3.dontTouch(io)
+    val regbanks1 = (0 until dataBytes ).map { i => SyncReadMem(numThread*32, UInt(8.W)) }
+    val regbanks2 = (0 until dataBytes ).map { i => SyncReadMem(numThread*32, UInt(8.W)) }
     
     // x0 is always 0
-    io.rs1_data := Mux(io.rs1(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataBytes){ i => banks1(i).read(io.rs1)}).asUInt)
-    io.rs2_data := Mux(io.rs2(4, 0) === 0.U, 0.U, VecInit(Seq.tabulate(dataBytes){ i => banks2(i).read(io.rs2)}).asUInt)
-
-    when(io.rd_write)
-    {
-      Seq.tabulate(dataBytes){ i => banks1(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
-      Seq.tabulate(dataBytes){ i => banks2(i).write(io.rd, io.rd_data(i*8+7, i*8)) }
-    }
+    val rs1_data_s1 = VecInit(Seq.tabulate(dataBytes){ i => regbanks1(i).read(io.rs1)}).asUInt;chisel3.dontTouch(rs1_data_s1)
+    val rs2_data_s1 = VecInit(Seq.tabulate(dataBytes){ i => regbanks2(i).read(io.rs2)}).asUInt;chisel3.dontTouch(rs2_data_s1)
+    io.rs1_data := RegNext(RegNext(Mux(RegNext(io.rs1(4, 0)) === 0.U, RegNext(0.U), rs1_data_s1)))
+    io.rs2_data := RegNext(RegNext(Mux(RegNext(io.rs2(4, 0)) === 0.U, RegNext(0.U), rs2_data_s1)))
 
     /********** handle axi4 write interface begin **********/
     val (in, edgeIn) = slavenode.in(0)
     chisel3.dontTouch(in)
 
-    val w_addr = Cat((mask(address, dataBytes) zip (in.aw.bits.addr >> log2Ceil(dataBytes)).asBools).filter(_._1).map(_._2).reverse)
     val w_sel0 = address.contains(in.aw.bits.addr)
 
     val w_full = RegInit(false.B)
@@ -81,13 +76,15 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       w_echo :<= in.aw.bits.echo
     }
 
-    val wdata = VecInit.tabulate(dataBytes) { i => in.w.bits.data(8*(i+1)-1, 8*i) }
+    val waddr = Mux(io.rd_write, io.rd, in.aw.bits.addr >> log2Ceil(dataBytes));chisel3.dontTouch(waddr)
     Seq.tabulate(dataBytes) 
     { i=> 
-      when (in.aw.fire() && w_sel0 && in.w.bits.strb(i).asBool) 
+      val wdata = Mux(io.rd_write, io.rd_data(i*8+7, i*8), in.w.bits.data(8*(i+1)-1, 8*i))
+      chisel3.dontTouch(wdata)
+      when (io.rd_write || (in.aw.fire() && w_sel0 && in.w.bits.strb(i).asBool)) 
       { 
-        banks1(i).write(in.aw.bits.addr >> log2Ceil(dataBytes), wdata(i))         
-        banks2(i).write(in.aw.bits.addr >> log2Ceil(dataBytes), wdata(i)) 
+        regbanks1(i).write(waddr, wdata)         
+        regbanks2(i).write(waddr, wdata) 
       }
     }
 

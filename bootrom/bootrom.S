@@ -3,9 +3,18 @@
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
-  csrwi 0x7c1, 0 // disable chicken bits
-  csrr a0, mhartid
+  //csrwi 0x7c1, 0 // disable chicken bits
+  //csrr a0, mhartid
+  li   a0, 0x1
   addi a0, a0, 1
+  addi a0, a0, 1
+  addi a0, a0, 1
+  addi a0, a0, 1
+  addi a0, a0, 1
+  addi a0, a0, 1
+  addi a0, a0, 1
+  addi a0, a0, 1
+  
   slli a1, a0, 12
   li   sp, 0x2000000
   add  sp, sp, a1

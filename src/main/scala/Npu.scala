@@ -26,7 +26,7 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
   val ixbar = LazyModule(new AXI4Xbar)
   val pxbar = LazyModule(new AXI4Xbar)
   val wxbar = LazyModule(new AXI4Xbar)
-  ixbar.node := front.masternode
+  ixbar.node := /*AXI4Buffer(BufferParams.pipe) := */front.masternode
   pxbar.node := accinf.pmasternode
   core.window.slavenode := wxbar.node
 

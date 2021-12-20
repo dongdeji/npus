@@ -141,7 +141,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       is(fetch_s_req) 
       { 
         //make instr reqest msg
-        out.ar.valid := true.B
+        out.ar.valid := rrsch.io.issue_OH.orR
         out.ar.bits.addr := PriorityMux(rrsch.io.issue_OH, thread_npc_R)
         fetch_s_req_pc_R := PriorityMux(rrsch.io.issue_OH, thread_npc_R)
         fetch_s_req_tid_R := rrsch.io.issue_tid

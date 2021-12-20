@@ -34,10 +34,10 @@ class RrBypassMux extends Module with NpusParams
                   val rs2_data = Output(UInt(dataWidth.W))
                 })
   chisel3.dontTouch(io)
-  val rs1_bypass_ex  = (io.rr_uop_R.rs1 =/= 0.U) && (io.rr_uop_R.rs1 === io.ex_uop_W.rd ) && io.ex_uop_W.rd_valid
-  val rs1_bypass_wb  = (io.rr_uop_R.rs1 =/= 0.U) && (io.rr_uop_R.rs1 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
-  val rs2_bypass_ex  = (io.rr_uop_R.rs2 =/= 0.U) && (io.rr_uop_R.rs2 === io.ex_uop_W.rd ) && io.ex_uop_W.rd_valid
-  val rs2_bypass_wb  = (io.rr_uop_R.rs2 =/= 0.U) && (io.rr_uop_R.rs2 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
+  val rs1_bypass_ex  = (io.rr_uop_R.rs1 =/= 0.U) && io.ex_uop_W.valid && (io.rr_uop_R.rs1 === io.ex_uop_W.rd ) && io.ex_uop_W.rd_valid
+  val rs1_bypass_wb  = (io.rr_uop_R.rs1 =/= 0.U) && io.wb_uop_W.valid && (io.rr_uop_R.rs1 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
+  val rs2_bypass_ex  = (io.rr_uop_R.rs2 =/= 0.U) && io.ex_uop_W.valid && (io.rr_uop_R.rs2 === io.ex_uop_W.rd ) && io.ex_uop_W.rd_valid
+  val rs2_bypass_wb  = (io.rr_uop_R.rs2 =/= 0.U) && io.wb_uop_W.valid && (io.rr_uop_R.rs2 === io.wb_uop_W.rd ) && io.wb_uop_W.rd_valid
 
   chisel3.dontTouch(rs1_bypass_ex)
   chisel3.dontTouch(rs1_bypass_wb)
@@ -51,10 +51,7 @@ class RrBypassMux extends Module with NpusParams
   .otherwise// low priority
   { io.rs1_data := io.rr_uop_R.rs1_data}
 
-  when(rs1_bypass_ex || rs1_bypass_wb)
-  { io.rs1_bypassed := true.B }
-  .otherwise
-  { io.rs1_bypassed := false.B }
+  io.rs1_bypassed := rs1_bypass_ex || rs1_bypass_wb
 
   when(rs2_bypass_ex) // high priority
   { io.rs2_data := io.ex_uop_W.rd_data } 
@@ -63,10 +60,7 @@ class RrBypassMux extends Module with NpusParams
   .otherwise// low priority
   { io.rs2_data := io.rr_uop_R.rs2_data}
 
-  when(rs2_bypass_ex || rs2_bypass_wb)
-  { io.rs2_bypassed := true.B }
-  .otherwise
-  { io.rs2_bypassed := false.B }
+  io.rs2_bypassed := rs2_bypass_ex || rs2_bypass_wb
 }
 
 class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -122,9 +116,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     id_uop_W.pc       := io.frontend.instr.bits.pc
     id_uop_W.instr    := io.frontend.instr.bits.instr
     id_uop_W.rd_valid := false.B
-    id_uop_W.rd       := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(11,7), 0.U(5.W)))
-    id_uop_W.rs1      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(19,15), 0.U(5.W)))
-    id_uop_W.rs2      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs2, io.frontend.instr.bits.instr(24,20), 0.U(5.W)))
+    id_uop_W.rd       := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(11, 7), 0.U(5.W)) )
+    id_uop_W.rs1      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(19,15), 0.U(5.W)) )
+    id_uop_W.rs2      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs2, io.frontend.instr.bits.instr(24,20), 0.U(5.W)) )
     id_uop_W.rd_data  := 0.U
     id_uop_W.rs1_data := 0.U
     id_uop_W.rs2_data := 0.U
@@ -135,8 +129,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /**********************************************************/
     /****************** register read begin *******************/
-    regfile.module.io.rs1 :=  id_uop_W.rs1
-    regfile.module.io.rs2 :=  id_uop_W.rs2
+    regfile.module.io.rs1 :=  rr0_uop_R.rs1
+    regfile.module.io.rs2 :=  rr0_uop_R.rs2
     
     window.module.io.r_offset := 0.U // to do by dongdeji
     
@@ -169,7 +163,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr2_uop_W.rs1_data := rr2_bypass_mux.io.rs1_data
     rr2_uop_W.rs2_valid := rr2_bypass_mux.io.rs2_bypassed
     rr2_uop_W.rs2_data := rr2_bypass_mux.io.rs2_data
-
     /****************** register read end *********************/
     /**********************************************************/
 
@@ -179,26 +172,29 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     ex_uop_W.rs2_data := Mux(ex_uop_R.rs2_valid, ex_uop_R.rs2_data, regfile.module.io.rs2_data)
 
     val alu = Module(new NpuALU);chisel3.dontTouch(alu.io)
-    alu.io.dw := ex_uop_W.ctrl.alu_dw
-    alu.io.fn := ex_uop_W.ctrl.alu_fn
-    alu.io.in2 := MuxLookup(ex_uop_W.ctrl.sel_alu2, 0.S,
-                                Seq(  A2_RS2 -> ex_uop_W.rs2_data.asSInt,
-                                      A2_IMM -> ImmGen(ex_uop_W.ctrl.sel_imm, ex_uop_W.instr),
-                                      A2_SIZE -> Mux(/*ex_uop_W.rvc*/false.B, 2.S, 4.S))).asUInt
+    alu.io.dw := ex_uop_R.ctrl.alu_dw
+    alu.io.fn := ex_uop_R.ctrl.alu_fn
+    alu.io.in2 := MuxLookup(ex_uop_R.ctrl.sel_alu2, 0.S,
+                                Seq(  A2_RS2 -> ex_uop_R.rs2_data.asSInt,
+                                      A2_IMM -> ImmGen(ex_uop_R.ctrl.sel_imm, ex_uop_R.instr),
+                                      A2_SIZE -> Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S))).asUInt
 
-    alu.io.in1 := MuxLookup(ex_uop_W.ctrl.sel_alu1, 0.S,
-                                Seq(  A1_RS1 -> ex_uop_W.rs1_data.asSInt,
-                                      A1_PC -> ex_uop_W.pc.asSInt)).asUInt
+    alu.io.in1 := MuxLookup(ex_uop_R.ctrl.sel_alu1, 0.S,
+                                Seq(  A1_RS1 -> ex_uop_R.rs1_data.asSInt,
+                                      A1_PC -> ex_uop_R.pc.asSInt)).asUInt
+
+    ex_uop_W.rd_valid := ex_uop_W.valid && ex_uop_R.ctrl.wxd && !ex_uop_R.ctrl.mem
+    ex_uop_W.rd_data := Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), /*csr.io.rw.rdata*/0.U, alu.io.out)
     /* handle imem request */
-    val nxt_target = Mux(ex_uop_W.ctrl.jalr, alu.io.out/*encodeVirtualAddress(alu.io.out, alu.io.out)*/,
-                            (ex_uop_W.pc.asSInt + Mux(ex_uop_W.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_W.instr),
-                                                      Mux(ex_uop_W.ctrl.jal, ImmGen(IMM_UJ, ex_uop_W.instr),
-                                                            Mux(/*ex_uop_W.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
+    val nxt_target = Mux(ex_uop_R.ctrl.jalr, alu.io.out/*encodeVirtualAddress(alu.io.out, alu.io.out)*/,
+                            (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.instr),
+                                                      Mux(ex_uop_R.ctrl.jal, ImmGen(IMM_UJ, ex_uop_R.instr),
+                                                            Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
 
-    io.frontend.redirect.valid := ex_uop_W.valid && ((ex_uop_W.ctrl.br && alu.io.cmp_out) || 
-                                                ex_uop_W.ctrl.jal || ex_uop_W.ctrl.jalr /*|| ex_uop_W.ctrl.acce */)
-    io.frontend.redirect.bits.tid := ex_uop_W.tid
-    io.frontend.redirect.bits.npc := nxt_target // Mux(ex_uop_W.ctrl.acce, ex_uop_W.pc + 4.U, nxt_target)
+    io.frontend.redirect.valid := ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || 
+                                                ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr /*|| ex_uop_R.ctrl.acce */)
+    io.frontend.redirect.bits.tid := ex_uop_R.tid
+    io.frontend.redirect.bits.npc := nxt_target // Mux(ex_uop_R.ctrl.acce, ex_uop_R.pc + 4.U, nxt_target)
     // erase instrs that following the redirected instr
     class TailEraseInfo extends Bundle with NpusParams {
       val valid = Bool() // valid after decode
@@ -207,7 +203,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val tailEraseInfo = RegInit(0.U.asTypeOf(new TailEraseInfo));chisel3.dontTouch(tailEraseInfo)
     val acceReq = false.B
     when(io.frontend.redirect.valid )
-    { tailEraseInfo.valid := true.B; tailEraseInfo.tid := ex_uop_W.tid }
+    { tailEraseInfo.valid := true.B; tailEraseInfo.tid := ex_uop_R.tid }
     when(tailEraseInfo.valid && (ex_uop_R.tid === tailEraseInfo.tid))
     { ex_uop_W.valid := false.B }
     .otherwise
