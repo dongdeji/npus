@@ -22,10 +22,10 @@ import freechips.rocketchip.rocket.Instructions._
 class RRScheduler extends Module with NpusParams
 {
   val io = IO(new Bundle() {
-                    val readys = Input(UInt(numThread.W))
-                    val issue_OH = Output(UInt(numThread.W))
-                    val issue_tid = Output(UInt(tidWidth.W))
-                    })
+             val readys = Input(UInt(numThread.W))
+             val issue_OH = Output(UInt(numThread.W))
+             val issue_tid = Output(UInt(tidWidth.W))
+           })
 
   val issues_cnt = PopCount(io.issue_OH)
   //if(numThread > 1) { assert((io.readys =/= (-1.S(numThread.W)).asUInt)) } // can not be all idle
@@ -87,14 +87,14 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     //thread state
     val thread_s_reset :: thread_s_halt :: thread_s_stall :: thread_s_ready :: thread_s_running :: Nil = Enum(5)
     val thread_states_R = RegInit(VecInit(Seq.fill(numThread)(thread_s_ready)));thread_states_R.foreach(chisel3.dontTouch(_))
-    for(i <- 0 until numThread) 
+    for(tid <- 0 until numThread) 
     { 
-      assert(Cat((io.core.readys.valid && io.core.readys.bits.thread(i)).asUInt, (halting && (fetch_s_req_tid_R === i.U)).asUInt) =/= 3.U)
-      when((io.core.readys.valid && io.core.readys.bits.thread(i)) || (halting && (fetch_s_req_tid_R === i.U))) 
-      { thread_states_R(i) := Mux(io.core.readys.bits.thread(i), thread_s_ready, thread_s_halt) } 
+      assert(Cat((io.core.readys.valid && io.core.readys.bits.thread(tid)).asUInt, (halting && (fetch_s_req_tid_R === tid.U)).asUInt) =/= 3.U)
+      when((io.core.readys.valid && io.core.readys.bits.thread(tid)) || (halting && (fetch_s_req_tid_R === tid.U))) 
+      { thread_states_R(tid) := Mux(io.core.readys.bits.thread(tid), thread_s_ready, thread_s_halt) } 
     }
 
-    val readys = VecInit(Seq.tabulate(numThread) { i => thread_states_R(i) === thread_s_ready } ).asUInt
+    val readys = VecInit(Seq.tabulate(numThread) { tid => thread_states_R(tid) === thread_s_ready } ).asUInt
     val rrsch = Module(new RRScheduler);chisel3.dontTouch(rrsch.io)
     rrsch.io.readys := readys
 
@@ -148,10 +148,10 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
         when(out.ar.fire()) { fetch_state_R := fetch_s_resp } 
 
         //update npc
-        for(i <- 0 until numThread) 
+        for(tid <- 0 until numThread) 
         { 
-          when(out.ar.fire() && i.U === rrsch.io.issue_tid) 
-          { thread_npc_R(i) := ((thread_npc_R(i) >> log2Ceil(fetchBytes)) + 1.U ) << log2Ceil(fetchBytes) } 
+          when(out.ar.fire() && tid.U === rrsch.io.issue_tid) 
+          { thread_npc_R(tid) := ((thread_npc_R(tid) >> log2Ceil(fetchBytes)) + 1.U ) << log2Ceil(fetchBytes) } 
         }
       }
       is(fetch_s_resp) 

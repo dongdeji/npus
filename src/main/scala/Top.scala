@@ -20,15 +20,20 @@ trait NpusParams {
   val numGroup: Int = 1
   val numNpu: Int = 1
   val numThread: Int = 1
-  val numIram: Int = 1
-  val iramBase: BigInt = 0x2000000
-  val iramSize: BigInt = 4096
+  val numIramBank: Int = 1
+  val iramBase: BigInt = 0x10000
+  val iramSizePerCluster: BigInt = 0x1000  
+  require(true == isPow2(iramBase)) 
+  require(true == isPow2(iramSizePerCluster))
+  val dramBase: BigInt = 0x20000
+  val dramSizePerNp: BigInt = 0x1000
+  require(true == isPow2(dramBase)) 
+  require(true == isPow2(dramSizePerNp))
   val windowBytes: Int = 512
-  val dmemBytes: Int = 1024
   val instrBytes: Int = 4
   val fetchInstrs: Int = 4
   val reset_vector: Int = 0x2000000
-
+  
   val dataWidth: Int = 64
   val dataBytes = dataWidth/8
   val addrWidth = 32

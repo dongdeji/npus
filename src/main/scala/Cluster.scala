@@ -21,10 +21,13 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   /* iram sequence */
-  val iramxbars = Seq.tabulate(numIram) 
+  val iramxbars = Seq.tabulate(numIramBank) 
   { i => 
+    val iramPerBankSize = iramSizePerCluster/numIramBank
+    require(0 == iramSizePerCluster%numIramBank )
+    require(true == isPow2(iramPerBankSize))
     val iramxbar = LazyModule(new AXI4Xbar)
-    val iram = LazyModule(new AXI4ROM(AddressSet(iramBase + iramSize*i, iramSize-1), beatBytes = fetchBytes))
+    val iram = LazyModule(new AXI4ROM(AddressSet(iramBase + iramSizePerCluster*ClusterId + iramPerBankSize*i, iramPerBankSize-1), beatBytes = fetchBytes))
     iram.node := iramxbar.node
     iramxbar.node
   }

@@ -48,24 +48,41 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
 }
 
 
+class DmemReqBundle extends Bundle with NpusParams {  
+  val cmd = UInt(M_SZ.W) /* dmem_req.ctrl.mem_cmd */
+  val size = UInt(2.W) /* dmem_req.inst_32(13,12) */
+  val signed = UInt(1.W) /* !dmem_req.inst_32(14) */
+  val data = UInt(dataWidth.W)
+  val addr = UInt(addrWidth.W)
+  val tid = UInt(log2Up(numThread).W)
+
+  override def cloneType: this.type = (new DmemReqBundle).asInstanceOf[this.type]
+}
+
+class DmemRespBundle extends Bundle with NpusParams {  
+  val data = UInt(dataWidth.W)
+  val addr = UInt(addrWidth.W)
+  val tid = UInt(log2Up(numThread).W)
+
+  override def cloneType: this.type = (new DmemRespBundle).asInstanceOf[this.type]
+}
+
 class AccInfBundle extends Bundle with NpusParams 
 {
-  val uop = Output( new ThreadUop )
-  val req = Valid( new Bundle {
-                    val cmd = UInt(M_SZ.W) /* dmem_req.ctrl.mem_cmd */
-                    val size = UInt(2.W) /* dmem_req.inst_32(13,12) */
-                    val signed = UInt(1.W) /* !dmem_req.inst_32(14) */
-                    val data = UInt(dataWidth.W)
-                    val addr = UInt(addrWidth.W)
-                    val tid = UInt(log2Up(numThread).W) } )
-  val resp = Flipped(Valid( new Bundle {
-                    val data = UInt(dataWidth.W)
-                    val addr = UInt(addrWidth.W)
-                    val tid = UInt(log2Up(numThread).W) } ))
-  val readys = Input(Valid(new Bundle { 
-      val thread = UInt(numThread.W) } ))
+  val uop  = Output( new ThreadUop )
+  val req  = Valid( new DmemReqBundle )
+  val resp = Flipped(Valid( new DmemRespBundle ))
+  val readys = Input(Valid(new Bundle { val thread = UInt(numThread.W) } ))
 
   override def cloneType: this.type = (new AccInfBundle).asInstanceOf[this.type]
+}
+
+class AccReqMetaBundle extends Bundle with NpusParams 
+{
+  val uop = new ThreadUop
+  val req = new DmemReqBundle
+
+  override def cloneType: this.type = (new AccReqMetaBundle).asInstanceOf[this.type]
 }
 
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -75,28 +92,28 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
   val accxbar = LazyModule(new AXI4Xbar)
 
   private val irammasters = Seq.tabulate(numThread) 
-  { i => 
+  { tid => 
     val irammaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"irammaster$i",
+                                                      name = s"irammaster$tid",
                                                       id = IdRange(0, numThread))))))
     iramxbar.node := irammaster
     irammaster
   }
   private val accmasters = Seq.tabulate(numThread) 
-  { i => 
+  { tid => 
     val accmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"accmaster$i",
+                                                      name = s"accmaster$tid",
                                                       id = IdRange(0, numThread))))))
     accxbar.node := accmaster
     accmaster
   }  
   private val regmasters = Seq.tabulate(numThread) 
-  { i => 
+  { tid => 
     val regmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"regmaster$i",
+                                                      name = s"regmaster$tid",
                                                       id = IdRange(0, numThread))))))
     regxbar.node := regmaster
     regmaster
@@ -107,24 +124,27 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
     })
-    chisel3.dontTouch(io)
 
     val iramouts = irammasters.map { _.out(0)._1 }
     val accouts  = accmasters.map { _.out(0)._1 }
     val regouts  = regmasters.map { _.out(0)._1 }
 
+    val iramaddress = AddressSet(iramBase + iramSizePerCluster*ClusterId, iramSizePerCluster-1)
+    val dramaddress = AddressSet(dramBase + dramSizePerNp*(ClusterId*numGroup*numNpu + GroupId*numNpu + NpId), dramSizePerNp-1)
+
+    /***************** handle dmem req begin *****************/
     val req_valid = RegNext(io.core.req.valid)
     val req_cmd = RegNext(io.core.req.bits.cmd)
     val req_addr = RegNext(io.core.req.bits.addr)
     val req_tid = RegNext(io.core.req.bits.tid)
-    val ramDepth = dmemBytes/dataBytes
-    val bankrams = (0 until dataBytes ).map{ i => SyncReadMem(ramDepth, UInt(8.W)) }
+    val dramDepth = dramSizePerNp/dataBytes
+    val banks = (0 until dataBytes ).map{ i => SyncReadMem(dramDepth, UInt(8.W)) }
 
     val wdata = Wire(Vec(dataBytes, UInt(8.W))); chisel3.dontTouch(wdata)
     wdata := (new StoreGen(io.core.req.bits.size, 0.U, io.core.req.bits.data, 8).data).asTypeOf(Vec(dataBytes, UInt(8.W)))
 
     val dsize = WireInit(1.U << io.core.req.bits.size); chisel3.dontTouch(dsize)
-    val addr_h = Cat(io.core.req.bits.tid, io.core.req.bits.addr(log2Ceil(ramDepth) - log2Ceil(numThread) - 1, log2Ceil(dataBytes)))
+    val addr_h = Cat(io.core.req.bits.tid, io.core.req.bits.addr(log2Ceil(dramDepth) - log2Ceil(numThread) - 1, log2Ceil(dataBytes)))
     val addr_l = io.core.req.bits.addr(log2Ceil(dataBytes)-1, 0)
     val unmask_l = WireInit((-1.S(dataBytes.W) >> addr_l) << addr_l); chisel3.dontTouch(unmask_l)
     val unmask_h = WireInit((-1.S(dataBytes.W) >> (addr_l + dsize)) << (addr_l + dsize)); chisel3.dontTouch(unmask_h)
@@ -133,25 +153,38 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     Seq.tabulate(dataBytes){ i =>
       when(enmask(i) && io.core.req.bits.cmd.isOneOf(M_XWR))
-      { bankrams(i).write(addr_h, wdata(i)) }
+      { banks(i).write(addr_h, wdata(i)) }
     }
 
-    val renmask = RegNext(enmask)
-    val rdatas = Seq.tabulate(dataBytes) { i => Mux(renmask(i).asBool, bankrams(i).read(addr_h), 0.U) }
+    val enmask_s1 = RegNext(enmask)
+    val rdatas = Seq.tabulate(dataBytes) { i => Mux(enmask_s1(i).asBool, banks(i).read(addr_h), 0.U) }
     val rdata = WireInit(Cat(rdatas.reverse))
 
     io.core.resp.bits.data := rdata >> (req_addr(log2Ceil(dataBytes)-1, 0) << log2Ceil(8))
-    io.core.resp.valid := req_valid
+    io.core.resp.valid := req_valid && dramaddress.contains(req_addr)
     io.core.resp.bits.addr := req_addr
     io.core.resp.bits.tid := req_tid 
+    /***************** handle dmem req end *****************/
 
-    // handle acc req
-    val uops_R = RegInit(0.U.asTypeOf(Vec(numThread, new ThreadUop)))
-    Seq.tabulate(numThread) 
-    { i => 
-      when(io.core.req.valid && (i.U === io.core.req.bits.tid)) 
-      { uops_R(i) := io.core.uop } 
+    // handle acc/mmio/iram req
+    /***************** handle acc/mmio/iram req begin *****************/
+    val accReqMeta = RegInit(0.U.asTypeOf(Vec(numThread, new AccReqMetaBundle)))
+    Seq.tabulate(numThread)
+    { tid => 
+      // remember the request meta
+      when(io.core.req.valid && (tid.U === io.core.req.bits.tid)) 
+      { 
+        accReqMeta(tid).req := io.core.req.bits
+        accReqMeta(tid).uop := io.core.uop
+      } 
+
+      when(iramaddress.contains(io.core.req.bits.addr))
+      { // handle iram read req
+        // to do by dongdeji
+      }
     }
+
+    /***************** handle acc/mmio/iram req end *****************/
 
   }
 }
