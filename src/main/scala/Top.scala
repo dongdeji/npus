@@ -22,22 +22,8 @@ trait NpusParams {
   val numThread: Int = 1
   val numIramBank: Int = 1
 
-  val iramGlobalBase: BigInt = 0x10000
-  val iramSizePerCluster: BigInt = 0x1000  
-  require(true == isPow2(iramGlobalBase)) 
-  require(true == isPow2(iramSizePerCluster))
-  val dramGlobalBase: BigInt = 0x20000
-  val dramSizePerNp: BigInt = 0x1000
-  require(true == isPow2(dramGlobalBase)) 
-  require(true == isPow2(dramSizePerNp))
-  val windowGlobalBase: BigInt = 0x200000
-  val windowSizePerNp: BigInt = 0x200*numThread
-  require(true == isPow2(windowGlobalBase)) 
-  require(true == isPow2(windowSizePerNp))
-
   val instrBytes: Int = 4
   val fetchInstrs: Int = 4
-  //val reset_vector: Int = 0x2000000
   
   val dataWidth: Int = 64
   val dataBytes = dataWidth/8
@@ -47,6 +33,27 @@ trait NpusParams {
   val fetchWidth = fetchBytes*8
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
+
+  val iramGlobalBase: BigInt = 0x10000
+  val iramSizePerCluster: BigInt = 0x1000  
+  require(true == isPow2(iramGlobalBase)) 
+  require(true == isPow2(iramSizePerCluster))
+
+  val dramGlobalBase: BigInt = 0x20000
+  val dramSizePerNp: BigInt = 0x1000
+  require(true == isPow2(dramGlobalBase)) 
+  require(true == isPow2(dramSizePerNp))
+
+  val windowGlobalBase: BigInt = 0x200000
+  val windowSizePerNp: BigInt = 0x200*numThread
+  require(true == isPow2(windowGlobalBase)) 
+  require(true == isPow2(windowSizePerNp))
+
+  val regfileGlobalBase: BigInt = 0x400000
+  val regfileSizePerNp: BigInt = 32*dataBytes*numThread
+  require(true == isPow2(regfileGlobalBase)) 
+  require(true == isPow2(regfileSizePerNp))
+
 
   val memInstrHalt = true
 

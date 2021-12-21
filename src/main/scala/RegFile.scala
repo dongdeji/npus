@@ -21,7 +21,7 @@ import freechips.rocketchip.util.{BundleMap}
 class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
-  val address = AddressSet(0x5000000 + 0x400*Id, 0x3ff)
+  val address = AddressSet(regfileGlobalBase + regfileSizePerNp*Id, regfileSizePerNp-1)
   val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
