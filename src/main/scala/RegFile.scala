@@ -18,7 +18,7 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 import freechips.rocketchip.util.{BundleMap}
 
-class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams with NpusUtil
+class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
   val address = AddressSet(0x5000000 + 0x400*Id, 0x3ff)
@@ -46,7 +46,7 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       val rs1_data = Output(Bits(dataWidth.W)           )
       val rs2_data = Output(Bits(dataWidth.W)           )
     })
-    chisel3.dontTouch(io)
+
     val regbanks1 = (0 until dataBytes ).map { i => SyncReadMem(numThread*32, UInt(8.W)) }
     val regbanks2 = (0 until dataBytes ).map { i => SyncReadMem(numThread*32, UInt(8.W)) }
     

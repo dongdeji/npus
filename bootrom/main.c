@@ -141,16 +141,16 @@ volatile void _kputs(const char *s)
 
 int main(void)
 {
-  uint64_t data [] = { 0x1111, 0x2222, 0x3333, 0x4444, \
-                       0x5555, 0x6666, 0x7777, 0x8888, \
-                       0x9999, 0xaaaa, 0xbbbb, 0xcccc, \
-                       0xdddd, 0xeeee, 0xffff, 0x5a5a };
-  uint64_t y1, y2, y3, y4, y5, y6, y7, y8 ;
+  //uint64_t data [] = { 0x1111, 0x2222, 0x3333, 0x4444, \
+  //                     0x5555, 0x6666, 0x7777, 0x8888, \
+  //                     0x9999, 0xaaaa, 0xbbbb, 0xcccc, \
+  //                     0xdddd, 0xeeee, 0xffff, 0x5a5a };
+  //uint64_t y1, y2, y3, y4, y5, y6, y7, y8 ;
   while(1)
   {
-    doCustom(y1, y2, y3, y4, data[0], data[1],  data[2],  data[3],  data[4],  data[5],  data[6],  data[7]);
-    doCustom(y5, y6, y7, y8, data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15]);
-	  _kputs("Hellow World\r\n");
+    //doCustom(y1, y2, y3, y4, data[0], data[1],  data[2],  data[3],  data[4],  data[5],  data[6],  data[7]);
+    //doCustom(y5, y6, y7, y8, data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15]);
+    _kputs("Hellow World\r\n");
   }
 	return 0;
 }

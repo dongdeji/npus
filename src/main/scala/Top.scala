@@ -37,13 +37,20 @@ trait NpusParams {
   val fetchWidth = fetchBytes*8
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
+
+  val memInstrHalt = true
+
+  def bigBits(x: BigInt, tail: List[Boolean] = Nil): List[Boolean] =
+    if (x == 0) tail.reverse else bigBits(x >> 1, ((x & 1) == 1) :: tail)
+  def mask(address: AddressSet, dataBytes:Int): List[Boolean] = bigBits(address.mask >> log2Ceil(dataBytes))
+  def haltCondition(instr:UInt): Bool =
+  {
+    val memInstrhalt_list = if(memInstrHalt) Seq(LB.value.asUInt()(6,0), SB.value.asUInt()(6,0)) else Nil
+    val halt_list = Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0)) ++ memInstrhalt_list
+    instr(6,0).isOneOf(halt_list)
+  }
 }
 
-trait NpusUtil {
-    def bigBits(x: BigInt, tail: List[Boolean] = Nil): List[Boolean] =
-        if (x == 0) tail.reverse else bigBits(x >> 1, ((x & 1) == 1) :: tail)
-    def mask(address: AddressSet, dataBytes:Int): List[Boolean] = bigBits(address.mask >> log2Ceil(dataBytes))
-}
 
 import chisel3._
 import chisel3.util._
@@ -86,16 +93,16 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
     beatBytes  = fetchBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
-  val pxbar = LazyModule(new AXI4Xbar)
-  matchslavenode := pxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
-  val wxbar = LazyModule(new AXI4Xbar)
-  wxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  wmasternode
+  val accxbar = LazyModule(new AXI4Xbar)
+  matchslavenode := accxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+  val windxbar = LazyModule(new AXI4Xbar)
+  windxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  wmasternode
 
   val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
-    pxbar.node := cluster.pxbar.node
-    cluster.wxbar.node := wxbar.node
+    accxbar.node := cluster.accxbar.node
+    cluster.windxbar.node := windxbar.node
     cluster
   }
 

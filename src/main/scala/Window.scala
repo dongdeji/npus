@@ -18,7 +18,7 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{GenericLogicalTre
 import freechips.rocketchip.util.{BundleMap}
 
 
-class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams with NpusUtil
+class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
   val address = AddressSet(0x6000000 + 0x400*Id, 0x3ff)

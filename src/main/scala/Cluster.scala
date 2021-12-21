@@ -32,26 +32,22 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
   val groupxbars = Seq.tabulate(numGroup) 
   { i => 
     val group = LazyModule(new Group(ClusterId, i))
-    (group.ixbar, group.pxbar, group.wxbar)
+    (group.iramxbar, group.accxbar, group.windxbar)
   }
   /* connect irams and groups */
   for(i <- 0 until iramxbars.size; j <- 0 until groupxbars.size )
   { iramxbars(i) := groupxbars(j)._1.node }
 
   /* connect match engin*/
-  val pxbar = LazyModule(new AXI4Xbar)
+  val accxbar = LazyModule(new AXI4Xbar)
   for(j <- 0 until groupxbars.size )
-  { pxbar.node := groupxbars(j)._2.node }
+  { accxbar.node := groupxbars(j)._2.node }
 
   /* connect window */
-  val wxbar = LazyModule(new AXI4Xbar)
+  val windxbar = LazyModule(new AXI4Xbar)
   for(j <- 0 until groupxbars.size )
-  { groupxbars(j)._3.node := wxbar.node }
+  { groupxbars(j)._3.node := windxbar.node }
 
-  val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
-                                      masters = Seq(AXI4MasterParameters(
-                                                      name = s"Cluster-$ClusterId",
-                                                      id   = IdRange(0, 1 << 1))))))
   val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(AddressSet(0x8000000 + 0x400, 0x3ff)),
@@ -65,13 +61,11 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 
-  slavenode := pxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+  slavenode := accxbar.node
 
   lazy val module = new LazyModuleImp(this) 
   {
-    chisel3.dontTouch(clock)
-    chisel3.dontTouch(reset)
-    val (out, edgeOut) = masternode.out(0)
+    // to do by dongdeji
     val (in, edgeIn) = slavenode.in(0)
   }
 }

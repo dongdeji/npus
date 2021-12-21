@@ -70,17 +70,37 @@ class AccInfBundle extends Bundle with NpusParams
 
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
-  val pmasternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
-                                      masters = Seq(AXI4MasterParameters(
-                                                      name = s"Core",
-                                                      id = IdRange(0, 1 << 1))))))
+  val regxbar = LazyModule(new AXI4Xbar)
+  val iramxbar = LazyModule(new AXI4Xbar)
+  val accxbar = LazyModule(new AXI4Xbar)
 
-  val rxbar = LazyModule(new AXI4Xbar)
-  val rmasternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+  private val irammasters = Seq.tabulate(numThread) 
+  { i => 
+    val irammaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"Core",
-                                                      id = IdRange(0, 1 << 1))))))
-  rxbar.node := rmasternode
+                                                      name = s"irammaster$i",
+                                                      id = IdRange(0, numThread))))))
+    iramxbar.node := irammaster
+    irammaster
+  }
+  private val accmasters = Seq.tabulate(numThread) 
+  { i => 
+    val accmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+                                      masters = Seq(AXI4MasterParameters(
+                                                      name = s"accmaster$i",
+                                                      id = IdRange(0, numThread))))))
+    accxbar.node := accmaster
+    accmaster
+  }  
+  private val regmasters = Seq.tabulate(numThread) 
+  { i => 
+    val regmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+                                      masters = Seq(AXI4MasterParameters(
+                                                      name = s"regmaster$i",
+                                                      id = IdRange(0, numThread))))))
+    regxbar.node := regmaster
+    regmaster
+  }
 
   lazy val module = new LazyModuleImp(this) 
   {
@@ -88,7 +108,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       val core = Flipped(new AccInfBundle)
     })
     chisel3.dontTouch(io)
-    val (out, edge) = pmasternode.out(0)
+
+    val iramouts = irammasters.map { _.out(0)._1 }
+    val accouts  = accmasters.map { _.out(0)._1 }
+    val regouts  = regmasters.map { _.out(0)._1 }
 
     val req_valid = RegNext(io.core.req.valid)
     val req_cmd = RegNext(io.core.req.bits.cmd)
@@ -124,7 +147,11 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     // handle acc req
     val uops_R = RegInit(0.U.asTypeOf(Vec(numThread, new ThreadUop)))
-    Seq.tabulate(numThread) { i => when(io.core.req.valid && (i.U === io.core.req.bits.tid)) { uops_R(i) := io.core.uop } }
+    Seq.tabulate(numThread) 
+    { i => 
+      when(io.core.req.valid && (i.U === io.core.req.bits.tid)) 
+      { uops_R(i) := io.core.uop } 
+    }
 
   }
 }

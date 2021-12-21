@@ -122,7 +122,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     id_uop_W.rd_data  := 0.U
     id_uop_W.rs1_data := 0.U
     id_uop_W.rs2_data := 0.U
-    id_uop_W.resped   := false.B
+    id_uop_W.make_ready := false.B
 
     /****************** instruction decode end **********************/
     /****************************************************************/
@@ -190,11 +190,12 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                             (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.instr),
                                                       Mux(ex_uop_R.ctrl.jal, ImmGen(IMM_UJ, ex_uop_R.instr),
                                                             Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
-
+    val memHalt = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
     io.frontend.redirect.valid := ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || 
-                                                ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr /*|| ex_uop_R.ctrl.acce */)
+                                                ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr || memHalt)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
-    io.frontend.redirect.bits.npc := nxt_target // Mux(ex_uop_R.ctrl.acce, ex_uop_R.pc + 4.U, nxt_target)
+    io.frontend.redirect.bits.npc := Mux(memHalt, ex_uop_R.pc + 4.U, nxt_target)
+    ex_uop_W.make_ready := io.frontend.redirect.valid
     // erase instrs that following the redirected instr
     class TailEraseInfo extends Bundle with NpusParams {
       val valid = Bool() // valid after decode
@@ -203,12 +204,15 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val tailEraseInfo = RegInit(0.U.asTypeOf(new TailEraseInfo));chisel3.dontTouch(tailEraseInfo)
     val acceReq = false.B
     when(io.frontend.redirect.valid )
-    { tailEraseInfo.valid := true.B; tailEraseInfo.tid := ex_uop_R.tid }
-    when(tailEraseInfo.valid && (ex_uop_R.tid === tailEraseInfo.tid))
-    { ex_uop_W.valid := false.B }
-    .otherwise
+    { 
+      tailEraseInfo.valid := true.B
+      tailEraseInfo.tid := ex_uop_R.tid 
+    }
+    when(tailEraseInfo.valid && (ex_uop_R.valid && (ex_uop_R.tid === tailEraseInfo.tid)))
+    { ex_uop_W := 0.U.asTypeOf(new ThreadUop) }
+    when(tailEraseInfo.valid && ((ex_uop_R.valid && (ex_uop_R.tid =/= tailEraseInfo.tid)) || (!ex_uop_R.valid)))
     { tailEraseInfo.valid := false.B }
-    
+
     io.accinf.uop := ex_uop_W
     io.accinf.req.valid := ex_uop_W.valid && (ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) 
     io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
@@ -226,10 +230,10 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     regfile.module.io.rd_data  := wb_uop_W.rd_data
     regfile.module.io.rd       := wb_uop_W.rd
 
-    val wb_uop_halt = wb_uop_W.valid && wb_uop_W.ctrl.legal && wb_uop_W.ctrl.halt
-    io.frontend.readys.valid := wb_uop_halt | io.accinf.readys.valid
+    val wb_make_ready = wb_uop_W.valid && wb_uop_W.ctrl.legal && wb_uop_W.make_ready
+    io.frontend.readys.valid := wb_make_ready | io.accinf.readys.valid
     io.frontend.readys.bits.thread :=  (Fill(numThread, io.accinf.readys.valid) & io.accinf.readys.bits.thread) | 
-                                       (Fill(numThread, wb_uop_halt) & UIntToOH(wb_uop_W.tid))
+                                       (Fill(numThread, wb_make_ready) & UIntToOH(wb_uop_W.tid))
 
     /****************** write back end *********************/
     /*******************************************************/

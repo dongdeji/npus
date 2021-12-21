@@ -23,14 +23,15 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
   val front = LazyModule(new FrontEnd(ClusterId, GroupId, NpId))
   val core = LazyModule(new Core(ClusterId, GroupId, NpId))
   val accinf = LazyModule(new AccInf(ClusterId, GroupId, NpId))
-  val ixbar = LazyModule(new AXI4Xbar)
-  val pxbar = LazyModule(new AXI4Xbar)
-  val wxbar = LazyModule(new AXI4Xbar)
-  ixbar.node := /*AXI4Buffer(BufferParams.pipe) := */front.masternode
-  pxbar.node := accinf.pmasternode
-  core.window.slavenode := wxbar.node
+  val iramxbar = LazyModule(new AXI4Xbar)
+  val accxbar = LazyModule(new AXI4Xbar)
+  val windxbar = LazyModule(new AXI4Xbar)
+  iramxbar.node := front.masternode
+  iramxbar.node := accinf.iramxbar.node
+  accxbar.node := accinf.accxbar.node
+  core.regfile.slavenode := accinf.regxbar.node
+  core.window.slavenode := windxbar.node
 
-  core.regfile.slavenode := accinf.rxbar.node
 
   lazy val module = new LazyModuleImp(this) 
   {

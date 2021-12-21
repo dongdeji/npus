@@ -24,7 +24,7 @@ MODEL ?= npusTop
 #--------------------------------------------------------------------
 
 verilog = \
-  $(abspath .)/generated-src/tsmc28_sram.v \
+  $(abspath .)/generated-src/sim_sram.v \
   $(abspath .)/generated-src/npusTop.v 
 
 # Build and install our own Verilator, to work around versionining issues.

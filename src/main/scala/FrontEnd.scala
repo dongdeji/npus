@@ -66,7 +66,7 @@ class FrontEndBundle extends Bundle with NpusParams
   override def cloneType: this.type = (new FrontEndBundle).asInstanceOf[this.type]
 }
 
-class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
+class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
@@ -197,9 +197,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
           fetch_state_R := fetch_s_req 
           //check redirect instr
           val instr_mask = Fill(fetchInstrs, true.B) >> fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,log2Ceil(instrBytes))
-          val instr_redirects = WireInit(VecInit(Seq.tabulate(fetchInstrs){ i => 
-                fetch_data_R((i+1)*instrWidth - 1, i*instrWidth)(6,0).isOneOf(
-                  Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0))) })) //to do by dongdeji
+          val instr_redirects = WireInit(VecInit(Seq.tabulate(fetchInstrs){ i => haltCondition(fetch_data_R((i+1)*instrWidth - 1, i*instrWidth)) }))
           val isRedirects = instr_mask & instr_redirects.asUInt
           debug1 := instr_mask
           debug2 := instr_redirects.asUInt

@@ -1,0 +1,68 @@
+[*]
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Tue Dec 21 01:14:30 2021
+[*]
+[dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
+[dumpfile_mtime] "Tue Dec 21 01:05:57 2021"
+[dumpfile_size] 434734022
+[savefile] "/home/dongdeji/share/code/npus/npu.gtkw"
+[timestart] 59
+[size] 1920 1007
+[pos] -1 -1
+*-2.000000 47 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.npusTop.
+[treeopen] TOP.npusTop.cluster.
+[treeopen] TOP.npusTop.cluster.group.
+[treeopen] TOP.npusTop.cluster.group.npu.
+[sst_width] 330
+[signals_width] 280
+[sst_expanded] 1
+[sst_vpaned_height] 285
+@28
+TOP.npusTop.cluster.group.npu.core.reset
+TOP.npusTop.cluster.group.npu.core.clock
+@200
+-core
+@22
+TOP.npusTop.cluster.group.npu.core.regfile_io_rd[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile_io_rd_data[63:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile_io_rd_write
+@22
+TOP.npusTop.cluster.group.npu.core.regfile_io_rs1[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile_io_rs1_data[63:0]
+TOP.npusTop.cluster.group.npu.core.regfile_io_rs2[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile_io_rs2_data[63:0]
+@28
+TOP.npusTop.cluster.group.npu.core.wb_uop_R_valid
+@22
+TOP.npusTop.cluster.group.npu.core.wb_uop_R_instr[31:0]
+TOP.npusTop.cluster.group.npu.core.wb_uop_R_pc[31:0]
+@28
+TOP.npusTop.cluster.group.npu.core.ex_uop_R_valid
+@22
+TOP.npusTop.cluster.group.npu.core.ex_uop_R_instr[31:0]
+TOP.npusTop.cluster.group.npu.core.ex_uop_R_pc[31:0]
+@28
+TOP.npusTop.cluster.group.npu.core.rr2_uop_R_valid
+@22
+TOP.npusTop.cluster.group.npu.core.rr2_uop_R_instr[31:0]
+TOP.npusTop.cluster.group.npu.core.rr2_uop_R_pc[31:0]
+@28
+TOP.npusTop.cluster.group.npu.core.rr1_uop_R_valid
+@22
+TOP.npusTop.cluster.group.npu.core.rr1_uop_R_instr[31:0]
+TOP.npusTop.cluster.group.npu.core.rr1_uop_R_pc[31:0]
+@28
+TOP.npusTop.cluster.group.npu.core.rr0_uop_R_valid
+@22
+TOP.npusTop.cluster.group.npu.core.rr0_uop_R_instr[31:0]
+TOP.npusTop.cluster.group.npu.core.rr0_uop_R_pc[31:0]
+@28
+TOP.npusTop.cluster.group.npu.core.id_uop_W_valid
+@22
+TOP.npusTop.cluster.group.npu.core.id_uop_W_instr[31:0]
+TOP.npusTop.cluster.group.npu.core.id_uop_W_pc[31:0]
+[pattern_trace] 1
+[pattern_trace] 0
