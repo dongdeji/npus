@@ -128,9 +128,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val iramouts = irammasters.map { _.out(0)._1 }
     val accouts  = accmasters.map { _.out(0)._1 }
     val regouts  = regmasters.map { _.out(0)._1 }
-
-    val iramaddress = AddressSet(iramBase + iramSizePerCluster*ClusterId, iramSizePerCluster-1)
-    val dramaddress = AddressSet(dramBase + dramSizePerNp*(ClusterId*numGroup*numNpu + GroupId*numNpu + NpId), dramSizePerNp-1)
+    
+    val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
+    val dramaddress = AddressSet(dramGlobalBase + dramSizePerNp*Id, dramSizePerNp-1)
+    val iramaddress = AddressSet(iramGlobalBase + iramSizePerCluster*ClusterId, iramSizePerCluster-1)
 
     /***************** handle dmem req begin *****************/
     val req_valid = RegNext(io.core.req.valid)

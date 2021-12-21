@@ -101,8 +101,10 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val fetch_tids_R = RegInit(0.U);chisel3.dontTouch(fetch_tids_R)
     val fetch_pcs_R = RegInit(0.U);chisel3.dontTouch(fetch_pcs_R)
     val fetch_data_R = RegInit(0.U);chisel3.dontTouch(fetch_data_R)
-
-    val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector.asUInt(addrWidth.W))));thread_npc_R.foreach(chisel3.dontTouch(_))
+    
+    val reset_vector = (iramGlobalBase + iramSizePerCluster*ClusterId).asUInt(addrWidth.W)
+    val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector)));
+    thread_npc_R.foreach(chisel3.dontTouch(_))
     when(io.core.redirect.valid) { thread_npc_R(io.core.redirect.bits.tid) := io.core.redirect.bits.npc }
 
     chisel3.dontTouch(out.ar)

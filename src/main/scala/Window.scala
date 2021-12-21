@@ -21,7 +21,7 @@ import freechips.rocketchip.util.{BundleMap}
 class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
-  val address = AddressSet(0x6000000 + 0x400*Id, 0x3ff)
+  val address = AddressSet(windowGlobalBase + windowSizePerNp*Id, windowSizePerNp-1)
   val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
@@ -37,14 +37,14 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
   lazy val module = new LazyModuleImp(this) 
   {
-    val offsetWith = 1 << log2Ceil(log2Ceil(windowBytes))
+    val offsetWith = 1 << log2Ceil(log2Ceil(windowSizePerNp))
     val io = IO(new Bundle {
       val r_offset = Input(UInt(offsetWith.W))
       val r_data   = Output(UInt(dataWidth.W))
     })
     chisel3.dontTouch(io)
 
-    val banks = Seq.tabulate(dataBytes) { i => SyncReadMem(windowBytes/dataBytes, UInt(8.W)) }
+    val banks = Seq.tabulate(dataBytes) { i => SyncReadMem(windowSizePerNp/dataBytes, UInt(8.W)) }
     
     val offset_raw = VecInit(Seq.tabulate(dataBytes){ i => (io.r_offset + i.U)(offsetWith-1, 0)}).asUInt
     chisel3.dontTouch(offset_raw)

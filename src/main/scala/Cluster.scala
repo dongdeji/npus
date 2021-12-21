@@ -27,7 +27,7 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
     require(0 == iramSizePerCluster%numIramBank )
     require(true == isPow2(iramPerBankSize))
     val iramxbar = LazyModule(new AXI4Xbar)
-    val iram = LazyModule(new AXI4ROM(AddressSet(iramBase + iramSizePerCluster*ClusterId + iramPerBankSize*i, iramPerBankSize-1), beatBytes = fetchBytes))
+    val iram = LazyModule(new AXI4ROM(AddressSet(iramGlobalBase + iramSizePerCluster*ClusterId + iramPerBankSize*i, iramPerBankSize-1), beatBytes = fetchBytes))
     iram.node := iramxbar.node
     iramxbar.node
   }
