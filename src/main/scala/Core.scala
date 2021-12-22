@@ -175,13 +175,13 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     alu.io.dw := ex_uop_R.ctrl.alu_dw
     alu.io.fn := ex_uop_R.ctrl.alu_fn
     alu.io.in2 := MuxLookup(ex_uop_R.ctrl.sel_alu2, 0.S,
-                                Seq(  A2_RS2 -> ex_uop_R.rs2_data.asSInt,
+                                Seq(  A2_RS2 -> ex_uop_W.rs2_data.asSInt,
                                       A2_IMM -> ImmGen(ex_uop_R.ctrl.sel_imm, ex_uop_R.instr),
                                       A2_SIZE -> Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S))).asUInt
 
     alu.io.in1 := MuxLookup(ex_uop_R.ctrl.sel_alu1, 0.S,
-                                Seq(  A1_RS1 -> ex_uop_R.rs1_data.asSInt,
-                                      A1_PC -> ex_uop_R.pc.asSInt)).asUInt
+                                Seq(  A1_RS1 -> ex_uop_W.rs1_data.asSInt,
+                                      A1_PC -> ex_uop_W.pc.asSInt)).asUInt
 
     ex_uop_W.rd_valid := ex_uop_W.valid && ex_uop_R.ctrl.wxd && !ex_uop_R.ctrl.mem
     ex_uop_W.rd_data := Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), /*csr.io.rw.rdata*/0.U, alu.io.out)

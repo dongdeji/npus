@@ -1,10 +1,12 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Wed Dec 22 16:43:38 2021
+[*] Wed Dec 22 17:06:32 2021
 [*]
-[dumpfile] "(null)"
+[dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
+[dumpfile_mtime] "Wed Dec 22 16:51:40 2021"
+[dumpfile_size] 1643222057
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
-[timestart] 124
+[timestart] 133
 [size] 1920 1007
 [pos] -1 -1
 *-2.000000 137 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
@@ -13,7 +15,6 @@
 [treeopen] TOP.npusTop.cluster.
 [treeopen] TOP.npusTop.cluster.group.
 [treeopen] TOP.npusTop.cluster.group.npu.
-[treeopen] TOP.npusTop.cluster.group.npu.accinf.
 [treeopen] TOP.npusTop.cluster.group.npu.accinf.mmioxbar.
 [sst_width] 339
 [signals_width] 611
@@ -139,6 +140,16 @@ TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_r_bits_data[127:0]
 TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_r_ready
 [color] 1
 TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_r_valid
+@22
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_aw_bits_addr[30:0]
+@28
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_aw_ready
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_aw_valid
+@22
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_ready
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_valid
 @200
 -accinf_mmioxbar
 @22
@@ -205,7 +216,6 @@ TOP.npusTop.uart.in_ar_bits_addr[30:0]
 TOP.npusTop.uart.in_ar_ready
 TOP.npusTop.uart.in_ar_valid
 TOP.npusTop.uart.ar_fire
-@29
 TOP.npusTop.uart.aw_fire
 @22
 TOP.npusTop.uart.uart_reg[31:0]
