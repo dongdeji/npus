@@ -47,8 +47,8 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       val rs2_data = Output(Bits(dataWidth.W)           )
     })
 
-    val regbanks1 = (0 until dataBytes ).map { i => SyncReadMem(numThread*32, UInt(8.W)) }
-    val regbanks2 = (0 until dataBytes ).map { i => SyncReadMem(numThread*32, UInt(8.W)) }
+    val regbanks1 = (0 until dataBytes ).map { i => SyncReadMem(numThread*isaRegNumPerThread, UInt(8.W)) }
+    val regbanks2 = (0 until dataBytes ).map { i => SyncReadMem(numThread*isaRegNumPerThread, UInt(8.W)) }
     
     // x0 is always 0
     val rs1_data_s1 = VecInit(Seq.tabulate(dataBytes){ i => regbanks1(i).read(io.rs1)}).asUInt;chisel3.dontTouch(rs1_data_s1)
@@ -67,7 +67,8 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val w_echo = Reg(BundleMap(in.params.echoFields))
     val w_sel1 = RegInit(false.B)
 
-    when (in.aw.fire()) { w_full := true.B }
+    when (in.b.fire())  { w_full := false.B }
+    when (in.aw.fire()) { w_full := true.B  }
 
     when (in.aw.fire()) 
     {
@@ -76,12 +77,13 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
       w_echo :<= in.aw.bits.echo
     }
 
-    val waddr = Mux(io.rd_write, io.rd, in.aw.bits.addr >> log2Ceil(dataBytes));chisel3.dontTouch(waddr)
+    val waddr = Mux(io.rd_write, io.rd, in.aw.bits.addr >> log2Ceil(dataBytes))
+    chisel3.dontTouch(waddr)
     Seq.tabulate(dataBytes) 
     { i=> 
       val wdata = Mux(io.rd_write, io.rd_data(i*8+7, i*8), in.w.bits.data(8*(i+1)-1, 8*i))
       chisel3.dontTouch(wdata)
-      when (io.rd_write || (in.aw.fire() && w_sel0 && in.w.bits.strb(i).asBool)) 
+      when (io.rd_write || (in.aw.fire() && w_sel0)) 
       { 
         regbanks1(i).write(waddr, wdata)         
         regbanks2(i).write(waddr, wdata) 

@@ -76,7 +76,7 @@ abstract trait DecodeConstants extends NpusParams {
 
 class InstrCtrlSigs extends Bundle {
   val legal = Bool()
-  val halt = Bool()
+  val TBD  = Bool()
   val acc = Bool()
   val br = Bool()
   val jal = Bool()
@@ -95,14 +95,14 @@ class InstrCtrlSigs extends Bundle {
 
   def default: List[BitPat] =
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   |  halt  | jalr    |     sel_alu1  |      alu_dw                       
+                        //   |  TBD   | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
                         List(N, X,X,X,X,X,X,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   X,CSR.X)
 
   def decode(inst: UInt, table: Iterable[(BitPat, List[BitPat])]) = {
     val decoder = DecodeLogic(inst, default, table)
-    val sigs = Seq(legal, halt, acc, br, jal, jalr, rxs2, rxs1, sel_alu2,
+    val sigs = Seq(legal, TBD , acc, br, jal, jalr, rxs2, rxs1, sel_alu2,
                    sel_alu1, sel_imm, alu_dw, alu_fn, mem, mem_cmd, wxd, csr)
     sigs zip decoder map {case(s,d) => s := d}
     this
@@ -113,7 +113,7 @@ class IDecode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   |  halt  | jalr    |     sel_alu1  |      alu_dw                       
+                        //   |  TBD   | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
     BNE->               List(Y, Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE,   N,M_X,   N,CSR.N),
@@ -174,7 +174,7 @@ class I64Decode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   |  halt  | jalr    |     sel_alu1  |      alu_dw                       
+                        //   |  TBD   | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
     LD->                List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
@@ -201,7 +201,7 @@ class CUSTOMDecode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal     jal       sel_alu2        sel_imm                             
-                        //   |  halt  | jalr    |     sel_alu1  |      alu_dw                       
+                        //   |  TBD   | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
     CUSTOM0->           List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),

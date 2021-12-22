@@ -116,7 +116,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     id_uop_W.pc       := io.frontend.instr.bits.pc
     id_uop_W.instr    := io.frontend.instr.bits.instr
     id_uop_W.rd_valid := false.B
-    id_uop_W.rd       := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(11, 7), 0.U(5.W)) )
+    id_uop_W.rd       := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.wxd , io.frontend.instr.bits.instr(11, 7), 0.U(5.W)) )
     id_uop_W.rs1      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(19,15), 0.U(5.W)) )
     id_uop_W.rs2      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs2, io.frontend.instr.bits.instr(24,20), 0.U(5.W)) )
     id_uop_W.rd_data  := 0.U
@@ -190,12 +190,13 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                             (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.instr),
                                                       Mux(ex_uop_R.ctrl.jal, ImmGen(IMM_UJ, ex_uop_R.instr),
                                                             Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
-    val memHalt = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
-    io.frontend.redirect.valid := ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || 
-                                                ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr || memHalt)
+    val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
+    val redirectForAcc = ex_uop_W.valid && ex_uop_R.ctrl.acc
+    val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr)
+    io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
-    io.frontend.redirect.bits.npc := Mux(memHalt, ex_uop_R.pc + 4.U, nxt_target)
-    ex_uop_W.make_ready := io.frontend.redirect.valid
+    io.frontend.redirect.bits.npc := Mux(redirectForMem || redirectForAcc, ex_uop_R.pc + 4.U, nxt_target)
+    ex_uop_W.make_ready := redirectForBJ
     // erase instrs that following the redirected instr
     class TailEraseInfo extends Bundle with NpusParams {
       val valid = Bool() // valid after decode

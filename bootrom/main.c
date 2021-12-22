@@ -146,6 +146,9 @@ int main(void)
   //                     0x9999, 0xaaaa, 0xbbbb, 0xcccc, \
   //                     0xdddd, 0xeeee, 0xffff, 0x5a5a };
   //uint64_t y1, y2, y3, y4, y5, y6, y7, y8 ;
+
+  _kputs("Hellow World\r\n");
+  
   while(1)
   {
     //doCustom(y1, y2, y3, y4, data[0], data[1],  data[2],  data[3],  data[4],  data[5],  data[6],  data[7]);

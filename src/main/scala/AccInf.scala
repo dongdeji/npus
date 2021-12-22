@@ -129,7 +129,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
     })
-    
+
+    val readys_thread = VecInit(Fill(numThread, false.B))
+    chisel3.dontTouch(readys_thread)
+
     val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
     val dramaddress = AddressSet(dramGlobalBase + dramSizePerNp*Id, dramSizePerNp-1)
     val iramaddress = AddressSet(iramGlobalBase + iramSizePerCluster*ClusterId, iramSizePerCluster-1)
@@ -166,6 +169,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     io.core.resp.valid := req_valid && dramaddress.contains(req_addr)
     io.core.resp.bits.addr := req_addr
     io.core.resp.bits.tid := req_tid 
+    readys_thread(req_tid) := io.core.resp.valid
     /***************** handle dmem req end *****************/
 
     // handle acc/mmio/iram req    
@@ -175,8 +179,13 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     /***************** handle acc/mmio/iram req begin *****************/
     val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
+    val debug1 = WireInit(0.U) ; chisel3.dontTouch(debug1)
+    val debug2 = WireInit(0.U) ; chisel3.dontTouch(debug2)
     Seq.tabulate(numThread)
     { tid => 
+      chisel3.dontTouch(iramouts(tid))
+      chisel3.dontTouch(accouts(tid))
+      chisel3.dontTouch(regouts(tid))
       // handle thread req
       when(io.core.req.valid && (tid.U === io.core.req.bits.tid)) 
       { 
@@ -202,18 +211,25 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         accMeta_R(tid).buff_full := true.B
       }
       regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full
-      regouts(tid).aw.bits.addr := accMeta_R(tid).uop.rd
+      val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
+      val npRegBase = (regfileGlobalBase + regfileSizePerNp*Id).U
+      val threadRegAddr = npRegBase >> (log2Ceil(isaRegNumPerThread) + log2Ceil(dataBytes))
+      val threadRegOff  = Cat(accMeta_R(tid).uop.rd, 0.U(log2Ceil(dataBytes).W))
+      debug1 := threadRegAddr
+      debug2 := threadRegOff
+      regouts(tid).aw.bits.addr := Cat(threadRegAddr, threadRegOff)
       regouts(tid).w.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full
       regouts(tid).w.bits.data := accMeta_R(tid).buff
       when(regouts(tid).aw.fire() && regouts(tid).w.fire())
-      {
-        accMeta_R(tid).valid := false.B
-      }
+      { accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) }
 
+      regouts(tid).b.ready := true.B
+      when(regouts(tid).b.fire()) { readys_thread(tid) := true.B }
     }
 
     /***************** handle acc/mmio/iram req end *****************/
-
+    io.core.readys.valid := readys_thread.asUInt.orR
+    io.core.readys.bits.thread := readys_thread.asUInt
   }
 }
 

@@ -5,16 +5,17 @@
 _start:
   //csrwi 0x7c1, 0 // disable chicken bits
   //csrr a0, mhartid
+  add  x0, x0, x0
   li   a0, 0x1  
   slli a1, a0, 12
-  li   sp, 0x2000000
-  add  x0, x0, x0
-  add  x0, x0, x0
-  add  sp, sp, a1
+  li   sp, 0x10000
+  lb   a1, 5(sp)
+  add  a2, a1, x0
+  li   sp, 0x20ff0
   lb   a1, 0(sp)
-  csrr a0, mhartid
+  //csrr a0, mhartid
   call main
-  csrr a0, mhartid
+  //csrr a0, mhartid
   la a1, _dtb
   jr s0
 

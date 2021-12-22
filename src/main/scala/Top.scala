@@ -50,8 +50,10 @@ trait NpusParams {
   require(true == isPow2(windowGlobalBase)) 
   require(true == isPow2(windowSizePerNp))
 
+
+  val isaRegNumPerThread: Int = 32
   val regfileGlobalBase: BigInt = 0x400000
-  val regfileSizePerNp: BigInt = 32*dataBytes*numThread
+  val regfileSizePerNp: BigInt = isaRegNumPerThread*dataBytes*numThread
   require(true == isPow2(regfileGlobalBase)) 
   require(true == isPow2(regfileSizePerNp))
 
