@@ -77,12 +77,17 @@ class AccInfBundle extends Bundle with NpusParams
   override def cloneType: this.type = (new AccInfBundle).asInstanceOf[this.type]
 }
 
-class AccReqMetaBundle extends Bundle with NpusParams 
+class AccMetaBundle extends Bundle with NpusParams 
 {
+  val valid = Bool()
   val uop = new ThreadUop
   val req = new DmemReqBundle
+  val reqed = Bool()
+  val resped = Bool()
+  val buff = UInt(dataWidth.W)
+  val buff_full = Bool()
 
-  override def cloneType: this.type = (new AccReqMetaBundle).asInstanceOf[this.type]
+  override def cloneType: this.type = (new AccMetaBundle).asInstanceOf[this.type]
 }
 
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -124,10 +129,6 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
     })
-
-    val iramouts = irammasters.map { _.out(0)._1 }
-    val accouts  = accmasters.map { _.out(0)._1 }
-    val regouts  = regmasters.map { _.out(0)._1 }
     
     val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
     val dramaddress = AddressSet(dramGlobalBase + dramSizePerNp*Id, dramSizePerNp-1)
@@ -167,22 +168,48 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     io.core.resp.bits.tid := req_tid 
     /***************** handle dmem req end *****************/
 
-    // handle acc/mmio/iram req
+    // handle acc/mmio/iram req    
+    val iramouts = irammasters.map { _.out(0)._1 }
+    val accouts  = accmasters.map { _.out(0)._1 }
+    val regouts  = regmasters.map { _.out(0)._1 }
+
     /***************** handle acc/mmio/iram req begin *****************/
-    val accReqMeta = RegInit(0.U.asTypeOf(Vec(numThread, new AccReqMetaBundle)))
+    val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
     Seq.tabulate(numThread)
     { tid => 
-      // remember the request meta
+      // handle thread req
       when(io.core.req.valid && (tid.U === io.core.req.bits.tid)) 
       { 
-        accReqMeta(tid).req := io.core.req.bits
-        accReqMeta(tid).uop := io.core.uop
-      } 
-
-      when(iramaddress.contains(io.core.req.bits.addr))
-      { // handle iram read req
-        // to do by dongdeji
+        // remember the request meta
+        accMeta_R(tid).valid := true.B
+        accMeta_R(tid).req := io.core.req.bits
+        accMeta_R(tid).uop := io.core.uop
+        accMeta_R(tid).reqed := iramouts(tid).ar.fire()
+        accMeta_R(tid).resped := iramouts(tid).b.fire()
       }
+      //assert( !( accMeta_R(tid).reqed && (!accMeta_R(tid).resped) ) )
+      // handle iram read req
+      val ioReqValid = io.core.req.valid && iramaddress.contains(io.core.req.bits.addr)
+      val metaReqValid = accMeta_R(tid).valid && !accMeta_R(tid).reqed && iramaddress.contains(accMeta_R(tid).req.addr)
+
+      iramouts(tid).ar.valid := ioReqValid | metaReqValid
+      iramouts(tid).ar.bits.addr := Mux(metaReqValid, accMeta_R(tid).req.addr, io.core.req.bits.addr)
+
+      iramouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
+      when(accMeta_R(tid).valid && iramouts(tid).r.fire())
+      { 
+        accMeta_R(tid).buff := iramouts(tid).r.bits.data >> (accMeta_R(tid).req.addr(log2Ceil(fetchBytes)-1, 0) << log2Ceil(8))
+        accMeta_R(tid).buff_full := true.B
+      }
+      regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full
+      regouts(tid).aw.bits.addr := accMeta_R(tid).uop.rd
+      regouts(tid).w.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full
+      regouts(tid).w.bits.data := accMeta_R(tid).buff
+      when(regouts(tid).aw.fire() && regouts(tid).w.fire())
+      {
+        accMeta_R(tid).valid := false.B
+      }
+
     }
 
     /***************** handle acc/mmio/iram req end *****************/

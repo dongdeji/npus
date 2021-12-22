@@ -34,6 +34,7 @@ trait NpusParams {
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
 
+  //val test = "0x8000_0000".toBigInt
   val iramGlobalBase: BigInt = 0x10000
   val iramSizePerCluster: BigInt = 0x1000  
   require(true == isPow2(iramGlobalBase)) 
