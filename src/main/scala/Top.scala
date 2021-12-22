@@ -34,33 +34,32 @@ trait NpusParams {
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
 
-  val mmioBase: BigInt = 0x54000000
-  val mmioSize: BigInt = 0x4000000  
-  require(true == isPow2(mmioSize))
+  val uartBase: BigInt = 0x54000000
+  val uartSize: BigInt = 0x1000  
+  require(true == isPow2(uartSize))
+  require(0 == (uartBase % uartSize))
 
   //val test = "0x8000_0000".toBigInt
   val iramGlobalBase: BigInt = 0x10000
   val iramSizePerCluster: BigInt = 0x1000  
-  require(true == isPow2(iramGlobalBase)) 
-  require(true == isPow2(iramSizePerCluster))
+  require(true == isPow2(iramSizePerCluster)) 
+  require(0 == (iramGlobalBase % iramSizePerCluster))
 
   val dramGlobalBase: BigInt = 0x20000
   val dramSizePerNp: BigInt = 0x1000
-  require(true == isPow2(dramGlobalBase)) 
-  require(true == isPow2(dramSizePerNp))
+  require(true == isPow2(dramSizePerNp)) 
+  require(0 == (dramGlobalBase % dramSizePerNp))
 
   val windowGlobalBase: BigInt = 0x200000
   val windowSizePerNp: BigInt = 0x200*numThread
-  require(true == isPow2(windowGlobalBase)) 
   require(true == isPow2(windowSizePerNp))
-
+  require(0 == (windowGlobalBase % windowSizePerNp))
 
   val isaRegNumPerThread: Int = 32
   val regfileGlobalBase: BigInt = 0x400000
   val regfileSizePerNp: BigInt = isaRegNumPerThread*dataBytes*numThread
-  require(true == isPow2(regfileGlobalBase)) 
   require(true == isPow2(regfileSizePerNp))
-
+  require(0 == (regfileGlobalBase % regfileSizePerNp))
 
   val memInstrHalt = true
 
@@ -118,25 +117,13 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
   val accxbar = LazyModule(new AXI4Xbar)
-  matchslavenode := accxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  masternode
+  matchslavenode := accxbar.node := masternode
   val windxbar = LazyModule(new AXI4Xbar)
   windxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  wmasternode
 
-
   val mmioxbar = LazyModule(new AXI4Xbar)
-  private val mmioslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
-    Seq(AXI4SlaveParameters(
-      address       = Seq(AddressSet(mmioBase + mmioSize, mmioSize-1)),
-      //resources     = resources,
-      regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
-      executable    = true,
-      supportsRead  = TransferSizes(1, fetchBytes),
-      supportsWrite = TransferSizes(1, fetchBytes),
-      interleavedId = Some(0))),
-    beatBytes  = fetchBytes,
-    requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
-    minLatency = 1)))
-  mmioslavenode := mmioxbar.node
+  val uart = LazyModule(new Axi4Uart(0))
+  uart.slavenode := mmioxbar.node
 
   val clusters = Seq.tabulate(numCluster) 
   { i => 
