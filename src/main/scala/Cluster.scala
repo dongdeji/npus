@@ -58,7 +58,7 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
 
   val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
-      address       = Seq(AddressSet(0x8000000 + 0x400, 0x3ff)),
+      address       = Seq(AddressSet(test2Base + ClusterId*test2Size, test2Size-1)),
       //resources     = resources,
       regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable    = true,

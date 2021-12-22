@@ -61,6 +61,16 @@ trait NpusParams {
   require(true == isPow2(regfileSizePerNp))
   require(0 == (regfileGlobalBase % regfileSizePerNp))
 
+  val test1Base: BigInt = 0x7000000
+  val test1Size: BigInt = 0x400  
+  require(true == isPow2(test1Size))
+  require(0 == (test1Base % test1Size))
+
+  val test2Base: BigInt = 0x8000000
+  val test2Size: BigInt = 0x400  
+  require(true == isPow2(test2Size))
+  require(0 == (test2Base % test2Size))
+
   val memInstrHalt = true
 
   def bigBits(x: BigInt, tail: List[Boolean] = Nil): List[Boolean] =
@@ -106,7 +116,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
                                                         id   = IdRange(0, 1 << 1))))))
   private val matchslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
-      address       = Seq(AddressSet(0x7000000 + 0x400, 0x3ff)),
+      address       = Seq(AddressSet(test1Base, test1Size - 1)),
       //resources     = resources,
       regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
       executable    = true,

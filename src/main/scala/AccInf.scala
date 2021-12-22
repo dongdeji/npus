@@ -101,7 +101,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val mmiomaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"mmiomaster$tid",
-                                                      id = IdRange(0, numThread))))))
+                                                      id = IdRange(0, 1),
+                                                      maxFlight = Some(0))))))
     mmioxbar.node := mmiomaster
     mmiomaster
   }
@@ -110,7 +111,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val accmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"accmaster$tid",
-                                                      id = IdRange(0, numThread))))))
+                                                      id = IdRange(0, 1),
+                                                      maxFlight = Some(0))))))
     accxbar.node := accmaster
     accmaster
   }  
@@ -119,7 +121,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val regmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
                                                       name = s"regmaster$tid",
-                                                      id = IdRange(0, numThread))))))
+                                                      id = IdRange(0, 1),
+                                                      maxFlight = Some(0))))))
     regxbar.node := regmaster
     regmaster
   }
@@ -174,8 +177,9 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     // handle acc/mmio/iram req    
     val mmioouts = mmiomasters.map { _.out(0)._1 }
-    val accouts  = accmasters.map { _.out(0)._1 }
-    val regouts  = regmasters.map { _.out(0)._1 }
+    val regouts  = regmasters.map { _.out(0)._1 }    
+    val mmioedgeOuts = mmiomasters.map { _.out(0)._2 }
+    val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
     /***************** handle acc/mmio/iram req begin *****************/
     val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
@@ -184,24 +188,31 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     Seq.tabulate(numThread)
     { tid => 
       chisel3.dontTouch(mmioouts(tid))
-      chisel3.dontTouch(accouts(tid))
       chisel3.dontTouch(regouts(tid))
-      // handle thread req
+
+      // remember the request meta
       when(io.core.req.valid && (tid.U === io.core.req.bits.tid)) 
-      { 
-        // remember the request meta
+      {         
         accMeta_R(tid).valid := true.B
         accMeta_R(tid).req := io.core.req.bits
         accMeta_R(tid).uop := io.core.uop
-        accMeta_R(tid).reqed := mmioouts(tid).ar.fire()
-        accMeta_R(tid).resped := mmioouts(tid).b.fire()
       }
-      //assert( !( accMeta_R(tid).reqed && (!accMeta_R(tid).resped) ) )
-      // handle iram read req
-      val ioReqValid = io.core.req.valid && iramaddress.contains(io.core.req.bits.addr)
-      val metaReqValid = accMeta_R(tid).valid && !accMeta_R(tid).reqed && iramaddress.contains(accMeta_R(tid).req.addr)
+      when(!accMeta_R(tid).reqed)
+      {
+        accMeta_R(tid).reqed := (mmioouts(tid).aw.fire() && mmioouts(tid).w.fire()) || mmioouts(tid).ar.fire()
+      }
+      accMeta_R(tid).resped := mmioouts(tid).b.fire() || mmioouts(tid).r.fire() 
 
-      mmioouts(tid).ar.valid := ioReqValid | metaReqValid
+      val slaves_address = mmioedgeOuts(tid).slave.slaves.map(_.address).flatten
+
+      val ioReqValid = io.core.req.valid && slaves_address.map(_.contains(io.core.req.bits.addr)).orR
+      val metaReqValid = accMeta_R(tid).valid && !accMeta_R(tid).reqed && 
+                            slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
+      
+      /************* handle read to rd process begin ************/
+      mmioouts(tid).ar.valid := (ioReqValid && io.core.req.bits.cmd.isOneOf(M_XRD)) || 
+                                (metaReqValid && accMeta_R(tid).req.cmd.isOneOf(M_XRD))
+      mmioouts(tid).ar.bits.id := 0.U
       mmioouts(tid).ar.bits.addr := Mux(metaReqValid, accMeta_R(tid).req.addr, io.core.req.bits.addr)
 
       mmioouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
@@ -210,23 +221,35 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         accMeta_R(tid).buff := mmioouts(tid).r.bits.data >> (accMeta_R(tid).req.addr(log2Ceil(fetchBytes)-1, 0) << log2Ceil(8))
         accMeta_R(tid).buff_full := true.B
       }
-      regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full
+      regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).uop.ctrl.wxd && 
+                                   accMeta_R(tid).buff_full
       val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
       val npRegBase = (regfileGlobalBase + regfileSizePerNp*Id).U
       val threadRegAddr = npRegBase >> (log2Ceil(isaRegNumPerThread) + log2Ceil(dataBytes))
       val threadRegOff  = Cat(accMeta_R(tid).uop.rd, 0.U(log2Ceil(dataBytes).W))
-      debug1 := threadRegAddr
-      debug2 := threadRegOff
       regouts(tid).aw.bits.addr := Cat(threadRegAddr, threadRegOff)
-      regouts(tid).w.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full
+      regouts(tid).w.valid := regouts(tid).aw.valid
       regouts(tid).w.bits.data := accMeta_R(tid).buff
       when(regouts(tid).aw.fire() && regouts(tid).w.fire())
       { accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) }
 
       regouts(tid).b.ready := true.B
       when(regouts(tid).b.fire()) { readys_thread(tid) := true.B }
-    }
+      /************* handle read to rd process end ************/
 
+      /************* handle write out process begin ************/
+      mmioouts(tid).aw.valid := (ioReqValid && io.core.req.bits.cmd.isOneOf(M_XWR)) || 
+                                (metaReqValid && accMeta_R(tid).req.cmd.isOneOf(M_XWR))
+      mmioouts(tid).aw.bits.addr := Mux(metaReqValid, accMeta_R(tid).req.addr, io.core.req.bits.addr)
+      mmioouts(tid).w.valid := mmioouts(tid).aw.valid
+      mmioouts(tid).w.bits.data := Mux(metaReqValid, accMeta_R(tid).req.data, io.core.req.bits.data)
+      when(mmioouts(tid).aw.fire() && mmioouts(tid).w.fire())
+      { 
+        accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) 
+        readys_thread(tid) := true.B
+      }
+      /************* handle write out process end ************/
+    }
     /***************** handle acc/mmio/iram req end *****************/
     io.core.readys.valid := readys_thread.asUInt.orR
     io.core.readys.bits.thread := readys_thread.asUInt
