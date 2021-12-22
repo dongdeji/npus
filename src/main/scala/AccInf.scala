@@ -93,17 +93,17 @@ class AccMetaBundle extends Bundle with NpusParams
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val regxbar = LazyModule(new AXI4Xbar)
-  val iramxbar = LazyModule(new AXI4Xbar)
+  val mmioxbar = LazyModule(new AXI4Xbar)
   val accxbar = LazyModule(new AXI4Xbar)
 
-  private val irammasters = Seq.tabulate(numThread) 
+  private val mmiomasters = Seq.tabulate(numThread) 
   { tid => 
-    val irammaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+    val mmiomaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                       masters = Seq(AXI4MasterParameters(
-                                                      name = s"irammaster$tid",
+                                                      name = s"mmiomaster$tid",
                                                       id = IdRange(0, numThread))))))
-    iramxbar.node := irammaster
-    irammaster
+    mmioxbar.node := mmiomaster
+    mmiomaster
   }
   private val accmasters = Seq.tabulate(numThread) 
   { tid => 
@@ -173,7 +173,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     /***************** handle dmem req end *****************/
 
     // handle acc/mmio/iram req    
-    val iramouts = irammasters.map { _.out(0)._1 }
+    val mmioouts = mmiomasters.map { _.out(0)._1 }
     val accouts  = accmasters.map { _.out(0)._1 }
     val regouts  = regmasters.map { _.out(0)._1 }
 
@@ -183,7 +183,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val debug2 = WireInit(0.U) ; chisel3.dontTouch(debug2)
     Seq.tabulate(numThread)
     { tid => 
-      chisel3.dontTouch(iramouts(tid))
+      chisel3.dontTouch(mmioouts(tid))
       chisel3.dontTouch(accouts(tid))
       chisel3.dontTouch(regouts(tid))
       // handle thread req
@@ -193,21 +193,21 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         accMeta_R(tid).valid := true.B
         accMeta_R(tid).req := io.core.req.bits
         accMeta_R(tid).uop := io.core.uop
-        accMeta_R(tid).reqed := iramouts(tid).ar.fire()
-        accMeta_R(tid).resped := iramouts(tid).b.fire()
+        accMeta_R(tid).reqed := mmioouts(tid).ar.fire()
+        accMeta_R(tid).resped := mmioouts(tid).b.fire()
       }
       //assert( !( accMeta_R(tid).reqed && (!accMeta_R(tid).resped) ) )
       // handle iram read req
       val ioReqValid = io.core.req.valid && iramaddress.contains(io.core.req.bits.addr)
       val metaReqValid = accMeta_R(tid).valid && !accMeta_R(tid).reqed && iramaddress.contains(accMeta_R(tid).req.addr)
 
-      iramouts(tid).ar.valid := ioReqValid | metaReqValid
-      iramouts(tid).ar.bits.addr := Mux(metaReqValid, accMeta_R(tid).req.addr, io.core.req.bits.addr)
+      mmioouts(tid).ar.valid := ioReqValid | metaReqValid
+      mmioouts(tid).ar.bits.addr := Mux(metaReqValid, accMeta_R(tid).req.addr, io.core.req.bits.addr)
 
-      iramouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
-      when(accMeta_R(tid).valid && iramouts(tid).r.fire())
+      mmioouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
+      when(accMeta_R(tid).valid && mmioouts(tid).r.fire())
       { 
-        accMeta_R(tid).buff := iramouts(tid).r.bits.data >> (accMeta_R(tid).req.addr(log2Ceil(fetchBytes)-1, 0) << log2Ceil(8))
+        accMeta_R(tid).buff := mmioouts(tid).r.bits.data >> (accMeta_R(tid).req.addr(log2Ceil(fetchBytes)-1, 0) << log2Ceil(8))
         accMeta_R(tid).buff_full := true.B
       }
       regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full

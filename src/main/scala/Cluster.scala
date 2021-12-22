@@ -35,7 +35,7 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
   val groupxbars = Seq.tabulate(numGroup) 
   { i => 
     val group = LazyModule(new Group(ClusterId, i))
-    (group.iramxbar, group.accxbar, group.windxbar)
+    (group.iramxbar, group.accxbar, group.windxbar, group.mmioxbar)
   }
   /* connect irams and groups */
   for(i <- 0 until iramxbars.size; j <- 0 until groupxbars.size )
@@ -50,6 +50,11 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
   val windxbar = LazyModule(new AXI4Xbar)
   for(j <- 0 until groupxbars.size )
   { groupxbars(j)._3.node := windxbar.node }
+
+  /* connect mmio */
+  val mmioxbar = LazyModule(new AXI4Xbar)
+  for(j <- 0 until groupxbars.size )
+  { mmioxbar.node := groupxbars(j)._4.node }
 
   val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(

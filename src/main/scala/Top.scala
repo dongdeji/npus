@@ -34,6 +34,10 @@ trait NpusParams {
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
 
+  val mmioBase: BigInt = 0x54000000
+  val mmioSize: BigInt = 0x4000000  
+  require(true == isPow2(mmioSize))
+
   //val test = "0x8000_0000".toBigInt
   val iramGlobalBase: BigInt = 0x10000
   val iramSizePerCluster: BigInt = 0x1000  
@@ -101,7 +105,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
                                         masters = Seq(AXI4MasterParameters(
                                                         name = s"Window_test",
                                                         id   = IdRange(0, 1 << 1))))))
-  val matchslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  private val matchslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(AddressSet(0x7000000 + 0x400, 0x3ff)),
       //resources     = resources,
@@ -118,10 +122,27 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   val windxbar = LazyModule(new AXI4Xbar)
   windxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  wmasternode
 
+
+  val mmioxbar = LazyModule(new AXI4Xbar)
+  private val mmioslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    Seq(AXI4SlaveParameters(
+      address       = Seq(AddressSet(mmioBase + mmioSize, mmioSize-1)),
+      //resources     = resources,
+      regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
+      executable    = true,
+      supportsRead  = TransferSizes(1, fetchBytes),
+      supportsWrite = TransferSizes(1, fetchBytes),
+      interleavedId = Some(0))),
+    beatBytes  = fetchBytes,
+    requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
+    minLatency = 1)))
+  mmioslavenode := mmioxbar.node
+
   val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
     accxbar.node := cluster.accxbar.node
+    mmioxbar.node := cluster.mmioxbar.node
     cluster.windxbar.node := windxbar.node
     cluster
   }
