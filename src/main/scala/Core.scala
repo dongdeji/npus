@@ -122,7 +122,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     id_uop_W.rd_data  := 0.U
     id_uop_W.rs1_data := 0.U
     id_uop_W.rs2_data := 0.U
-    id_uop_W.make_ready := false.B
+    id_uop_W.make_ready := io.frontend.instr.bits.halt_last
 
     /****************** instruction decode end **********************/
     /****************************************************************/
@@ -196,7 +196,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
     io.frontend.redirect.bits.npc := Mux(redirectForMem || redirectForAcc, ex_uop_R.pc + 4.U, nxt_target)
-    ex_uop_W.make_ready := redirectForBJ
+    ex_uop_W.make_ready := ex_uop_R.make_ready || redirectForBJ
     // erase instrs that following the redirected instr
     class TailEraseInfo extends Bundle with NpusParams {
       val valid = Bool() // valid after decode

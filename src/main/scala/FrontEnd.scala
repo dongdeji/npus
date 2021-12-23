@@ -54,6 +54,7 @@ class RRScheduler extends Module with NpusParams
 class FrontEndBundle extends Bundle with NpusParams
 {
   val instr = Output(Valid( new Bundle {
+      val halt_last = Bool()
       val tid = UInt(tidWidth.W)
       val pc = UInt(addrWidth.W)
       val instr = UInt(instrWidth.W) } ))
@@ -91,13 +92,17 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     { 
       assert(Cat((io.core.readys.valid && io.core.readys.bits.thread(tid)).asUInt, (halting && (fetch_s_req_tid_R === tid.U)).asUInt) =/= 3.U)
       when((io.core.readys.valid && io.core.readys.bits.thread(tid)) || (halting && (fetch_s_req_tid_R === tid.U))) 
-      { thread_states_R(tid) := Mux(io.core.readys.bits.thread(tid), thread_s_ready, thread_s_halt) } 
+      { 
+        thread_states_R(tid) := 
+          Mux(io.core.readys.valid && io.core.readys.bits.thread(tid), thread_s_ready, thread_s_halt) 
+      } 
     }
 
     val readys = VecInit(Seq.tabulate(numThread) { tid => thread_states_R(tid) === thread_s_ready } ).asUInt
     val rrsch = Module(new RRScheduler);chisel3.dontTouch(rrsch.io)
     rrsch.io.readys := readys
 
+    val fetch_last_R = RegInit(0.U);chisel3.dontTouch(fetch_last_R)
     val fetch_tids_R = RegInit(0.U);chisel3.dontTouch(fetch_tids_R)
     val fetch_pcs_R = RegInit(0.U);chisel3.dontTouch(fetch_pcs_R)
     val fetch_data_R = RegInit(0.U);chisel3.dontTouch(fetch_data_R)
@@ -105,7 +110,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val reset_vector = (iramGlobalBase + iramSizePerCluster*ClusterId).asUInt(addrWidth.W)
     val thread_npc_R = RegInit(VecInit(Seq.fill(numThread)(reset_vector)));
     thread_npc_R.foreach(chisel3.dontTouch(_))
-    when(io.core.redirect.valid) { thread_npc_R(io.core.redirect.bits.tid) := io.core.redirect.bits.npc }
+    //when(io.core.redirect.valid) { thread_npc_R(io.core.redirect.bits.tid) := io.core.redirect.bits.npc } move to bottom for high priority
 
     chisel3.dontTouch(out.ar)
     chisel3.dontTouch(out.r)
@@ -114,17 +119,20 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     out.ar.bits.id := 1.U
 
     val instr_cnt_R = RegInit(0.U(log2Ceil(2*fetchInstrs + 1).W));chisel3.dontTouch(instr_cnt_R)
+    val halt_last_buff_R = RegInit(0.U((2*fetchInstrs*1).W))
     val tid_buff_R = RegInit(0.U((2*fetchInstrs*tidWidth).W))
     val pc_buff_R = RegInit(0.U((2*fetchInstrs*addrWidth).W))
     val instr_buff_R = RegInit(0.U((2*fetchInstrs*instrWidth).W))
     when(instr_cnt_R =/= 0.U)
     {
       instr_cnt_R := instr_cnt_R - 1.U
+      halt_last_buff_R := halt_last_buff_R >> 1
       tid_buff_R := tid_buff_R >> tidWidth
       pc_buff_R := pc_buff_R >> addrWidth
       instr_buff_R := instr_buff_R >> instrWidth
     }
-    io.core.instr.valid := instr_cnt_R.orR
+    io.core.instr.valid := instr_cnt_R.orR    
+    io.core.instr.bits.halt_last := halt_last_buff_R(0).asBool
     io.core.instr.bits.tid := tid_buff_R(tidWidth - 1, 0)
     io.core.instr.bits.pc := pc_buff_R(addrWidth - 1, 0)
     io.core.instr.bits.instr := instr_buff_R(instrWidth - 1, 0)
@@ -161,6 +169,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
         when(out.r.fire()) 
         { 
           //store instr data to register and shiftout unwanted data
+          fetch_last_R := Cat(1.U(1.W), 0.U((fetchInstrs-1).W)) >> fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,log2Ceil(instrBytes))
           fetch_tids_R := Fill(fetchInstrs, fetch_s_req_tid_R) >> (fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0) << log2Ceil(8))
           val fetch_pcs_raw = VecInit(Seq.tabulate(fetchInstrs){ i => 
                            ((fetch_s_req_pc_R >> log2Ceil(fetchBytes)) << log2Ceil(fetchBytes)) + (i*instrBytes).U }).asUInt
@@ -182,6 +191,11 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
             instr_buff_R := Mux(instr_cnt_R === 0.U, fetch_data_R,  
               Cat(0.U(instrWidth.W), instr_buff_R(2*fetchInstrs*instrWidth-1, instrWidth)) 
                 | (fetch_data_R << ((instr_cnt_R-1.U) << log2Ceil(instrWidth)) ) )
+            
+            val fetch_halt_last = Fill(fetchInstrs, halting) & fetch_last_R
+            halt_last_buff_R := Mux(instr_cnt_R === 0.U, fetch_halt_last,  
+              Cat(0.U(1.W), halt_last_buff_R(2*fetchInstrs*1-1, 1)) 
+                | ( fetch_halt_last << ((instr_cnt_R-1.U) << log2Ceil(1)) ) )
 
             tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tids_R,  
               Cat(0.U(tidWidth.W), tid_buff_R(2*fetchInstrs*tidWidth-1, tidWidth)) 
@@ -207,7 +221,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
         }
         .otherwise { fetch_state_R := fetch_s_nospace }
       }
-      is(fetch_s_nospace) 
+      is(fetch_s_nospace) // to do by dongdeji here has bug
       {
         when(instr_cnt_R <= (instr_buff_R.getWidth/instrWidth - fetchInstrs + 1).U) 
         {
@@ -217,6 +231,11 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
               Cat(0.U(instrWidth.W), instr_buff_R(2*fetchInstrs*instrWidth-1, instrWidth)) 
                 | (fetch_data_R << ((instr_cnt_R-1.U) << log2Ceil(instrWidth)) ) )
 
+            val fetch_halt_last = Fill(fetchInstrs, thread_states_R(fetch_s_req_tid_R) === thread_s_halt) & fetch_last_R
+            halt_last_buff_R := Mux(instr_cnt_R === 0.U, fetch_halt_last,  
+              Cat(0.U(1.W), halt_last_buff_R(2*fetchInstrs*1-1, 1)) 
+                | ( fetch_halt_last << ((instr_cnt_R-1.U) << log2Ceil(1)) ) )
+
             tid_buff_R := Mux(instr_cnt_R === 0.U, fetch_tids_R,  
               Cat(0.U(tidWidth.W), tid_buff_R(2*fetchInstrs*tidWidth-1, tidWidth)) 
                 | ( fetch_tids_R << ((instr_cnt_R-1.U) << log2Ceil(tidWidth)) ) )
@@ -225,15 +244,19 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
               Cat(0.U(addrWidth.W), pc_buff_R(2*fetchInstrs*addrWidth-1, addrWidth)) 
                 | ( fetch_pcs_R << ((instr_cnt_R-1.U) << log2Ceil(addrWidth)) ) )
 
-            val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0)) >> log2Ceil(instrBytes)
+            //val fetch_instr_num = (fetchBytes.U - fetch_s_req_pc_R(log2Ceil(fetchBytes)-1 ,0)) >> log2Ceil(instrBytes)
             //update instr cnt
-            instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)
+            //instr_cnt_R := Mux(instr_cnt_R === 0.U, fetch_instr_num, fetch_instr_num + instr_cnt_R - 1.U)
           }
           fetch_state_R := fetch_s_req 
         }
-        .otherwise { fetch_state_R := fetch_s_req }
+        .otherwise { fetch_state_R := fetch_s_nospace }
       }
     }  //end of switch(fetch_state_R)
+
+    // move to here to make this has high priority    
+    when(io.core.redirect.valid) { thread_npc_R(io.core.redirect.bits.tid) := io.core.redirect.bits.npc }
+
   }// end of lazy val module = new LazyModuleImp(this)
 }
 
