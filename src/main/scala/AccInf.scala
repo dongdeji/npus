@@ -218,7 +218,9 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       mmioouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
       when(accMeta_R(tid).valid && mmioouts(tid).r.fire())
       { 
-        accMeta_R(tid).buff := mmioouts(tid).r.bits.data >> (accMeta_R(tid).req.addr(log2Ceil(fetchBytes)-1, 0) << log2Ceil(8))
+        val loadgen = new LoadGen(accMeta_R(tid).req.size, accMeta_R(tid).req.signed.asBool, 
+                                  accMeta_R(tid).req.addr, mmioouts(tid).r.bits.data, false.B, dataBytes)
+        accMeta_R(tid).buff := loadgen.data
         accMeta_R(tid).buff_full := true.B
       }
       regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).uop.ctrl.wxd && 
@@ -229,6 +231,14 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       val threadRegOff  = Cat(accMeta_R(tid).uop.rd, 0.U(log2Ceil(dataBytes).W))
       regouts(tid).aw.bits.addr := Cat(threadRegAddr, threadRegOff)
       regouts(tid).w.valid := regouts(tid).aw.valid
+
+  //val wdata = Wire(Vec(datalen/8, UInt(8.W))); chisel3.dontTouch(wdata)
+  //wdata := (new StoreGen(io.thread.req.bits.size, 0.U, io.thread.req.bits.data, 8).data).asTypeOf(Vec(datalen/8, UInt(8.W)))
+  val wdata = new StoreGen(accMeta_R(tid).req.size, 0.U, accMeta_R(tid).buff, 8).data
+  chisel3.dontTouch(wdata)
+  debug1 := wdata
+
+
       regouts(tid).w.bits.data := accMeta_R(tid).buff
       when(regouts(tid).aw.fire() && regouts(tid).w.fire())
       { accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) }
