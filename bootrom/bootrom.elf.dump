@@ -156,10 +156,10 @@ Disassembly of section .rodata.str1.8:
 0000000000000810 <.rodata.str1.8>:
  810:	6548                	ld	a0,136(a0)
  812:	6c6c                	ld	a1,216(s0)
- 814:	5720776f          	jal	a4,7d86 <_dtb+0x7586>
- 818:	646c726f          	jal	tp,c7e5e <_dtb+0xc765e>
- 81c:	0a0d                	addi	s4,s4,3
-	...
+ 814:	6f77206f          	j	7370a <_dtb+0x72f0a>
+ 818:	6c72                	ld	s8,280(sp)
+ 81a:	0d64                	addi	s1,sp,668
+ 81c:	000a                	c.slli	zero,0x2
 
 Disassembly of section .riscv.attributes:
 

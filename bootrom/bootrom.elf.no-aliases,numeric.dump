@@ -96,10 +96,10 @@ Disassembly of section .rodata.str1.8:
 0000000000000810 <.rodata.str1.8>:
  810:	6548                	c.ld	x10,136(x10)
  812:	6c6c                	c.ld	x11,216(x8)
- 814:	5720776f          	jal	x14,7d86 <_dtb+0x7586>
- 818:	646c726f          	jal	x4,c7e5e <_dtb+0xc765e>
- 81c:	0a0d                	c.addi	x20,3
-	...
+ 814:	6f77206f          	jal	x0,7370a <_dtb+0x72f0a>
+ 818:	6c72                	c.ldsp	x24,280(x2)
+ 81a:	0d64                	c.addi4spn	x9,x2,668
+ 81c:	000a                	c.slli	x0,0x2
 
 Disassembly of section .riscv.attributes:
 

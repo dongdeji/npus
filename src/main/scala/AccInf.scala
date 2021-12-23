@@ -157,7 +157,6 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
     val dramaddress = AddressSet(dramGlobalBase + dramSizePerNp*Id, dramSizePerNp-1)
-println(s"=== dramaddress:${dramaddress}")
 
     /***************** handle dmem req begin *****************/
     val req_valid = RegNext(io.core.req.valid)
@@ -212,14 +211,25 @@ println(s"=== dramaddress:${dramaddress}")
       chisel3.dontTouch(regouts(tid))
 
       val slaves_address = mmioedgeOuts(tid).slave.slaves.map(_.address).flatten
-println(s"=== slaves_address:${slaves_address}")
+      
+      // default connect
       mmioouts(tid).ar.valid := false.B
+      mmioouts(tid).ar.bits.id := 0.U
       mmioouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
       mmioouts(tid).aw.valid := false.B
+      mmioouts(tid).aw.bits.id := 0.U
+      mmioouts(tid).w.bits.last := true.B
       mmioouts(tid).w.valid := false.B
       mmioouts(tid).b.ready := true.B
+      regouts(tid).ar.valid := false.B
+      regouts(tid).ar.bits.id := 0.U
       regouts(tid).r.ready := true.B
+      regouts(tid).aw.valid := false.B
+      regouts(tid).aw.bits.id := 0.U
+      regouts(tid).w.bits.last := true.B
+      regouts(tid).w.valid := false.B
       regouts(tid).b.ready := true.B
+
       switch(state_R(tid)) 
       {
         is(idle) 
@@ -238,11 +248,12 @@ println(s"=== slaves_address:${slaves_address}")
         { 
           mmioouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
                                     slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
-          mmioouts(tid).ar.bits.id := 0.U
+          //mmioouts(tid).ar.bits.id := 0.U
           mmioouts(tid).ar.bits.addr := accMeta_R(tid).req.addr
 
           mmioouts(tid).aw.valid := accMeta_R(tid).req.cmd.isOneOf(M_XWR) &&
                                     slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
+          //mmioouts(tid).aw.bits.id := 0.U
           mmioouts(tid).aw.bits.addr := accMeta_R(tid).req.addr
           mmioouts(tid).w.valid := mmioouts(tid).aw.valid
           mmioouts(tid).w.bits.data := accMeta_R(tid).req.data

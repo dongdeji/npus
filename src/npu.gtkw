@@ -1,25 +1,25 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Thu Dec 23 07:44:48 2021
+[*] Thu Dec 23 08:57:25 2021
 [*]
-[dumpfile] "(null)"
+[dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
+[dumpfile_mtime] "Thu Dec 23 08:56:24 2021"
+[dumpfile_size] 227269340
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
-[timestart] 0
+[timestart] 738
 [size] 1920 1007
 [pos] -1 -1
-*-5.000000 87 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-8.000000 1345 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.npusTop.
 [treeopen] TOP.npusTop.cluster.
 [treeopen] TOP.npusTop.cluster.group.
 [treeopen] TOP.npusTop.cluster.group.npu.
 [treeopen] TOP.npusTop.cluster.group.npu.accinf.mmioxbar.
-[treeopen] TOP.npusTop.cluster.group.npu.core.
-[treeopen] TOP.npusTop.cluster.group.npu.core.regfile.
-[sst_width] 363
-[signals_width] 605
+[sst_width] 341
+[signals_width] 763
 [sst_expanded] 1
-[sst_vpaned_height] 532
+[sst_vpaned_height] 379
 @28
 TOP.npusTop.cluster.group.npu.core.reset
 TOP.npusTop.cluster.group.npu.core.clock
@@ -97,9 +97,7 @@ TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_0.W0_en
 TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_0.W0_clk
 @22
 TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_0.W0_data[7:0]
-@23
 TOP.npusTop.cluster.group.npu.core.io_accinf_req_bits_addr[31:0]
-@22
 TOP.npusTop.cluster.group.npu.core.io_accinf_req_bits_cmd[4:0]
 TOP.npusTop.cluster.group.npu.core.io_accinf_req_bits_data[63:0]
 @28
@@ -130,20 +128,6 @@ TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_size[1:0]
 TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_tid
 [color] 1
 TOP.npusTop.cluster.group.npu.accinf.io_core_req_valid
-@22
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_buff[63:0]
-@28
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_buff_full
-@22
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_addr[31:0]
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_cmd[4:0]
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_data[63:0]
-@28
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_uop_ctrl_wxd
-@22
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_uop_rd[4:0]
-@28
-TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_valid
 TOP.npusTop.cluster.group.npu.accinf.state_R_0[2:0]
 @22
 TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_ar_bits_addr[30:0]
@@ -171,6 +155,10 @@ TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_bits_data[127:0]
 @28
 TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_ready
 TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_valid
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_bits_id
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_bits_resp[1:0]
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_ready
+TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_valid
 @22
 TOP.npusTop.cluster.group.npu.accinf.regouts_0_aw_bits_addr[22:0]
 @28
@@ -188,13 +176,22 @@ TOP.npusTop.uart.clock
 @22
 TOP.npusTop.uart.in_aw_bits_addr[30:0]
 @28
+[color] 1
 TOP.npusTop.uart.in_aw_ready
+@29
+[color] 1
 TOP.npusTop.uart.in_aw_valid
 @22
 TOP.npusTop.uart.in_w_bits_data[127:0]
 @28
+[color] 1
 TOP.npusTop.uart.in_w_ready
+[color] 1
 TOP.npusTop.uart.in_w_valid
+TOP.npusTop.uart.in_b_bits_id
+TOP.npusTop.uart.in_b_bits_resp[1:0]
+TOP.npusTop.uart.in_b_ready
+TOP.npusTop.uart.in_b_valid
 @22
 TOP.npusTop.uart.in_ar_bits_addr[30:0]
 @28
