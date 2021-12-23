@@ -47,6 +47,25 @@ class StoreGen(typ: UInt, addr: UInt, dat: UInt, maxSize: Int = 8)
   def wordData = genData(2)
 }
 
+class LoadGen(typ: UInt, signed: Bool, addr: UInt, dat: UInt, zero: Bool, maxSize: Int) {
+  private val size = new StoreGen(typ, addr, dat, maxSize).size
+
+  private def genData(logMinSize: Int): UInt = {
+    var res = dat
+    for (i <- log2Up(maxSize)-1 to logMinSize by -1) {
+      val pos = 8 << i
+      val shifted = Mux(addr(i), res(2*pos-1,pos), res(pos-1,0))
+      val doZero = (i == 0).B && zero
+      val zeroed = Mux(doZero, 0.U, shifted)
+      res = Cat(Mux(size === i.U || doZero, Fill(8*maxSize-pos, signed && zeroed(pos-1)), res(8*maxSize-1,pos)), zeroed)
+    }
+    res
+  }
+
+  def wordData = genData(2)
+  def data = genData(0)
+}
+
 
 class DmemReqBundle extends Bundle with NpusParams {  
   val cmd = UInt(M_SZ.W) /* dmem_req.ctrl.mem_cmd */
@@ -138,7 +157,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
     val dramaddress = AddressSet(dramGlobalBase + dramSizePerNp*Id, dramSizePerNp-1)
-    val iramaddress = AddressSet(iramGlobalBase + iramSizePerCluster*ClusterId, iramSizePerCluster-1)
+println(s"=== dramaddress:${dramaddress}")
 
     /***************** handle dmem req begin *****************/
     val req_valid = RegNext(io.core.req.valid)
@@ -182,6 +201,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
     /***************** handle acc/mmio/iram req begin *****************/
+    val idle :: send_mmio_req :: wait_mmio_r :: send_reg_aw :: wait_reg_b :: Nil = Enum(5)
+    val state_R = RegInit(VecInit(Seq.fill(numThread)(idle))) ;state_R.foreach(chisel3.dontTouch(_))
     val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
     val debug1 = WireInit(0.U) ; chisel3.dontTouch(debug1)
     val debug2 = WireInit(0.U) ; chisel3.dontTouch(debug2)
@@ -190,76 +211,90 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       chisel3.dontTouch(mmioouts(tid))
       chisel3.dontTouch(regouts(tid))
 
-      // remember the request meta
-      when(io.core.req.valid && (tid.U === io.core.req.bits.tid)) 
-      {         
-        accMeta_R(tid).valid := true.B
-        accMeta_R(tid).req := io.core.req.bits
-        accMeta_R(tid).uop := io.core.uop
-      }
-      when(!accMeta_R(tid).reqed)
-      {
-        accMeta_R(tid).reqed := (mmioouts(tid).aw.fire() && mmioouts(tid).w.fire()) || mmioouts(tid).ar.fire()
-      }
-      accMeta_R(tid).resped := mmioouts(tid).b.fire() || mmioouts(tid).r.fire() 
-
       val slaves_address = mmioedgeOuts(tid).slave.slaves.map(_.address).flatten
-
-      val ioReqValid = io.core.req.valid && slaves_address.map(_.contains(io.core.req.bits.addr)).orR
-      val metaReqValid = accMeta_R(tid).valid && !accMeta_R(tid).reqed && 
-                            slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
-      
-      /************* handle read to rd process begin ************/
-      mmioouts(tid).ar.valid := (ioReqValid && io.core.req.bits.cmd.isOneOf(M_XRD)) || 
-                                (metaReqValid && accMeta_R(tid).req.cmd.isOneOf(M_XRD))
-      mmioouts(tid).ar.bits.id := 0.U
-      mmioouts(tid).ar.bits.addr := Mux(metaReqValid, accMeta_R(tid).req.addr, io.core.req.bits.addr)
-
+println(s"=== slaves_address:${slaves_address}")
+      mmioouts(tid).ar.valid := false.B
       mmioouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
-      when(accMeta_R(tid).valid && mmioouts(tid).r.fire())
-      { 
-        val loadgen = new LoadGen(accMeta_R(tid).req.size, accMeta_R(tid).req.signed.asBool, 
-                                  accMeta_R(tid).req.addr, mmioouts(tid).r.bits.data, false.B, dataBytes)
-        accMeta_R(tid).buff := loadgen.data
-        accMeta_R(tid).buff_full := true.B
-      }
-      regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).uop.ctrl.wxd && 
-                                   accMeta_R(tid).buff_full
-      val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
-      val npRegBase = (regfileGlobalBase + regfileSizePerNp*Id).U
-      val threadRegAddr = npRegBase >> (log2Ceil(isaRegNumPerThread) + log2Ceil(dataBytes))
-      val threadRegOff  = Cat(accMeta_R(tid).uop.rd, 0.U(log2Ceil(dataBytes).W))
-      regouts(tid).aw.bits.addr := Cat(threadRegAddr, threadRegOff)
-      regouts(tid).w.valid := regouts(tid).aw.valid
-
-  //val wdata = Wire(Vec(datalen/8, UInt(8.W))); chisel3.dontTouch(wdata)
-  //wdata := (new StoreGen(io.thread.req.bits.size, 0.U, io.thread.req.bits.data, 8).data).asTypeOf(Vec(datalen/8, UInt(8.W)))
-  val wdata = new StoreGen(accMeta_R(tid).req.size, 0.U, accMeta_R(tid).buff, 8).data
-  chisel3.dontTouch(wdata)
-  debug1 := wdata
-
-
-      regouts(tid).w.bits.data := accMeta_R(tid).buff
-      when(regouts(tid).aw.fire() && regouts(tid).w.fire())
-      { accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) }
-
+      mmioouts(tid).aw.valid := false.B
+      mmioouts(tid).w.valid := false.B
+      mmioouts(tid).b.ready := true.B
+      regouts(tid).r.ready := true.B
       regouts(tid).b.ready := true.B
-      when(regouts(tid).b.fire()) { readys_thread(tid) := true.B }
-      /************* handle read to rd process end ************/
+      switch(state_R(tid)) 
+      {
+        is(idle) 
+        {           
+          when(io.core.req.valid && (tid.U === io.core.req.bits.tid) && 
+                 slaves_address.map(_.contains(io.core.req.bits.addr)).orR) 
+          { // remember the request meta
+            accMeta_R(tid).valid := true.B
+            accMeta_R(tid).req := io.core.req.bits
+            accMeta_R(tid).uop := io.core.uop
 
-      /************* handle write out process begin ************/
-      mmioouts(tid).aw.valid := (ioReqValid && io.core.req.bits.cmd.isOneOf(M_XWR)) || 
-                                (metaReqValid && accMeta_R(tid).req.cmd.isOneOf(M_XWR))
-      mmioouts(tid).aw.bits.addr := Mux(metaReqValid, accMeta_R(tid).req.addr, io.core.req.bits.addr)
-      mmioouts(tid).w.valid := mmioouts(tid).aw.valid
-      mmioouts(tid).w.bits.data := Mux(metaReqValid, accMeta_R(tid).req.data, io.core.req.bits.data)
-      when(mmioouts(tid).aw.fire() && mmioouts(tid).w.fire())
-      { 
-        accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) 
-        readys_thread(tid) := true.B
-      }
-      /************* handle write out process end ************/
-    }
+            state_R(tid) := send_mmio_req
+          }
+        }
+        is(send_mmio_req) 
+        { 
+          mmioouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
+                                    slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
+          mmioouts(tid).ar.bits.id := 0.U
+          mmioouts(tid).ar.bits.addr := accMeta_R(tid).req.addr
+
+          mmioouts(tid).aw.valid := accMeta_R(tid).req.cmd.isOneOf(M_XWR) &&
+                                    slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
+          mmioouts(tid).aw.bits.addr := accMeta_R(tid).req.addr
+          mmioouts(tid).w.valid := mmioouts(tid).aw.valid
+          mmioouts(tid).w.bits.data := accMeta_R(tid).req.data
+          
+          when(mmioouts(tid).ar.fire()) 
+          { state_R(tid) := wait_mmio_r }
+
+          when(mmioouts(tid).aw.fire() && mmioouts(tid).w.fire()) 
+          { 
+            accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) 
+            readys_thread(tid) := true.B
+            state_R(tid) := idle 
+          }
+        }
+        is(wait_mmio_r)
+        { 
+          when(mmioouts(tid).r.fire())
+          { 
+            val loadgen = new LoadGen(Cat(0.U(1.W), accMeta_R(tid).req.size), accMeta_R(tid).req.signed.asBool, 
+                                      accMeta_R(tid).req.addr, mmioouts(tid).r.bits.data, false.B, fetchBytes)
+            accMeta_R(tid).buff := loadgen.data
+            accMeta_R(tid).buff_full := true.B
+            
+            state_R(tid) := send_reg_aw
+          }
+        }
+        is(send_reg_aw)
+        { 
+          regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).uop.ctrl.wxd && 
+                                   accMeta_R(tid).buff_full
+          val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
+          val npRegBase = (regfileGlobalBase + regfileSizePerNp*Id).U
+          val threadRegAddr = npRegBase >> (log2Ceil(isaRegNumPerThread) + log2Ceil(dataBytes))
+          val threadRegOff  = Cat(accMeta_R(tid).uop.rd, 0.U(log2Ceil(dataBytes).W))
+          regouts(tid).aw.bits.addr := Cat(threadRegAddr, threadRegOff)
+          regouts(tid).w.valid := regouts(tid).aw.valid
+
+          regouts(tid).w.bits.data := accMeta_R(tid).buff
+          when(regouts(tid).aw.fire() && regouts(tid).w.fire())
+          { state_R(tid) := wait_reg_b }
+        }
+        is(wait_reg_b)
+        { 
+          when(regouts(tid).b.fire()) 
+          { 
+            accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) 
+            readys_thread(tid) := true.B 
+            state_R(tid) := idle
+          }
+        }
+      } // end of switch(state_R(tid)) 
+    } // end of Seq.tabulate(numThread)
     /***************** handle acc/mmio/iram req end *****************/
     io.core.readys.valid := readys_thread.asUInt.orR
     io.core.readys.bits.thread := readys_thread.asUInt

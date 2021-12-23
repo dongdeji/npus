@@ -18,8 +18,8 @@ _start:
    8:	00c51593          	slli	a1,a0,0xc
   li   sp, 0x10000
    c:	00010137          	lui	sp,0x10
-  lb   a1, 5(sp)
-  10:	00510583          	lb	a1,5(sp) # 10005 <_dtb+0xf805>
+  lb   a1, 9(sp)
+  10:	00910583          	lb	a1,9(sp) # 10009 <_dtb+0xf809>
   add  a2, a1, x0
   14:	00058633          	add	a2,a1,zero
   li   sp, 0x20ff0
@@ -175,7 +175,7 @@ Disassembly of section .riscv.attributes:
   li   sp, 0x10000
    c:	0015                	c.nop	5
    e:	0000                	unimp
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	1004                	addi	s1,sp,32
   12:	7205                	lui	tp,0xfffe1
   add  a2, a1, x0
@@ -200,7 +200,7 @@ Disassembly of section .comment:
   li   sp, 0x10000
    c:	2e31                	addiw	t3,t3,12
    e:	2e31                	addiw	t3,t3,12
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	0030                	addi	a2,sp,8
 
 Disassembly of section .debug_line:
@@ -218,7 +218,7 @@ Disassembly of section .debug_line:
   li   sp, 0x10000
    c:	0101                	addi	sp,sp,0
    e:	fb01                	bnez	a4,ffffffffffffff1e <_dtb+0xfffffffffffff71e>
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	0d0e                	slli	s10,s10,0x3
   12:	0100                	addi	s0,sp,128
   add  a2, a1, x0
@@ -589,7 +589,7 @@ Disassembly of section .debug_line_str:
   li   sp, 0x10000
    c:	696a                	ld	s2,152(sp)
    e:	6168732f          	0x6168732f
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   12:	6572                	ld	a0,280(sp)
   add  a2, a1, x0
   14:	646f632f          	0x646f632f
@@ -665,7 +665,7 @@ Disassembly of section .debug_info:
   li   sp, 0x10000
    c:	0001                	nop
    e:	0000                	unimp
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	0c00                	addi	s0,sp,528
   12:	0000                	unimp
   add  a2, a1, x0
@@ -954,7 +954,7 @@ Disassembly of section .debug_abbrev:
   li   sp, 0x10000
    c:	130e                	slli	t1,t1,0x23
    e:	0005                	c.nop	1
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	0000                	unimp
   12:	2401                	sext.w	s0,s0
   add  a2, a1, x0
@@ -1144,7 +1144,7 @@ Disassembly of section .debug_str:
    8:	682f0053          	0x682f0053
   li   sp, 0x10000
    c:	2f656d6f          	jal	s10,56302 <_dtb+0x55b02>
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	6f64                	ld	s1,216(a4)
   12:	676e                	ld	a4,216(sp)
   add  a2, a1, x0
@@ -1275,7 +1275,7 @@ Disassembly of section .debug_rnglists:
    a:	0000                	unimp
   li   sp, 0x10000
    c:	00000007          	0x7
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	0000                	unimp
   12:	0000                	unimp
   add  a2, a1, x0
@@ -1398,7 +1398,7 @@ Disassembly of section .debug_loclists:
    a:	0000                	unimp
   li   sp, 0x10000
    c:	00046007          	0x46007
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	0000                	unimp
   12:	0000                	unimp
   add  a2, a1, x0
@@ -1554,7 +1554,7 @@ Disassembly of section .debug_frame:
   li   sp, 0x10000
    c:	0d01                	addi	s10,s10,0
    e:	0002                	c.slli64	zero
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   10:	0014                	0x14
   12:	0000                	unimp
   add  a2, a1, x0

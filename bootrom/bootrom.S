@@ -9,7 +9,7 @@ _start:
   li   a0, 0x1  
   slli a1, a0, 12
   li   sp, 0x10000
-  lb   a1, 5(sp)
+  lb   a1, 9(sp)
   add  a2, a1, x0
   li   sp, 0x20ff0
   lb   a1, 0(sp)

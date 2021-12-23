@@ -9,7 +9,7 @@ Disassembly of section .text.start:
    4:	00100513          	addi	x10,x0,1
    8:	00c51593          	slli	x11,x10,0xc
    c:	00010137          	lui	x2,0x10
-  10:	00510583          	lb	x11,5(x2) # 10005 <_dtb+0xf805>
+  10:	00910583          	lb	x11,9(x2) # 10009 <_dtb+0xf809>
   14:	00058633          	add	x12,x11,x0
   18:	00021137          	lui	x2,0x21
   1c:	ff01011b          	addiw	x2,x2,-16
