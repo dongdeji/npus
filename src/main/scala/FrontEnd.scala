@@ -85,7 +85,7 @@ class FrontEnd(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     val halting = WireInit(false.B)
 
     //thread state
-    val thread_s_reset :: thread_s_halt :: thread_s_stall :: thread_s_ready :: thread_s_running :: Nil = Enum(5)
+    val thread_s_halt :: thread_s_ready :: Nil = Enum(2)
     val thread_states_R = RegInit(VecInit(Seq.fill(numThread)(thread_s_ready)));thread_states_R.foreach(chisel3.dontTouch(_))
     for(tid <- 0 until numThread) 
     { 
