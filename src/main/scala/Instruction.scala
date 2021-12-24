@@ -116,25 +116,25 @@ class IDecode extends DecodeConstants
                         //   |  wind  | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
-    BNE->               List(Y, Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE,   N,M_X,   N,CSR.N),
-    BEQ->               List(Y, Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SEQ,   N,M_X,   N,CSR.N),
-    BLT->               List(Y, Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLT,   N,M_X,   N,CSR.N),
-    BLTU->              List(Y, Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLTU,  N,M_X,   N,CSR.N),
-    BGE->               List(Y, Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGE,   N,M_X,   N,CSR.N),
-    BGEU->              List(Y, Y,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGEU,  N,M_X,   N,CSR.N),
+    BNE->               List(Y, N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE,   N,M_X,   N,CSR.N),
+    BEQ->               List(Y, N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SEQ,   N,M_X,   N,CSR.N),
+    BLT->               List(Y, N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLT,   N,M_X,   N,CSR.N),
+    BLTU->              List(Y, N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLTU,  N,M_X,   N,CSR.N),
+    BGE->               List(Y, N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGE,   N,M_X,   N,CSR.N),
+    BGEU->              List(Y, N,N,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGEU,  N,M_X,   N,CSR.N),
  
-    JAL->               List(Y, Y,N,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    JALR->              List(Y, Y,N,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
+    JAL->               List(Y, N,N,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
+    JALR->              List(Y, N,N,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
     AUIPC->             List(Y, N,N,N,N,N,N,N,  A2_IMM, A1_PC,  IMM_U, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
  
-    LB->                List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    LH->                List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    LW->                List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    LBU->               List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    LHU->               List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    SB->                List(Y,MH,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
-    SH->                List(Y,MH,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
-    SW->                List(Y,MH,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
+    LB->                List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    LH->                List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    LW->                List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    LBU->               List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    LHU->               List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    SB->                List(Y, N,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
+    SH->                List(Y, N,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
+    SW->                List(Y, N,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
  
     LUI->               List(Y, N,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_U, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
     ADDI->              List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
@@ -177,9 +177,9 @@ class I64Decode extends DecodeConstants
                         //   |  wind  | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
-    LD->                List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    LWU->               List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    SD->                List(Y,MH,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
+    LD->                List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    LWU->               List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    SD->                List(Y, N,N,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD,   Y,M_XWR, N,CSR.N),
  
     SLLI->              List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SL,    N,M_X,   Y,CSR.N),
     SRLI->              List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SR,    N,M_X,   Y,CSR.N),
@@ -254,13 +254,13 @@ class NpDecode extends DecodeConstants
                         //   |  wind  | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
-    NPSWAPB ->          List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPH ->          List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPW ->          List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPD ->          List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPBU->          List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPHU->          List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPWU->          List(Y,MH,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N))
+    NPSWAPB ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    NPSWAPH ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    NPSWAPW ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    NPSWAPD ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    NPSWAPBU->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    NPSWAPHU->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    NPSWAPWU->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N))
 }
 
 class NpuALU extends Module with NpusParams
