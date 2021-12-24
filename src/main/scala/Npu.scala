@@ -20,14 +20,14 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 
 class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
-  private val front = LazyModule(new FrontEnd(ClusterId, GroupId, NpId))
+  private val frontend = LazyModule(new FrontEnd(ClusterId, GroupId, NpId))
   private val core = LazyModule(new Core(ClusterId, GroupId, NpId))
   private val accinf = LazyModule(new AccInf(ClusterId, GroupId, NpId))
   val iramxbar = LazyModule(new AXI4Xbar)
   val accxbar = LazyModule(new AXI4Xbar)
   val windxbar = LazyModule(new AXI4Xbar)
   val mmioxbar = LazyModule(new AXI4Xbar)
-  iramxbar.node := front.masternode
+  iramxbar.node := frontend.masternode
   iramxbar.node := accinf.accxbar.node
   mmioxbar.node := accinf.accxbar.node
   accxbar.node := accinf.accxbar.node
@@ -36,7 +36,7 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
 
   lazy val module = new LazyModuleImp(this) 
   {
-    core.module.io.frontend <> front.module.io.core
+    core.module.io.frontend <> frontend.module.io.core
     accinf.module.io.core <> core.module.io.accinf
   }
 }

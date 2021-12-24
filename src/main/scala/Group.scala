@@ -25,7 +25,7 @@ class Group(ClusterId:Int, GroupId:Int)(implicit p: Parameters) extends LazyModu
   val windxbar = LazyModule(new AXI4Xbar)
   val mmioxbar = LazyModule(new AXI4Xbar)
 
-  val npus = Seq.tabulate(numNpu)
+  Seq.tabulate(numNpu)
   { i => 
     val npu = LazyModule(new Npu(ClusterId, GroupId, i)) 
     iramxbar.node := npu.iramxbar.node

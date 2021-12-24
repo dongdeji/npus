@@ -124,29 +124,16 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
                                         masters = Seq(AXI4MasterParameters(
                                                         name = s"Window_test",
                                                         id   = IdRange(0, 1 << 1))))))
-  private val matchslavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
-    Seq(AXI4SlaveParameters(
-      address       = Seq(AddressSet(test1Base, test1Size - 1)),
-      //resources     = resources,
-      regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
-      executable    = true,
-      supportsRead  = TransferSizes(1, fetchBytes),
-      supportsWrite = TransferSizes(1, fetchBytes),
-      interleavedId = Some(0))),
-    beatBytes  = fetchBytes,
-    requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
-    minLatency = 1)))
   val accxbar = LazyModule(new AXI4Xbar)
-  matchslavenode := accxbar.node := masternode
+  private val tcam = LazyModule(new Axi4Tcam(0))
+  tcam.slavenode := accxbar.node
+
   val windxbar = LazyModule(new AXI4Xbar)
-  windxbar.node := AXI4IdIndexer(1/*fifoBits*/) :=  wmasternode
+  windxbar.node := wmasternode
 
   val mmioxbar = LazyModule(new AXI4Xbar)
   val uart = LazyModule(new Axi4Uart(0))
   uart.slavenode := mmioxbar.node
-
-  val tcam = LazyModule(new Axi4Tcam(0))
-  tcam.slavenode := mmioxbar.node
   
   val clusters = Seq.tabulate(numCluster) 
   { i => 
@@ -163,8 +150,8 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
       val success = Output(Bool())
       val start = Input(Bool())
     })
-
-    val matchperph = matchslavenode.makeIOs()
+    
+    // to do by dongdeji
 
   }
 }

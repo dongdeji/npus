@@ -21,7 +21,7 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   /* iram sequence */
-  val iramxbars = Seq.tabulate(numIramBank) 
+  private val iramxbars = Seq.tabulate(numIramBank) 
   { i => 
     val iramPerBankSize = iramSizePerCluster/numIramBank
     require(0 == iramSizePerCluster%numIramBank )
@@ -32,7 +32,7 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
     iramxbar.node
   }
   /* groups */
-  val groupxbars = Seq.tabulate(numGroup) 
+  private val groupxbars = Seq.tabulate(numGroup) 
   { i => 
     val group = LazyModule(new Group(ClusterId, i))
     (group.iramxbar, group.accxbar, group.windxbar, group.mmioxbar)
@@ -56,25 +56,9 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
   for(j <- 0 until groupxbars.size )
   { mmioxbar.node := groupxbars(j)._4.node }
 
-  val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
-    Seq(AXI4SlaveParameters(
-      address       = Seq(AddressSet(test2Base + ClusterId*test2Size, test2Size-1)),
-      //resources     = resources,
-      regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
-      executable    = true,
-      supportsRead  = TransferSizes(1, fetchBytes),
-      supportsWrite = TransferSizes(1, fetchBytes),
-      interleavedId = Some(0))),
-    beatBytes  = fetchBytes,
-    requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
-    minLatency = 1)))
-
-  slavenode := accxbar.node
-
   lazy val module = new LazyModuleImp(this) 
   {
     // to do by dongdeji
-    val (in, edgeIn) = slavenode.in(0)
   }
 }
 

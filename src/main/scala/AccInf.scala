@@ -112,7 +112,6 @@ class AccMetaBundle extends Bundle with NpusParams
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val regxbar = LazyModule(new AXI4Xbar)
-  //val mmioxbar = LazyModule(new AXI4Xbar)
   val accxbar = LazyModule(new AXI4Xbar)
 
   private val accmasters = Seq.tabulate(numThread) 
