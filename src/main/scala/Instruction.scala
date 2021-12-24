@@ -156,17 +156,17 @@ class IDecode extends DecodeConstants
 
     //FENCE->             List(Y, Y,N,N,N,N,N,N,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.N),
 
-    SCALL->             List(Y, Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    SBREAK->            List(Y, Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    MRET->              List(Y, Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    WFI->               List(Y, Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    CEASE->             List(Y, Y,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
-    CSRRW->             List(Y, Y,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
-    CSRRS->             List(Y, Y,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
-    CSRRC->             List(Y, Y,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C),
-    CSRRWI->            List(Y, Y,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
-    CSRRSI->            List(Y, Y,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
-    CSRRCI->            List(Y, Y,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C))
+    SCALL->             List(Y, N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    SBREAK->            List(Y, N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    MRET->              List(Y, N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    WFI->               List(Y, N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    CEASE->             List(Y, N,N,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,     N,M_X,   N,CSR.I),
+    CSRRW->             List(Y, N,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
+    CSRRS->             List(Y, N,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
+    CSRRC->             List(Y, N,N,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C),
+    CSRRWI->            List(Y, N,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.W),
+    CSRRSI->            List(Y, N,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.S),
+    CSRRCI->            List(Y, N,N,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.C))
 }
 
 

@@ -16,24 +16,29 @@ import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
+import freechips.rocketchip.util._
+import freechips.rocketchip.rocket._
+//import freechips.rocketchip.rocket.Instructions._
+//import freechips.rocketchip.tile._
+import chisel3.experimental.chiselName
 
-
-class Csrs(id: Int)(implicit p: Parameters) extends LazyModule 
+class CSRFile extends Module with NpusParams
 {
-  val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
-                                      masters = Seq(AXI4MasterParameters(
-                                                      name = s"Cluster-$id",
-                                                      id   = IdRange(0, 1 << 1))))))
+  val io = IO(new Bundle() {
+                  val tid = Input(UInt(log2Up(numThread).W))
+                  val rw = new Bundle {
+                  val addr = Input(UInt(12.W/*CSR.ADDRSZ*/))
+                  val cmd = Input(UInt(3.W/*CSR.SZ*/))
+                  val wdata = Input(UInt(dataWidth.W))
+                  val rdata = Output(UInt(dataWidth.W))
+                  }
+            })
 
-  lazy val module = new LazyModuleImp(this) 
-  {
-    val (out, edge) = masternode.out(0)
+  io.rw.rdata := (-1.S(dataWidth.W)).asUInt
 
-
-  }
+  when(io.rw.cmd.isOneOf(CSR.S, CSR.C, CSR.W) && io.rw.addr === CSRs.mhartid.U(12.W))
+  { io.rw.rdata := io.tid }
 }
-
-
 
 
 

@@ -90,7 +90,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val rr2_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr2_uop_W)
     val ex_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(ex_uop_W)
     val wb_uop_W = WireInit(0.U.asTypeOf(new ThreadUop));dontTouch(wb_uop_W)
-
     // default connection
     rr0_uop_R := id_uop_W
     rr0_uop_W := rr0_uop_R
@@ -171,6 +170,12 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     ex_uop_W.rs1_data := Mux(ex_uop_R.rs1_valid, ex_uop_R.rs1_data, regfile.module.io.rs1_data)
     ex_uop_W.rs2_data := Mux(ex_uop_R.rs2_valid, ex_uop_R.rs2_data, regfile.module.io.rs2_data)
 
+    val csr = Module(new CSRFile)
+    csr.io.tid := ex_uop_R.tid
+    csr.io.rw.addr := ex_uop_R.instr(31,20)
+    csr.io.rw.cmd := ex_uop_R.ctrl.csr
+    csr.io.rw.wdata := 0.U
+
     val alu = Module(new NpuALU);chisel3.dontTouch(alu.io)
     alu.io.dw := ex_uop_R.ctrl.alu_dw
     alu.io.fn := ex_uop_R.ctrl.alu_fn
@@ -184,7 +189,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                                       A1_PC -> ex_uop_W.pc.asSInt)).asUInt
 
     ex_uop_W.rd_valid := ex_uop_W.valid && ex_uop_R.ctrl.wxd && !ex_uop_R.ctrl.mem
-    ex_uop_W.rd_data := Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), /*csr.io.rw.rdata*/0.U, alu.io.out)
+    ex_uop_W.rd_data := Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), csr.io.rw.rdata, alu.io.out)
     /* handle imem request */
     val nxt_target = Mux(ex_uop_R.ctrl.jalr, alu.io.out/*encodeVirtualAddress(alu.io.out, alu.io.out)*/,
                             (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.instr),

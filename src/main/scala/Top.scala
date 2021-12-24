@@ -10,7 +10,7 @@ import chisel3.util._
 import freechips.rocketchip.util._
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.rocket.Instructions._
-import freechips.rocketchip.diplomacy.{ AddressSet, LazyModule, LazyModuleImp, RegionType, LazyRawModuleImp }
+import freechips.rocketchip.diplomacy.{ AddressSet, LazyModule, LazyModuleImp, RegionType, LazyRawModuleImp, BigIntHexContext}
 import freechips.rocketchip.tile._
 import chisel3.experimental.chiselName
 
@@ -34,12 +34,7 @@ trait NpusParams {
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
 
-  val uartBase: BigInt = 0x54000000
-  val uartSize: BigInt = 0x1000  
-  require(true == isPow2(uartSize))
-  require(0 == (uartBase % uartSize))
-
-  //val test = "0x8000_0000".toBigInt
+  val test = x"8000_0000"
   val iramGlobalBase: BigInt = 0x10000
   val iramSizePerCluster: BigInt = 0x1000  
   require(true == isPow2(iramSizePerCluster)) 
@@ -61,12 +56,22 @@ trait NpusParams {
   require(true == isPow2(regfileSizePerNp))
   require(0 == (regfileGlobalBase % regfileSizePerNp))
 
-  val test1Base: BigInt = 0x7000000
+  val uartBase: BigInt = 0x54000000
+  val uartSize: BigInt = 0x1000  
+  require(true == isPow2(uartSize))
+  require(0 == (uartBase % uartSize))
+
+  val tcamBase: BigInt = 0x54010000
+  val tcamSize: BigInt = 0x100  
+  require(true == isPow2(tcamSize))
+  require(0 == (tcamBase % tcamSize))
+
+  val test1Base: BigInt = 0x70000000
   val test1Size: BigInt = 0x400  
   require(true == isPow2(test1Size))
   require(0 == (test1Base % test1Size))
 
-  val test2Base: BigInt = 0x8000000
+  val test2Base: BigInt = 0x71000000
   val test2Size: BigInt = 0x400  
   require(true == isPow2(test2Size))
   require(0 == (test2Base % test2Size))
