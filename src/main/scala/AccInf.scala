@@ -112,19 +112,9 @@ class AccMetaBundle extends Bundle with NpusParams
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
   val regxbar = LazyModule(new AXI4Xbar)
-  val mmioxbar = LazyModule(new AXI4Xbar)
+  //val mmioxbar = LazyModule(new AXI4Xbar)
   val accxbar = LazyModule(new AXI4Xbar)
 
-  private val mmiomasters = Seq.tabulate(numThread) 
-  { tid => 
-    val mmiomaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
-                                      masters = Seq(AXI4MasterParameters(
-                                                      name = s"mmiomaster$tid",
-                                                      id = IdRange(0, 1),
-                                                      maxFlight = Some(0))))))
-    mmioxbar.node := mmiomaster
-    mmiomaster
-  }
   private val accmasters = Seq.tabulate(numThread) 
   { tid => 
     val accmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
@@ -194,9 +184,9 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     /***************** handle dmem req end *****************/
 
     // handle acc/mmio/iram req    
-    val mmioouts = mmiomasters.map { _.out(0)._1 }
+    val accouts = accmasters.map { _.out(0)._1 }
     val regouts  = regmasters.map { _.out(0)._1 }    
-    val mmioedgeOuts = mmiomasters.map { _.out(0)._2 }
+    val accedgeOuts = accmasters.map { _.out(0)._2 }
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
     /***************** handle acc/mmio/iram req begin *****************/
@@ -207,20 +197,20 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val debug2 = WireInit(0.U) ; chisel3.dontTouch(debug2)
     Seq.tabulate(numThread)
     { tid => 
-      chisel3.dontTouch(mmioouts(tid))
+      chisel3.dontTouch(accouts(tid))
       chisel3.dontTouch(regouts(tid))
 
-      val slaves_address = mmioedgeOuts(tid).slave.slaves.map(_.address).flatten
+      val slaves_address = accedgeOuts(tid).slave.slaves.map(_.address).flatten
       
       // default connect
-      mmioouts(tid).ar.valid := false.B
-      mmioouts(tid).ar.bits.id := 0.U
-      mmioouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
-      mmioouts(tid).aw.valid := false.B
-      mmioouts(tid).aw.bits.id := 0.U
-      mmioouts(tid).w.bits.last := true.B
-      mmioouts(tid).w.valid := false.B
-      mmioouts(tid).b.ready := true.B
+      accouts(tid).ar.valid := false.B
+      accouts(tid).ar.bits.id := 0.U
+      accouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
+      accouts(tid).aw.valid := false.B
+      accouts(tid).aw.bits.id := 0.U
+      accouts(tid).w.bits.last := true.B
+      accouts(tid).w.valid := false.B
+      accouts(tid).b.ready := true.B
       regouts(tid).ar.valid := false.B
       regouts(tid).ar.bits.id := 0.U
       regouts(tid).r.ready := true.B
@@ -246,22 +236,22 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         }
         is(send_mmio_req) 
         { 
-          mmioouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
+          accouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
                                     slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
-          //mmioouts(tid).ar.bits.id := 0.U
-          mmioouts(tid).ar.bits.addr := accMeta_R(tid).req.addr
+          //accouts(tid).ar.bits.id := 0.U
+          accouts(tid).ar.bits.addr := accMeta_R(tid).req.addr
 
-          mmioouts(tid).aw.valid := accMeta_R(tid).req.cmd.isOneOf(M_XWR) &&
+          accouts(tid).aw.valid := accMeta_R(tid).req.cmd.isOneOf(M_XWR) &&
                                     slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
-          //mmioouts(tid).aw.bits.id := 0.U
-          mmioouts(tid).aw.bits.addr := accMeta_R(tid).req.addr
-          mmioouts(tid).w.valid := mmioouts(tid).aw.valid
-          mmioouts(tid).w.bits.data := accMeta_R(tid).req.data
+          //accouts(tid).aw.bits.id := 0.U
+          accouts(tid).aw.bits.addr := accMeta_R(tid).req.addr
+          accouts(tid).w.valid := accouts(tid).aw.valid
+          accouts(tid).w.bits.data := accMeta_R(tid).req.data
           
-          when(mmioouts(tid).ar.fire()) 
+          when(accouts(tid).ar.fire()) 
           { state_R(tid) := wait_mmio_r }
 
-          when(mmioouts(tid).aw.fire() && mmioouts(tid).w.fire()) 
+          when(accouts(tid).aw.fire() && accouts(tid).w.fire()) 
           { 
             accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) 
             readys_thread(tid) := true.B
@@ -270,10 +260,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         }
         is(wait_mmio_r)
         { 
-          when(mmioouts(tid).r.fire())
+          when(accouts(tid).r.fire())
           { 
             val loadgen = new LoadGen(Cat(0.U(1.W), accMeta_R(tid).req.size), accMeta_R(tid).req.signed.asBool, 
-                                      accMeta_R(tid).req.addr, mmioouts(tid).r.bits.data, false.B, fetchBytes)
+                                      accMeta_R(tid).req.addr, accouts(tid).r.bits.data, false.B, fetchBytes)
             accMeta_R(tid).buff := loadgen.data
             accMeta_R(tid).buff_full := true.B
             

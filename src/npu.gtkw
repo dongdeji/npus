@@ -1,23 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Thu Dec 23 09:20:07 2021
+[*] Fri Dec 24 03:08:56 2021
 [*]
 [dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
-[dumpfile_mtime] "Thu Dec 23 09:08:12 2021"
-[dumpfile_size] 334994100
+[dumpfile_mtime] "Fri Dec 24 03:07:49 2021"
+[dumpfile_size] 657361438
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
-[timestart] 1303
+[timestart] 0
 [size] 1920 1007
 [pos] -1 -1
-*-5.000000 1375 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-6.000000 1375 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.npusTop.
 [treeopen] TOP.npusTop.cluster.
 [treeopen] TOP.npusTop.cluster.group.
 [treeopen] TOP.npusTop.cluster.group.npu.
-[treeopen] TOP.npusTop.cluster.group.npu.accinf.mmioxbar.
-[sst_width] 291
-[signals_width] 763
+[sst_width] 245
+[signals_width] 430
 [sst_expanded] 1
 [sst_vpaned_height] 412
 @28
@@ -47,9 +46,9 @@ TOP.npusTop.cluster.group.npu.front.out_r_bits_data[127:0]
 @28
 TOP.npusTop.cluster.group.npu.front.out_r_ready
 TOP.npusTop.cluster.group.npu.front.out_r_valid
-@23
+@22
 TOP.npusTop.cluster.group.npu.front.fetch_data_R[127:0]
-@200
+@201
 -core
 @28
 TOP.npusTop.cluster.group.npu.core.io_frontend_readys_bits_thread
@@ -144,36 +143,7 @@ TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_tid
 TOP.npusTop.cluster.group.npu.accinf.io_core_req_valid
 TOP.npusTop.cluster.group.npu.accinf.state_R_0[2:0]
 @22
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_ar_bits_addr[30:0]
-@28
 [color] 1
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_ar_ready
-[color] 1
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_ar_valid
-@22
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_r_bits_data[127:0]
-@28
-[color] 1
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_r_ready
-[color] 1
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_r_valid
-@22
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_aw_bits_addr[30:0]
-@28
-[color] 1
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_aw_ready
-[color] 1
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_aw_valid
-@22
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_bits_data[127:0]
-@28
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_ready
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_w_valid
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_bits_id
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_bits_resp[1:0]
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_ready
-TOP.npusTop.cluster.group.npu.accinf.mmioouts_0_b_valid
-@22
 TOP.npusTop.cluster.group.npu.accinf.regouts_0_aw_bits_addr[22:0]
 @28
 TOP.npusTop.cluster.group.npu.accinf.regouts_0_aw_ready
