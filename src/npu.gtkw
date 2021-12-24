@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Fri Dec 24 07:39:20 2021
+[*] Fri Dec 24 11:34:28 2021
 [*]
 [dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
-[dumpfile_mtime] "Fri Dec 24 07:17:52 2021"
-[dumpfile_size] 359986149
+[dumpfile_mtime] "Fri Dec 24 11:32:08 2021"
+[dumpfile_size] 1222292017
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
 [timestart] 43
 [size] 1920 1007
 [pos] -1 -1
-*-2.000000 47 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-2.000000 51 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.npusTop.
 [treeopen] TOP.npusTop.cluster.
@@ -17,10 +17,10 @@
 [treeopen] TOP.npusTop.cluster.group.npu.
 [treeopen] TOP.npusTop.cluster.group.npu.core.
 [treeopen] TOP.npusTop.cluster.group.npu.core.window.
-[sst_width] 351
+[sst_width] 308
 [signals_width] 730
 [sst_expanded] 1
-[sst_vpaned_height] 212
+[sst_vpaned_height] 266
 @28
 TOP.npusTop.cluster.group.npu.core.reset
 TOP.npusTop.cluster.group.npu.core.clock
@@ -99,9 +99,46 @@ TOP.npusTop.cluster.group.npu.core.io_frontend_redirect_valid
 @200
 -window
 @22
+[color] 1
 TOP.npusTop.cluster.group.npu.core.window.io_r_offset[15:0]
+@28
+TOP.npusTop.cluster.group.npu.core.window.io_signed
+TOP.npusTop.cluster.group.npu.core.window.io_size[1:0]
+@22
 TOP.npusTop.cluster.group.npu.core.window.offset_raw[127:0]
 TOP.npusTop.cluster.group.npu.core.window.offset_pakage[127:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_0_R0_addr[5:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_1_R0_addr[5:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_2_R0_addr[5:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_3_R0_addr[5:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_4_R0_addr[5:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_5_R0_addr[5:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_6_R0_addr[5:0]
+[color] 2
+TOP.npusTop.cluster.group.npu.core.window.banks_7_R0_addr[5:0]
+TOP.npusTop.cluster.group.npu.core.window.banks_0_R0_data[7:0]
+TOP.npusTop.cluster.group.npu.core.window.banks_1_R0_data[7:0]
+TOP.npusTop.cluster.group.npu.core.window.banks_2_R0_data[7:0]
+TOP.npusTop.cluster.group.npu.core.window.banks_3_R0_data[7:0]
+TOP.npusTop.cluster.group.npu.core.window.banks_4_R0_data[7:0]
+TOP.npusTop.cluster.group.npu.core.window.banks_5_R0_data[7:0]
+@23
+TOP.npusTop.cluster.group.npu.core.window.banks_6_R0_data[7:0]
+@22
+TOP.npusTop.cluster.group.npu.core.window.banks_7_R0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.window.byte_offset_s1[2:0]
+TOP.npusTop.cluster.group.npu.core.window.size_s1[1:0]
+TOP.npusTop.cluster.group.npu.core.window.dataMask[7:0]
+@22
+TOP.npusTop.cluster.group.npu.core.window.io_r_data[63:0]
 @200
 -window_bank0
 @22
@@ -112,9 +149,7 @@ TOP.npusTop.cluster.group.npu.core.window.banks_3_R0_addr[5:0]
 TOP.npusTop.cluster.group.npu.core.window.banks_4_R0_addr[5:0]
 TOP.npusTop.cluster.group.npu.core.window.banks_5_R0_addr[5:0]
 TOP.npusTop.cluster.group.npu.core.window.banks_6_R0_addr[5:0]
-@23
 TOP.npusTop.cluster.group.npu.core.window.banks_7_R0_addr[5:0]
-@22
 TOP.npusTop.cluster.group.npu.core.window.banks_0_R0_data[7:0]
 TOP.npusTop.cluster.group.npu.core.window.banks_1_R0_data[7:0]
 TOP.npusTop.cluster.group.npu.core.window.banks_2_R0_data[7:0]

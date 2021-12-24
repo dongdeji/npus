@@ -39,28 +39,32 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
   {
     val offsetWith = 1 << log2Ceil(log2Ceil(windowSizePerNp))
     val io = IO(new Bundle {
-      val r_offset = Input(UInt(offsetWith.W))
-      val r_data   = Output(UInt(dataWidth.W))
+      val offset = Input(UInt(offsetWith.W))
+      val size = Input(UInt(2.W)) /* dmem_req.inst_32(13,12) */
+      val signed = Input(UInt(1.W)) /* !dmem_req.inst_32(14) */
+      val data = Output(UInt(dataWidth.W))
     })
     chisel3.dontTouch(io)
 
     val banks = Seq.tabulate(dataBytes) { i => SyncReadMem(windowSizePerNp/dataBytes, UInt(8.W)) }
     
-    val offset_raw = VecInit(Seq.tabulate(dataBytes){ i => (io.r_offset + i.U)(offsetWith-1, 0)}).asUInt
+    val offset_raw = VecInit(Seq.tabulate(dataBytes){ i => (io.offset + i.U)(offsetWith-1, 0)}).asUInt
     chisel3.dontTouch(offset_raw)
-    val offset_l = io.r_offset(log2Ceil(dataBytes)-1, 0)
-    val wide_offset_raw = offset_raw << (offset_l << log2Ceil(offsetWith))
+    val byte_offset = io.offset(log2Ceil(dataBytes)-1, 0)
+    val wide_offset_raw = offset_raw << (byte_offset << log2Ceil(offsetWith))
     chisel3.dontTouch(wide_offset_raw)
     val offset_pakage = (wide_offset_raw >> offsetWith*dataBytes) | wide_offset_raw(offsetWith*dataBytes-1,0)
     chisel3.dontTouch(offset_pakage)
-    val offset_l_R = RegNext(offset_l)
-    chisel3.dontTouch(offset_l_R)
+    val byte_offset_s1 = RegNext(byte_offset)
+    chisel3.dontTouch(byte_offset_s1)
+    val size_s1 = RegNext(io.size)
+    val signed_s1 = RegNext(io.signed)
     val data_pakage = VecInit(Seq.tabulate(dataBytes) { i => banks(i).read(offset_pakage((i+1)*offsetWith-1, i*offsetWith)) }).asUInt
-    val data_raw_l = data_pakage >> (offset_l_R << log2Ceil(8))
-    val data_raw_h = (data_pakage << ((dataBytes.U - offset_l_R) << log2Ceil(8)))(dataWidth - 1, 0)
-    io.r_data := data_raw_h | data_raw_l 
-    chisel3.dontTouch(data_raw_l)
-    chisel3.dontTouch(data_raw_h)
+    val data_raw_l = data_pakage >> (byte_offset_s1 << log2Ceil(8))
+    val data_raw_h = (data_pakage << ((dataBytes.U - byte_offset_s1) << log2Ceil(8)))(dataWidth - 1, 0)
+    val dataMask = ~( ((~(0.U(dataBytes.W))) << (1.U << size_s1)) (dataBytes-1,0) )
+    chisel3.dontTouch(dataMask)
+    io.data := (data_raw_h | data_raw_l) & FillInterleaved(8, dataMask)
 
     /********** handle axi4 write interface begin **********/
     val (in, edgeIn) = node.in(0)

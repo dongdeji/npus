@@ -217,7 +217,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     when(tailEraseInfo.valid && ((ex_uop_R.valid && (ex_uop_R.tid =/= tailEraseInfo.tid)) || (!ex_uop_R.valid)))
     { tailEraseInfo.valid := false.B }
 
-    window.module.io.r_offset := alu.io.adder_out
+    window.module.io.offset := alu.io.adder_out
+    window.module.io.size := ex_uop_W.instr(13,12)
+    window.module.io.signed := !ex_uop_W.instr(14)
     chisel3.dontTouch(window.module.io)
 
     io.accinf.uop := ex_uop_W
@@ -233,6 +235,10 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /*******************************************************/
     /****************** write back begin *******************/
+    
+    wb_uop_W.rd_data := Mux(wb_uop_R.ctrl.wind, window.module.io.data, wb_uop_R.rd_data)
+    wb_uop_W.rd_valid := Mux(wb_uop_R.ctrl.wind, true.B, wb_uop_R.rd_valid)
+
     regfile.module.io.rd_write := wb_uop_W.valid & wb_uop_W.ctrl.legal & wb_uop_W.rd_valid
     regfile.module.io.rd_data  := wb_uop_W.rd_data
     regfile.module.io.rd       := wb_uop_W.rd
