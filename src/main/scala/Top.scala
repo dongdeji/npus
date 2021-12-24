@@ -116,26 +116,28 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   ElaborationArtefacts.add("graphml", graphML)
   ElaborationArtefacts.add("plusArgs", PlusArgArtefacts.serialize_cHeader)
   
-  val fbusmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+  private val fbusmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                         masters = Seq(AXI4MasterParameters(
                                                         name = s"FrontBuss_src",
                                                         id   = IdRange(0, 1 << 1))))))
-  val windmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+  private val windmaster = AXI4MasterNode(Seq(AXI4MasterPortParameters(
                                         masters = Seq(AXI4MasterParameters(
                                                         name = s"Window_src",
                                                         id   = IdRange(0, 1 << 1))))))
-  val accxbar = LazyModule(new AXI4Xbar)
+  private val accxbar = LazyModule(new AXI4Xbar)
   private val tcam = LazyModule(new Axi4Tcam(0))
+  private val lram = LazyModule(new Axi4Lram(0))
   tcam.slavenode := accxbar.node
+  lram.slavenode := accxbar.node
 
-  val windxbar = LazyModule(new AXI4Xbar)
+  private val windxbar = LazyModule(new AXI4Xbar)
   windxbar.node := windmaster
 
-  val mmioxbar = LazyModule(new AXI4Xbar)
-  val uart = LazyModule(new Axi4Uart(0))
+  private val mmioxbar = LazyModule(new AXI4Xbar)
+  private val uart = LazyModule(new Axi4Uart(0))
   uart.slavenode := mmioxbar.node
   
-  val clusters = Seq.tabulate(numCluster) 
+  private val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
     accxbar.node := cluster.accxbar.node
