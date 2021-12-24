@@ -31,8 +31,8 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
   iramxbar.node := accinf.accxbar.node
   mmioxbar.node := accinf.accxbar.node
   accxbar.node := accinf.accxbar.node
-  core.regfile.slavenode := accinf.regxbar.node
-  core.window.slavenode := windxbar.node
+  core.regfile.node := accinf.regxbar.node
+  core.window.node := windxbar.node
 
   lazy val module = new LazyModuleImp(this) 
   {

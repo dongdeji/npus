@@ -21,7 +21,7 @@ import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTree
 class Axi4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val address = AddressSet(uartBase, uartSize-1)
-  val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
       //resources     = resources,
@@ -36,7 +36,7 @@ class Axi4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 
   lazy val module = new LazyModuleImp(this) 
   {
-    val (in, edgeIn) = slavenode.in(0)
+    val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
     val uart_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(uart_reg)
     in.aw.ready := true.B
@@ -82,7 +82,7 @@ class Axi4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val address = AddressSet(tcamBase, tcamSize-1)
-  val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
       //resources     = resources,
@@ -97,7 +97,7 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 
   lazy val module = new LazyModuleImp(this) 
   {
-    val (in, edgeIn) = slavenode.in(0)
+    val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
     val tcam_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(tcam_reg)
     in.aw.ready := true.B
@@ -146,7 +146,7 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   val address = AddressSet(lramBase, lramSize-1)
-  val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
       //resources     = resources,
@@ -161,9 +161,9 @@ class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 
   lazy val module = new LazyModuleImp(this) 
   {
-    val (in, edgeIn) = slavenode.in(0)
+    val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
-    val tcam_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(tcam_reg)
+    val lram_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(lram_reg)
     in.aw.ready := true.B
     in.w.ready := true.B
     in.ar.ready := true.B
@@ -178,7 +178,7 @@ class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
     // handle aw/w->b begin
     when(in.aw.fire() && address.contains(in.aw.bits.addr) && in.w.fire())
     { 
-      tcam_reg := in.w.bits.data(31,0) 
+      lram_reg := in.w.bits.data(31,0) 
       aw_fire := in.aw.fire()
       aw_id := in.aw.bits.id
     }
@@ -199,7 +199,7 @@ class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 
     in.r.valid := ar_fire && IncCounter.inc
     in.r.bits.data := ar_id
-    in.r.bits.data := Cat(0.U(33.W), tcam_reg(30,0))
+    in.r.bits.data := Cat(0.U(33.W), lram_reg(30,0))
     when(ar_fire && in.r.fire())
     { ar_fire := false.B }
     // handle ar->r end

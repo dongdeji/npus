@@ -22,7 +22,7 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 {
   val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
   val address = AddressSet(windowGlobalBase + windowSizePerNp*Id, windowSizePerNp-1)
-  val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
       //resources     = resources,
@@ -63,7 +63,7 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     chisel3.dontTouch(data_raw_h)
 
     /********** handle axi4 write interface begin **********/
-    val (in, edgeIn) = slavenode.in(0)
+    val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
 
     val w_addr = Cat((mask(address, dataBytes) zip (in.aw.bits.addr >> log2Ceil(dataBytes)).asBools).filter(_._1).map(_._2).reverse)

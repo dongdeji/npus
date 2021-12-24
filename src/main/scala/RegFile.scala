@@ -22,7 +22,7 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
 {
   val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
   val address = AddressSet(regfileGlobalBase + regfileSizePerNp*Id, regfileSizePerNp-1)
-  val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
       //resources     = resources,
@@ -57,7 +57,7 @@ class RegFiles(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ex
     io.rs2_data := RegNext(RegNext(Mux(RegNext(io.rs2(4, 0)) === 0.U, RegNext(0.U), rs2_data_s1)))
 
     /********** handle axi4 write interface begin **********/
-    val (in, edgeIn) = slavenode.in(0)
+    val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
 
     val w_sel0 = address.contains(in.aw.bits.addr)

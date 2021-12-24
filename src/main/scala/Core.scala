@@ -107,7 +107,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /****************************************************************/
     /****************** instruction decode begin ********************/
-    val decode_table = { Seq(new CUSTOMDecode) ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
+    val decode_table = { Seq(new NpDecode) ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
     val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.frontend.instr.bits.instr, decode_table); chisel3.dontTouch(id_ctrl)
     id_uop_W.valid    := io.frontend.instr.valid && id_ctrl.legal
     id_uop_W.ctrl     := id_ctrl
@@ -130,9 +130,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /****************** register read begin *******************/
     regfile.module.io.rs1 :=  rr0_uop_R.rs1
     regfile.module.io.rs2 :=  rr0_uop_R.rs2
-    
-    window.module.io.r_offset := 0.U // to do by dongdeji
-    
+
     //register read stage 0 bypass check
     val rr0_bypass_mux = Module(new RrBypassMux)
     rr0_bypass_mux.io.rr_uop_R := rr0_uop_R
@@ -218,6 +216,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     { ex_uop_W := 0.U.asTypeOf(new ThreadUop) }
     when(tailEraseInfo.valid && ((ex_uop_R.valid && (ex_uop_R.tid =/= tailEraseInfo.tid)) || (!ex_uop_R.valid)))
     { tailEraseInfo.valid := false.B }
+
+    window.module.io.r_offset := alu.io.adder_out
+    chisel3.dontTouch(window.module.io)
 
     io.accinf.uop := ex_uop_W
     io.accinf.req.valid := ex_uop_W.valid && (ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) 

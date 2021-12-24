@@ -127,21 +127,22 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   private val accxbar = LazyModule(new AXI4Xbar)
   private val tcam = LazyModule(new Axi4Tcam(0))
   private val lram = LazyModule(new Axi4Lram(0))
-  tcam.slavenode := accxbar.node
-  lram.slavenode := accxbar.node
+  tcam.node := accxbar.node
+  lram.node := accxbar.node
 
   private val windxbar = LazyModule(new AXI4Xbar)
   windxbar.node := windmaster
 
   private val mmioxbar = LazyModule(new AXI4Xbar)
   private val uart = LazyModule(new Axi4Uart(0))
-  uart.slavenode := mmioxbar.node
+  uart.node := mmioxbar.node
   
   private val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
     accxbar.node := cluster.accxbar.node
     mmioxbar.node := cluster.mmioxbar.node
+    cluster.fbusxbar.node := fbusmaster
     cluster.windxbar.node := windxbar.node
     cluster
   }
