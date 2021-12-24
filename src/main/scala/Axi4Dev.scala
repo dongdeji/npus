@@ -145,7 +145,7 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 
 class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
-  val address = AddressSet(tcamBase, tcamSize-1)
+  val address = AddressSet(lramBase, lramSize-1)
   val slavenode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
