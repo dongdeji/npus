@@ -34,46 +34,52 @@ trait NpusParams {
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
 
+  def RequireAddressAlign(base: BigInt, size: BigInt) = 
+  { 
+    require(true == isPow2(size), s"size:${size} is not Pow2 !") 
+    require(0 == (base % size), s"base:${base} is not align to size:${size} !")
+  }
+
   val iramGlobalBase: BigInt = x"0001_0000"
   val iramSizePerCluster: BigInt = x"1000"
-  require(true == isPow2(iramSizePerCluster)) 
-  require(0 == (iramGlobalBase % iramSizePerCluster))
+  RequireAddressAlign(iramGlobalBase, iramSizePerCluster)
 
   val dramGlobalBase: BigInt = x"0002_0000"
   val dramSizePerNp: BigInt = x"1000"
-  require(true == isPow2(dramSizePerNp)) 
-  require(0 == (dramGlobalBase % dramSizePerNp))
+  RequireAddressAlign(dramGlobalBase, dramSizePerNp)
 
   val windowGlobalBase: BigInt = x"0020_0000"
   val windowSizePerNp: BigInt = x"200"*numThread
-  require(true == isPow2(windowSizePerNp))
-  require(0 == (windowGlobalBase % windowSizePerNp))
+  RequireAddressAlign(windowGlobalBase, windowSizePerNp)
 
   val isaRegNumPerThread: Int = 32
   val regfileGlobalBase: BigInt = x"0040_0000"
   val regfileSizePerNp: BigInt = isaRegNumPerThread*dataBytes*numThread
-  require(true == isPow2(regfileSizePerNp))
-  require(0 == (regfileGlobalBase % regfileSizePerNp))
+  RequireAddressAlign(regfileGlobalBase, regfileSizePerNp)
 
   val uartBase: BigInt = x"5400_0000"
   val uartSize: BigInt = x"1000"
-  require(true == isPow2(uartSize))
-  require(0 == (uartBase % uartSize))
+  RequireAddressAlign(uartBase, uartSize)
 
   val tcamBase: BigInt = x"5401_0000"
   val tcamSize: BigInt = x"100"
-  require(true == isPow2(tcamSize))
-  require(0 == (tcamBase % tcamSize))
+  RequireAddressAlign(tcamBase, tcamSize)
+
+  val lramBase: BigInt = x"5402_0000"
+  val lramSize: BigInt = x"100"
+  RequireAddressAlign(lramBase, lramSize)
+
+  val eamBase: BigInt = x"5403_0000"
+  val eamSize: BigInt = x"100"
+  RequireAddressAlign(eamBase, eamSize)
 
   val test1Base: BigInt = x"7000_0000"
   val test1Size: BigInt = x"400"
-  require(true == isPow2(test1Size))
-  require(0 == (test1Base % test1Size))
+  RequireAddressAlign(test1Base, test1Size)
 
   val test2Base: BigInt = x"7100_0000"
   val test2Size: BigInt = x"400"
-  require(true == isPow2(test2Size))
-  require(0 == (test2Base % test2Size))
+  RequireAddressAlign(test2Base, test2Size)
 
   val memInstrHalt = true
 
@@ -139,6 +145,9 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   val uart = LazyModule(new Axi4Uart(0))
   uart.slavenode := mmioxbar.node
 
+  val tcam = LazyModule(new Axi4Tcam(0))
+  tcam.slavenode := mmioxbar.node
+  
   val clusters = Seq.tabulate(numCluster) 
   { i => 
     val cluster = LazyModule(new Cluster(i)) 
