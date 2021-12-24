@@ -34,45 +34,44 @@ trait NpusParams {
   val instrWidth = instrBytes*8
   val tidWidth = log2Up(numThread)
 
-  val test = x"8000_0000"
-  val iramGlobalBase: BigInt = 0x10000
-  val iramSizePerCluster: BigInt = 0x1000  
+  val iramGlobalBase: BigInt = x"0001_0000"
+  val iramSizePerCluster: BigInt = x"1000"
   require(true == isPow2(iramSizePerCluster)) 
   require(0 == (iramGlobalBase % iramSizePerCluster))
 
-  val dramGlobalBase: BigInt = 0x20000
-  val dramSizePerNp: BigInt = 0x1000
+  val dramGlobalBase: BigInt = x"0002_0000"
+  val dramSizePerNp: BigInt = x"1000"
   require(true == isPow2(dramSizePerNp)) 
   require(0 == (dramGlobalBase % dramSizePerNp))
 
-  val windowGlobalBase: BigInt = 0x200000
-  val windowSizePerNp: BigInt = 0x200*numThread
+  val windowGlobalBase: BigInt = x"0020_0000"
+  val windowSizePerNp: BigInt = x"200"*numThread
   require(true == isPow2(windowSizePerNp))
   require(0 == (windowGlobalBase % windowSizePerNp))
 
   val isaRegNumPerThread: Int = 32
-  val regfileGlobalBase: BigInt = 0x400000
+  val regfileGlobalBase: BigInt = x"0040_0000"
   val regfileSizePerNp: BigInt = isaRegNumPerThread*dataBytes*numThread
   require(true == isPow2(regfileSizePerNp))
   require(0 == (regfileGlobalBase % regfileSizePerNp))
 
-  val uartBase: BigInt = 0x54000000
-  val uartSize: BigInt = 0x1000  
+  val uartBase: BigInt = x"5400_0000"
+  val uartSize: BigInt = x"1000"
   require(true == isPow2(uartSize))
   require(0 == (uartBase % uartSize))
 
-  val tcamBase: BigInt = 0x54010000
-  val tcamSize: BigInt = 0x100  
+  val tcamBase: BigInt = x"5401_0000"
+  val tcamSize: BigInt = x"100"
   require(true == isPow2(tcamSize))
   require(0 == (tcamBase % tcamSize))
 
-  val test1Base: BigInt = 0x70000000
-  val test1Size: BigInt = 0x400  
+  val test1Base: BigInt = x"7000_0000"
+  val test1Size: BigInt = x"400"
   require(true == isPow2(test1Size))
   require(0 == (test1Base % test1Size))
 
-  val test2Base: BigInt = 0x71000000
-  val test2Size: BigInt = 0x400  
+  val test2Base: BigInt = x"7100_0000"
+  val test2Size: BigInt = x"400"
   require(true == isPow2(test2Size))
   require(0 == (test2Base % test2Size))
 
