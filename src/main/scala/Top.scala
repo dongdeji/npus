@@ -40,45 +40,49 @@ trait NpusParams {
     require(0 == (base % size), s"base:${base} is not align to size:${size} !")
   }
 
-  val iramGlobalBase: BigInt = x"0001_0000"
-  val iramSizePerCluster: BigInt = x"1000"
+  val iramGlobalBase:     BigInt = x"0001_0000"
+  val iramSizePerCluster: BigInt = x"0000_1000"
   RequireAddressAlign(iramGlobalBase, iramSizePerCluster)
 
   val dramGlobalBase: BigInt = x"0002_0000"
-  val dramSizePerNp: BigInt = x"1000"
+  val dramSizePerNp:  BigInt = x"0000_1000"
   RequireAddressAlign(dramGlobalBase, dramSizePerNp)
 
+  val keyBuffBase:       BigInt = x"0002_0000"
+  val keyBuffSizePerNp:  BigInt = x"0000_1000"
+  RequireAddressAlign(keyBuffBase, keyBuffSizePerNp)
+
   val windowGlobalBase: BigInt = x"0020_0000"
-  val windowSizePerNp: BigInt = x"200"*numThread
+  val windowSizePerNp:  BigInt = x"0000_0200"*numThread
   RequireAddressAlign(windowGlobalBase, windowSizePerNp)
 
   val isaRegNumPerThread: Int = 32
   val regfileGlobalBase: BigInt = x"0040_0000"
-  val regfileSizePerNp: BigInt = isaRegNumPerThread*dataBytes*numThread
+  val regfileSizePerNp:  BigInt = isaRegNumPerThread*dataBytes*numThread
   RequireAddressAlign(regfileGlobalBase, regfileSizePerNp)
 
   val uartBase: BigInt = x"5400_0000"
-  val uartSize: BigInt = x"1000"
+  val uartSize: BigInt = x"0000_1000"
   RequireAddressAlign(uartBase, uartSize)
 
   val tcamBase: BigInt = x"5401_0000"
-  val tcamSize: BigInt = x"100"
+  val tcamSize: BigInt = x"0000_0100"
   RequireAddressAlign(tcamBase, tcamSize)
 
   val lramBase: BigInt = x"5402_0000"
-  val lramSize: BigInt = x"100"
+  val lramSize: BigInt = x"0000_0100"
   RequireAddressAlign(lramBase, lramSize)
 
   val eamBase: BigInt = x"5403_0000"
-  val eamSize: BigInt = x"100"
+  val eamSize: BigInt = x"0000_0100"
   RequireAddressAlign(eamBase, eamSize)
 
   val test1Base: BigInt = x"7000_0000"
-  val test1Size: BigInt = x"400"
+  val test1Size: BigInt = x"0000_0400"
   RequireAddressAlign(test1Base, test1Size)
 
   val test2Base: BigInt = x"7100_0000"
-  val test2Size: BigInt = x"400"
+  val test2Size: BigInt = x"0000_0400"
   RequireAddressAlign(test2Base, test2Size)
 
   val memInstrHalt = true
