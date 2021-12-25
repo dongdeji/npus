@@ -167,7 +167,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
     /***************** handle acc/iram axi4 req begin *****************/
-    val idle :: send_acc_req :: wait_acc_r :: send_reg_aw :: wait_reg_b :: Nil = Enum(5)
+    val idle :: acc_rw_send :: wait_acc_r :: send_reg_aw :: wait_reg_b :: wait_acc_b :: Nil = Enum(6)
     val state_R = RegInit(VecInit(Seq.fill(numThread)(idle))) ;state_R.foreach(chisel3.dontTouch(_))
     val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
     val debug1 = WireInit(0.U) ; chisel3.dontTouch(debug1)
@@ -208,10 +208,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
             accMeta_R(tid).req := io.core.req.bits
             accMeta_R(tid).uop := io.core.uop
 
-            state_R(tid) := send_acc_req
+            state_R(tid) := acc_rw_send
           }
         }
-        is(send_acc_req) 
+        is(acc_rw_send) 
         { 
           accouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
                                     slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
