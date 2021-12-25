@@ -160,14 +160,14 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     when(keybuff.io.core.resp.valid)
     { io.core.resp := keybuff.io.core.resp }
 
-    // handle acc/mmio/iram req    
+    // handle acc/iram axi4 req    
     val accouts = accmasters.map { _.out(0)._1 }
     val regouts  = regmasters.map { _.out(0)._1 }    
     val accedgeOuts = accmasters.map { _.out(0)._2 }
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
-    /***************** handle acc/mmio/iram req begin *****************/
-    val idle :: send_mmio_req :: wait_mmio_r :: send_reg_aw :: wait_reg_b :: Nil = Enum(5)
+    /***************** handle acc/iram axi4 req begin *****************/
+    val idle :: send_acc_req :: wait_acc_r :: send_reg_aw :: wait_reg_b :: Nil = Enum(5)
     val state_R = RegInit(VecInit(Seq.fill(numThread)(idle))) ;state_R.foreach(chisel3.dontTouch(_))
     val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
     val debug1 = WireInit(0.U) ; chisel3.dontTouch(debug1)
@@ -208,10 +208,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
             accMeta_R(tid).req := io.core.req.bits
             accMeta_R(tid).uop := io.core.uop
 
-            state_R(tid) := send_mmio_req
+            state_R(tid) := send_acc_req
           }
         }
-        is(send_mmio_req) 
+        is(send_acc_req) 
         { 
           accouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
                                     slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
@@ -226,7 +226,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
           accouts(tid).w.bits.data := accMeta_R(tid).req.data
           
           when(accouts(tid).ar.fire()) 
-          { state_R(tid) := wait_mmio_r }
+          { state_R(tid) := wait_acc_r }
 
           when(accouts(tid).aw.fire() && accouts(tid).w.fire()) 
           { 
@@ -235,7 +235,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
             state_R(tid) := idle 
           }
         }
-        is(wait_mmio_r)
+        is(wait_acc_r)
         { 
           when(accouts(tid).r.fire())
           { 
@@ -273,7 +273,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         }
       } // end of switch(state_R(tid)) 
     } // end of Seq.tabulate(numThread)
-    /***************** handle acc/mmio/iram req end *****************/
+    /***************** handle acc/iram axi4 req end *****************/
     io.core.readys.valid := readys_thread.asUInt.orR || dmem.io.core.readys.valid
     io.core.readys.bits.thread := readys_thread.asUInt | dmem.io.core.readys.bits.thread
   }
