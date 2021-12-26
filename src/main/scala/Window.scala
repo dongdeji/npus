@@ -38,7 +38,10 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     })
     chisel3.dontTouch(io)
 
-    //val loadpktReqQ = Module(new Queue(io.loadpkt.req.cloneType, numThread))
+    val loadpktReqQ = Module(new Queue(io.loadpkt.req.bits.cloneType, numThread + 1))
+    loadpktReqQ.io.enq.valid := io.loadpkt.req.valid
+    loadpktReqQ.io.enq.bits := io.loadpkt.req.bits
+    loadpktReqQ.io.deq.ready := false.B
     // to do by dongdeji
 
     val banks = Seq.tabulate(dataBytes) { i => SyncReadMem(windowSizePerNp/dataBytes, UInt(8.W)) }
@@ -76,10 +79,11 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     switch(load_state_R)
     {
       is(idle) {
-        when(io.loadpkt.req.fire()) {
+        loadpktReqQ.io.deq.ready := true.B
+        when(loadpktReqQ.io.deq.fire()) {
           offset := 0.U
-          loadMata.tid := io.loadpkt.req.bits.tid
-          loadMata.addr := io.loadpkt.req.bits.addr
+          loadMata.tid := loadpktReqQ.io.deq.bits.tid
+          loadMata.addr := loadpktReqQ.io.deq.bits.addr
           load_state_R := wind_ar_send
         }
       }
