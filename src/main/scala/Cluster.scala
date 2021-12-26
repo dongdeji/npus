@@ -27,7 +27,9 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
     require(0 == iramSizePerCluster%numIramBank )
     require(true == isPow2(iramPerBankSize))
     val iramxbar = LazyModule(new AXI4Xbar)
-    val iram = LazyModule(new AXI4ROM(AddressSet(iramGlobalBase + iramSizePerCluster*ClusterId + iramPerBankSize*i, iramPerBankSize-1), beatBytes = fetchBytes))
+    val iram = LazyModule(new AXI4IROM(file = "./bootrom/bootrom.img",
+                                       address = AddressSet(iramGlobalBase + iramSizePerCluster*ClusterId + iramPerBankSize*i, iramPerBankSize-1), 
+                                       beatBytes = fetchBytes))
     iram.frag.node := iramxbar.node
     iramxbar
   }
@@ -35,7 +37,7 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
   private val groupxbars = Seq.tabulate(numGroup) 
   { i => 
     val group = LazyModule(new Group(ClusterId, i))
-    (group.iramxbar, group.accxbar, group.windxbar, group.mmioxbar)
+    (group.iramxbar, group.accxbar, group.mmioxbar)
   }
   /* connect irams and groups */
   for(i <- 0 until iramxbars.size; j <- 0 until groupxbars.size )
@@ -51,18 +53,10 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
   for(j <- 0 until groupxbars.size )
   { accxbar.node := groupxbars(j)._2.node }
 
-  /* connect window */
-  val windxbar = LazyModule(new AXI4Xbar)
-  for(j <- 0 until groupxbars.size )
-  { 
-    groupxbars(j)._3.node := windxbar.node 
-    //groupxbars(j)._3.node := fbusxbar.node
-  }
-
   /* connect mmio */
   val mmioxbar = LazyModule(new AXI4Xbar)
   for(j <- 0 until groupxbars.size )
-  { mmioxbar.node := groupxbars(j)._4.node }
+  { mmioxbar.node := groupxbars(j)._3.node }
 
   lazy val module = new LazyModuleImp(this) 
   {

@@ -22,21 +22,12 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 {
   private val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
   private val address = AddressSet(windowGlobalBase + windowSizePerNp*Id, windowSizePerNp-1)
-  private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
-    Seq(AXI4SlaveParameters(
-      address       = Seq(address),
-      //resources     = resources,
-      regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
-      executable    = true,
-      supportsRead  = TransferSizes(1, dataBytes),
-      supportsWrite = TransferSizes(1, dataBytes),
-      interleavedId = Some(0))),
-    beatBytes  = dataBytes,
-    requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
-    minLatency = 1)))
 
-  val frag = LazyModule(new AXI4Fragmenter)
-  node := frag.node
+  val masternode = AXI4MasterNode(Seq(AXI4MasterPortParameters(
+                                    masters = Seq(AXI4MasterParameters(
+                                                    name = s"windmaster$NpId",
+                                                    id = IdRange(0, 1),
+                                                    maxFlight = Some(0))))))
 
   lazy val module = new LazyModuleImp(this) 
   {
@@ -51,63 +42,62 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     
     /********** handle swap req from pipe begin **********/
     val offset_raw = VecInit(Seq.tabulate(dataBytes){ i => (io.swap.offset + i.U)(offsetWith-1, 0)}).asUInt
-    chisel3.dontTouch(offset_raw)
     val byte_offset = io.swap.offset(log2Ceil(dataBytes)-1, 0)
     val wide_offset_raw = offset_raw << (byte_offset << log2Ceil(offsetWith))
-    chisel3.dontTouch(wide_offset_raw)
     val offset_pakage = (wide_offset_raw >> offsetWith*dataBytes) | wide_offset_raw(offsetWith*dataBytes-1,0)
-    chisel3.dontTouch(offset_pakage)
     val byte_offset_s1 = RegNext(byte_offset)
-    chisel3.dontTouch(byte_offset_s1)
     val size_s1 = RegNext(io.swap.size)
     val signed_s1 = RegNext(io.swap.signed)
     val data_pakage = VecInit(Seq.tabulate(dataBytes) { i => banks(i).read(offset_pakage((i+1)*offsetWith-1, i*offsetWith)) }).asUInt
     val data_raw_l = data_pakage >> (byte_offset_s1 << log2Ceil(8))
     val data_raw_h = (data_pakage << ((dataBytes.U - byte_offset_s1) << log2Ceil(8)))(dataWidth - 1, 0)
     val dataMask = ~( ((~(0.U(dataBytes.W))) << (1.U << size_s1)) (dataBytes-1,0) )
-    chisel3.dontTouch(dataMask)
     io.swap.data := (data_raw_h | data_raw_l) & FillInterleaved(8, dataMask)
     /********** handle swap req from pipe end **********/
 
-    /********** handle axi4 write interface begin **********/
-    val (in, edgeIn) = node.in(0)
-    chisel3.dontTouch(in)
+    /********** handle axi4 master interface end **********/
+    val (out, edgeOut) = masternode.out(0)
 
+    val offset = RegInit(0.U(log2Ceil(windowSizePerNp/dataBytes)))
     val idle :: wind_ar_send :: wait_wind_r :: Nil = Enum(3)
+    val load_state_R = RegInit(idle)
+    val loadMata = RegInit(0.U.asTypeOf(new Bundle {
+              val tid = UInt(log2Up(numThread).W)
+              val addr = UInt(addrWidth.W)
+        }))
 
-    val w_addr = Cat((mask(address, dataBytes) zip (in.aw.bits.addr >> log2Ceil(dataBytes)).asBools).filter(_._1).map(_._2).reverse)
-    val w_sel0 = address.contains(in.aw.bits.addr)
+    out.ar.valid := false.B
+    out.ar.bits.id := 0.U
+    out.r.ready := true.B
 
-    val w_full = RegInit(false.B)
-    val w_id   = Reg(UInt())
-    val w_echo = Reg(BundleMap(in.params.echoFields))
-    val w_sel1 = RegInit(false.B)
-
-    when (in.aw.fire()) { w_full := true.B }
-
-    when (in.aw.fire()) 
+    switch(load_state_R)
     {
-      w_id := in.aw.bits.id
-      w_sel1 := w_sel0
-      w_echo :<= in.aw.bits.echo
+      is(idle) {
+        when(io.loadpkt.req.fire()) {
+          offset := 0.U
+          loadMata.tid := io.loadpkt.req.bits.tid
+          loadMata.addr := io.loadpkt.req.bits.addr
+          load_state_R := wind_ar_send
+        }
+      }
+      is(wind_ar_send) {
+        out.ar.valid := true.B
+        out.ar.bits.addr := loadMata.addr
+        when(out.ar.fire())
+        { load_state_R := wait_wind_r }
+      }
+      is(wait_wind_r) {
+        when(out.r.fire()) {
+          val wdata = VecInit.tabulate(dataBytes) { i => out.r.bits.data(8*(i+1)-1, 8*i) }
+          Seq.tabulate(dataBytes) { i=> banks(i).write(offset, wdata(i)) }
+          offset := offset + 1.U
+          when(out.r.bits.last)
+          { load_state_R := idle }
+        }
+      }
     }
 
-    val wdata = VecInit.tabulate(dataBytes) { i => in.w.bits.data(8*(i+1)-1, 8*i) }
-    Seq.tabulate(dataBytes) 
-    { i=> 
-      when (in.aw.fire() && w_sel0 && in.w.bits.strb(i).asBool) 
-      { banks(i).write(in.aw.bits.addr >> log2Ceil(dataBytes), wdata(i)) }
-    }
-
-    in.aw.ready := in. w.valid && (in.b.ready || !w_full)
-    in.w.ready  := in.aw.valid && (in.b.ready || !w_full)
-
-    in.b.valid     := w_full
-    in.b.bits.id   := w_id
-    in.b.bits.resp := Mux(w_sel1, AXI4Parameters.RESP_OKAY, AXI4Parameters.RESP_DECERR)
-    in.b.bits.echo :<= w_echo
-    /********** handle axi4 write interface end **********/
-
+    /********** handle axi4 master interface end **********/
   }
 }
 

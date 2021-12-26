@@ -110,15 +110,16 @@ class AccMetaBundle extends Bundle with NpusParams
   override def cloneType: this.type = (new AccMetaBundle).asInstanceOf[this.type]
 }
 
+
 class LoadPktWindBundle extends Bundle with NpusParams
 {
   val req = Decoupled(new Bundle {
-    val tid = UInt(log2Up(numThread).W)
-    val addr = UInt(addrWidth.W)
+        val tid = UInt(log2Up(numThread).W)
+        val addr = UInt(addrWidth.W)
   })
   val resp = Valid(new Bundle {
-    val tid = UInt(log2Up(numThread).W)
-    val state = UInt(4.W)
+        val tid = UInt(log2Up(numThread).W)
+        val state = UInt(4.W)
   })
 }
 

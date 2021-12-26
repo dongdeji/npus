@@ -25,14 +25,13 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
   private val accinf = LazyModule(new AccInf(ClusterId, GroupId, NpId))
   val iramxbar = LazyModule(new AXI4Xbar)
   val accxbar = LazyModule(new AXI4Xbar)
-  val windxbar = LazyModule(new AXI4Xbar)
   val mmioxbar = LazyModule(new AXI4Xbar)
   iramxbar.node := frontend.masternode
   iramxbar.node := accinf.accxbar.node
   mmioxbar.node := accinf.accxbar.node
+  mmioxbar.node := core.window.masternode
   accxbar.node := accinf.accxbar.node
   core.regfile.frag.node := accinf.regxbar.node
-  core.window.frag.node := windxbar.node
 
   lazy val module = new LazyModuleImp(this) 
   {
