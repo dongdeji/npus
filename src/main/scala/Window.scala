@@ -20,9 +20,9 @@ import freechips.rocketchip.util.{BundleMap}
 
 class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
-  val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
-  val address = AddressSet(windowGlobalBase + windowSizePerNp*Id, windowSizePerNp-1)
-  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  private val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
+  private val address = AddressSet(windowGlobalBase + windowSizePerNp*Id, windowSizePerNp-1)
+  private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
       //resources     = resources,
@@ -34,6 +34,9 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     beatBytes  = dataBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
+
+  val frag = LazyModule(new AXI4Fragmenter)
+  node := frag.node
 
   lazy val module = new LazyModuleImp(this) 
   {
@@ -65,10 +68,12 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     chisel3.dontTouch(dataMask)
     io.swap.data := (data_raw_h | data_raw_l) & FillInterleaved(8, dataMask)
     /********** handle swap req from pipe end **********/
-    
+
     /********** handle axi4 write interface begin **********/
     val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
+
+    val idle :: wind_ar_send :: wait_wind_r :: Nil = Enum(3)
 
     val w_addr = Cat((mask(address, dataBytes) zip (in.aw.bits.addr >> log2Ceil(dataBytes)).asBools).filter(_._1).map(_._2).reverse)
     val w_sel0 = address.contains(in.aw.bits.addr)

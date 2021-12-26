@@ -30,13 +30,13 @@ class AXI4ROM(
     wcorrupt: Boolean = true)
   (implicit p: Parameters) extends LazyModule
 {
-  val device = devName
+  private val device = devName
     .map(new SimpleDevice(_, Seq("sifive,sram0")))
     .getOrElse(new MemoryDevice())
 
-  val resources = device.reg("mem")
+  private val resources = device.reg("mem")
 
-  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = List(address) ++ errors,
       resources     = resources,
@@ -48,6 +48,9 @@ class AXI4ROM(
     beatBytes  = beatBytes,
     requestKeys = if (wcorrupt) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
+
+  val frag = LazyModule(new AXI4Fragmenter)
+  node := frag.node
 
   lazy val module = new LazyModuleImp(this) 
   {
