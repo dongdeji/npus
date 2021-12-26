@@ -355,16 +355,6 @@ class AXI4PKTROM(
     val dwords = (contents ++ Seq.fill(wrapSize-contents.size)(0.toByte)).grouped(beatBytes).toSeq
     val bigs = dwords.map(_.foldRight(BigInt(0)){ case (x,y) => (x.toInt & 0xff) | y << 8})
     val rom = Chisel.Vec(bigs.map(x => x.U((8*beatBytes).W)))
-
-    /*val index = in.ar.bits.addr(log2Ceil(wrapSize)-1,log2Ceil(beatBytes))
-    val offset = in.ar.bits.addr(log2Ceil(beatBytes)-1, 0)
-    val ar_sel_s0 = address.contains(in.ar.bits.addr);chisel3.dontTouch(ar_sel_s0)
-    val ar_sel_s1 = RegNext(ar_sel_s0);chisel3.dontTouch(ar_sel_s1)
-    val ar_fire_s1 = RegNext(in.ar.fire() && ar_sel_s0);chisel3.dontTouch(ar_fire_s1)
-    val ar_id_s1 = RegNext(in.ar.bits.id);chisel3.dontTouch(ar_id_s1)
-    val ar_echo_s1 = RegNext(in.ar.bits.echo);chisel3.dontTouch(ar_echo_s1)
-    val r_data = RegNext(rom(index));chisel3.dontTouch(r_data)*/
-    //val r_mask = FillInterleaved(8, Fill(beatBytes, "b1".U) << offset)(beatBytes*8-1,0);chisel3.dontTouch(r_mask)
     
     /******************* push data to wind begin ******************/
     val idle :: send_data :: Nil = Enum(2)
@@ -388,6 +378,7 @@ class AXI4PKTROM(
         }
       }
       is(send_data) {
+        in.ar.ready := false.B
         in.r.valid := true.B
         in.r.bits.id   := ar_id
         in.r.bits.resp := AXI4Parameters.RESP_OKAY
