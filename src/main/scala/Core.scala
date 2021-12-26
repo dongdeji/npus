@@ -86,7 +86,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
       val loadpkt = Flipped(new LoadPktWindBundle)
     })
     chisel3.dontTouch(io)
-    io.loadpkt <> window.module.io.loadpkt
+    window.module.io.loadpkt <> io.loadpkt
     /****************************************************************/
     /**************** key pipe signal define begine******************/
     val rr0_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr0_uop_R)

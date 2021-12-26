@@ -110,13 +110,15 @@ class AccMetaBundle extends Bundle with NpusParams
   override def cloneType: this.type = (new AccMetaBundle).asInstanceOf[this.type]
 }
 
-
+class LoadPktReqBundle extends Bundle with NpusParams
+{
+  val tid = UInt(log2Up(numThread).W)
+  val addr = UInt(addrWidth.W)
+  override def cloneType: this.type = (new LoadPktReqBundle).asInstanceOf[this.type]
+}
 class LoadPktWindBundle extends Bundle with NpusParams
 {
-  val req = Decoupled(new Bundle {
-        val tid = UInt(log2Up(numThread).W)
-        val addr = UInt(addrWidth.W)
-  })
+  val req = Decoupled(new LoadPktReqBundle)
   val resp = Valid(new Bundle {
         val tid = UInt(log2Up(numThread).W)
         val state = UInt(4.W)
@@ -153,9 +155,13 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
   {
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
-      val loadpkt = new LoadPktWindBundle
+      val loadpkt = new LoadPktWindBundle  // to window
     })
     
+    io.loadpkt.req.valid := io.core.req.valid && io.core.uop.valid && io.core.uop.ctrl.legal //&& io.core.uop.ctrl.lwind
+    io.loadpkt.req.bits.tid := io.core.req.bits.tid
+    io.loadpkt.req.bits.addr := pktBuffBase.U
+
     io.core.resp.valid := false.B  // set resp defaut
 
     val readys_thread = VecInit(Fill(numThread, false.B))

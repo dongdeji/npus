@@ -56,6 +56,10 @@ trait NpusParams {
   val windowSizePerNp:  BigInt = x"0000_0200"*numThread
   RequireAddressAlign(windowGlobalBase, windowSizePerNp)
 
+  val pktBuffBase: BigInt = x"003f_fff0"
+  val pktBuffSize:  BigInt = x"0000_0010"*numThread
+  RequireAddressAlign(pktBuffBase, pktBuffSize)
+
   val isaRegNumPerThread: Int = 32
   val regfileGlobalBase: BigInt = x"0040_0000"
   val regfileSizePerNp:  BigInt = isaRegNumPerThread*dataBytes*numThread
@@ -131,6 +135,10 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   lram.frag.node := accxbar.node
 
   private val mmioxbar = LazyModule(new AXI4Xbar)
+  private val pktbuff = LazyModule(new AXI4PKTROM(file = "./bootrom/bootrom.img",
+                                     address = AddressSet(pktBuffBase, pktBuffSize-1), 
+                                     beatBytes = fetchBytes))
+  pktbuff.frag.node := mmioxbar.node
   private val uart = LazyModule(new Axi4Uart(0))
   uart.frag.node := mmioxbar.node
   

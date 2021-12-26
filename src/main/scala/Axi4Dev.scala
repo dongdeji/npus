@@ -359,7 +359,7 @@ class AXI4PKTROM(
     /******************* push data to wind begin ******************/
     val idle :: send_data :: Nil = Enum(2)
     val ar_id = Reg(UInt())
-    val ar_echo = Reg(UInt())
+    val ar_echo = Reg(in.ar.bits.echo.cloneType)
     val state = RegInit(idle)
     val offset = Reg(UInt())
     chisel3.dontTouch(in.ar)

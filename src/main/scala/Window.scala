@@ -38,6 +38,9 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     })
     chisel3.dontTouch(io)
 
+    //val loadpktReqQ = Module(new Queue(io.loadpkt.req.cloneType, numThread))
+    // to do by dongdeji
+
     val banks = Seq.tabulate(dataBytes) { i => SyncReadMem(windowSizePerNp/dataBytes, UInt(8.W)) }
     
     /********** handle swap req from pipe begin **********/
