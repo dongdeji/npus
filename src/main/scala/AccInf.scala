@@ -86,6 +86,7 @@ class DmemRespBundle extends Bundle with NpusParams {
   override def cloneType: this.type = (new DmemRespBundle).asInstanceOf[this.type]
 }
 
+
 class AccInfBundle extends Bundle with NpusParams 
 {
   val uop  = Output( new ThreadUop )
@@ -107,6 +108,18 @@ class AccMetaBundle extends Bundle with NpusParams
   val buff_full = Bool()
 
   override def cloneType: this.type = (new AccMetaBundle).asInstanceOf[this.type]
+}
+
+class LoadPktWindBundle extends Bundle with NpusParams
+{
+  val req = Decoupled(new Bundle {
+    val tid = UInt(log2Up(numThread).W)
+    val addr = UInt(addrWidth.W)
+  })
+  val resp = Valid(new Bundle {
+    val tid = UInt(log2Up(numThread).W)
+    val state = UInt(4.W)
+  })
 }
 
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -139,6 +152,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
   {
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
+      val loadpkt = new LoadPktWindBundle
     })
     
     io.core.resp.valid := false.B  // set resp defaut

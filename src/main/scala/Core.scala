@@ -63,6 +63,15 @@ class RrBypassMux extends Module with NpusParams
   io.rs2_bypassed := rs2_bypass_ex || rs2_bypass_wb
 }
 
+class SwapWindBundle extends Bundle with NpusParams
+{
+  val offsetWith = 1 << log2Ceil(log2Ceil(windowSizePerNp))
+  val offset = Output(UInt(offsetWith.W))
+  val size = Output(UInt(2.W)) /* dmem_req.inst_32(13,12) */
+  val signed = Output(UInt(1.W)) /* !dmem_req.inst_32(14) */
+  val data = Input(UInt(dataWidth.W))
+}
+
 class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
 {
 
@@ -74,9 +83,10 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val io = IO(new Bundle {
       val frontend = Flipped(new FrontEndBundle)
       val accinf = new AccInfBundle
+      val loadpkt = Flipped(new LoadPktWindBundle)
     })
     chisel3.dontTouch(io)
-
+    io.loadpkt <> window.module.io.loadpkt
     /****************************************************************/
     /**************** key pipe signal define begine******************/
     val rr0_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr0_uop_R)
@@ -217,9 +227,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     when(tailEraseInfo.valid && ((ex_uop_R.valid && (ex_uop_R.tid =/= tailEraseInfo.tid)) || (!ex_uop_R.valid)))
     { tailEraseInfo.valid := false.B }
 
-    window.module.io.offset := alu.io.adder_out
-    window.module.io.size := ex_uop_W.instr(13,12)
-    window.module.io.signed := !ex_uop_W.instr(14)
+    window.module.io.swap.offset := alu.io.adder_out
+    window.module.io.swap.size := ex_uop_W.instr(13,12)
+    window.module.io.swap.signed := !ex_uop_W.instr(14)
     chisel3.dontTouch(window.module.io)
 
     io.accinf.uop := ex_uop_W
@@ -235,8 +245,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /*******************************************************/
     /****************** write back begin *******************/
-    
-    wb_uop_W.rd_data := Mux(wb_uop_R.ctrl.wind, window.module.io.data, wb_uop_R.rd_data)
+
+    wb_uop_W.rd_data := Mux(wb_uop_R.ctrl.wind, window.module.io.swap.data, wb_uop_R.rd_data)
     wb_uop_W.rd_valid := Mux(wb_uop_R.ctrl.wind, true.B, wb_uop_R.rd_valid)
 
     regfile.module.io.rd_write := wb_uop_W.valid & wb_uop_W.ctrl.legal & wb_uop_W.rd_valid
