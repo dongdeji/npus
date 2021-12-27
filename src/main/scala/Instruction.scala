@@ -349,7 +349,7 @@ class ThreadUop extends Bundle with NpusParams {
   val ctrl = new InstrCtrlSigs
   val tid = UInt(log2Ceil(numThread).W)
   val pc = UInt(addrWidth.W) // valid after decode
-  val instr = Bits(instrWidth.W) // valid after decode
+  val inst = Bits(instWidth.W) // valid after decode
   val rd_valid = Bool() // valid after alu/lsu
   val rs1_valid = Bool() // true if bypassed
   val rs2_valid = Bool() // true if bypassed

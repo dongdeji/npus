@@ -53,41 +53,42 @@ class Axi4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
   {
     val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
+    val aw_fire_s1 = RegInit(false.B)
+    val ar_fire_s1 = RegInit(false.B)
+    val aw_id_s1 = RegInit(0.U)
+    val ar_id_s1 = RegInit(0.U)
     val uart_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(uart_reg)
     in.aw.ready := true.B
     in.w.ready := true.B
-    in.ar.ready := true.B
+    in.ar.ready := !ar_fire_s1
     
-    val aw_fire = RegInit(false.B)
-    val ar_fire = RegInit(false.B)
-    val aw_id = RegInit(0.U)
-    val ar_id = RegInit(0.U)
 
     // handle aw/w->b begin
     when(in.aw.fire() && address.contains(in.aw.bits.addr) && in.w.fire())
     { 
       uart_reg := in.w.bits.data(31,0) 
-      aw_fire := in.aw.fire()
-      aw_id := in.aw.bits.id
+      aw_fire_s1 := in.aw.fire()
+      aw_id_s1 := in.aw.bits.id
     }
-    in.b.valid := aw_fire
-    in.b.bits.id := aw_id
-    when(aw_fire && in.b.fire())
-    { aw_fire := false.B }
+    in.b.valid := aw_fire_s1
+    in.b.bits.id := aw_id_s1
+    when(aw_fire_s1 && in.b.fire())
+    { aw_fire_s1 := false.B }
     // handle aw/w->b end
 
     // handle ar->r begin
     val sel_s0 = address.contains(in.ar.bits.addr); chisel3.dontTouch(sel_s0)
     when(in.ar.fire() && address.contains(in.ar.bits.addr))
     { 
-      ar_fire := true.B
-      ar_id := in.aw.bits.id
+      ar_fire_s1 := true.B
+      ar_id_s1 := in.ar.bits.id
     }
-    in.r.valid := ar_fire
-    in.r.bits.data := ar_id
+    in.r.valid := ar_fire_s1
+    in.r.bits.id := ar_id_s1
+    in.r.bits.last := true.B
     in.r.bits.data := Cat(0.U(33.W), uart_reg(30,0))
-    when(ar_fire && in.r.fire())
-    { ar_fire := false.B }
+    when(ar_fire_s1 && in.r.fire())
+    { ar_fire_s1 := false.B }
     // handle ar->r end
 
   }
@@ -117,15 +118,14 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
   {
     val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
+    val aw_fire_s1 = RegInit(false.B)
+    val ar_fire_s1 = RegInit(false.B)
+    val aw_id_s1 = RegInit(0.U)
+    val ar_id_s1 = RegInit(0.U)
     val tcam_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(tcam_reg)
     in.aw.ready := true.B
     in.w.ready := true.B
-    in.ar.ready := true.B
-    
-    val aw_fire = RegInit(false.B)
-    val ar_fire = RegInit(false.B)
-    val aw_id = RegInit(0.U)
-    val ar_id = RegInit(0.U)
+    in.ar.ready := !ar_fire_s1    
 
     val IncCounter = Counter(5)
 
@@ -133,29 +133,29 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
     when(in.aw.fire() && address.contains(in.aw.bits.addr) && in.w.fire())
     { 
       tcam_reg := in.w.bits.data(31,0) 
-      aw_fire := in.aw.fire()
-      aw_id := in.aw.bits.id
+      aw_fire_s1 := in.aw.fire()
+      aw_id_s1 := in.aw.bits.id
     }
-    in.b.valid := aw_fire
-    in.b.bits.id := aw_id
-    when(aw_fire && in.b.fire())
-    { aw_fire := false.B }
+    in.b.valid := aw_fire_s1
+    in.b.bits.id := aw_id_s1
+    when(aw_fire_s1 && in.b.fire())
+    { aw_fire_s1 := false.B }
     // handle aw/w->b end
 
     // handle ar->r begin
     val sel_s0 = address.contains(in.ar.bits.addr); chisel3.dontTouch(sel_s0)
     when(in.ar.fire() && address.contains(in.ar.bits.addr))
     { 
-      ar_fire := true.B
-      ar_id := in.aw.bits.id
+      ar_fire_s1 := true.B
+      ar_id_s1 := in.ar.bits.id
       IncCounter.reset
     }
 
-    in.r.valid := ar_fire && IncCounter.inc
-    in.r.bits.data := ar_id
+    in.r.valid := ar_fire_s1 && IncCounter.inc
+    in.r.bits.data := ar_id_s1
     in.r.bits.data := Cat(0.U(33.W), tcam_reg(30,0))
-    when(ar_fire && in.r.fire())
-    { ar_fire := false.B }
+    when(ar_fire_s1 && in.r.fire())
+    { ar_fire_s1 := false.B }
     // handle ar->r end
 
   }
@@ -184,15 +184,14 @@ class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
   {
     val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
+    val aw_fire_s1 = RegInit(false.B)
+    val ar_fire_s1 = RegInit(false.B)
+    val aw_id_s1 = RegInit(0.U)
+    val ar_id_s1 = RegInit(0.U)
     val lram_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(lram_reg)
     in.aw.ready := true.B
     in.w.ready := true.B
-    in.ar.ready := true.B
-    
-    val aw_fire = RegInit(false.B)
-    val ar_fire = RegInit(false.B)
-    val aw_id = RegInit(0.U)
-    val ar_id = RegInit(0.U)
+    in.ar.ready := !ar_fire_s1    
 
     val IncCounter = Counter(5)
 
@@ -200,29 +199,29 @@ class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
     when(in.aw.fire() && address.contains(in.aw.bits.addr) && in.w.fire())
     { 
       lram_reg := in.w.bits.data(31,0) 
-      aw_fire := in.aw.fire()
-      aw_id := in.aw.bits.id
+      aw_fire_s1 := in.aw.fire()
+      aw_id_s1 := in.aw.bits.id
     }
-    in.b.valid := aw_fire
-    in.b.bits.id := aw_id
-    when(aw_fire && in.b.fire())
-    { aw_fire := false.B }
+    in.b.valid := aw_fire_s1
+    in.b.bits.id := aw_id_s1
+    when(aw_fire_s1 && in.b.fire())
+    { aw_fire_s1 := false.B }
     // handle aw/w->b end
 
     // handle ar->r begin
     val sel_s0 = address.contains(in.ar.bits.addr); chisel3.dontTouch(sel_s0)
     when(in.ar.fire() && address.contains(in.ar.bits.addr))
     { 
-      ar_fire := true.B
-      ar_id := in.aw.bits.id
+      ar_fire_s1 := true.B
+      ar_id_s1 := in.ar.bits.id
       IncCounter.reset
     }
 
-    in.r.valid := ar_fire && IncCounter.inc
-    in.r.bits.data := ar_id
+    in.r.valid := ar_fire_s1 && IncCounter.inc
+    in.r.bits.data := ar_id_s1
     in.r.bits.data := Cat(0.U(33.W), lram_reg(30,0))
-    when(ar_fire && in.r.fire())
-    { ar_fire := false.B }
+    when(ar_fire_s1 && in.r.fire())
+    { ar_fire_s1 := false.B }
     // handle ar->r end
 
   }
@@ -287,8 +286,8 @@ class AXI4IROM(
     val offset = in.ar.bits.addr(log2Ceil(beatBytes)-1, 0)
     val ar_sel_s0 = address.contains(in.ar.bits.addr);chisel3.dontTouch(ar_sel_s0)
     val ar_sel_s1 = RegNext(ar_sel_s0);chisel3.dontTouch(ar_sel_s1)
-    val ar_fire_s1 = RegNext(in.ar.fire() && ar_sel_s0);chisel3.dontTouch(ar_fire_s1)
-    val ar_id_s1 = RegNext(in.ar.bits.id);chisel3.dontTouch(ar_id_s1)
+    val ar_fire_s1_s1 = RegNext(in.ar.fire() && ar_sel_s0);chisel3.dontTouch(ar_fire_s1_s1)
+    val ar_id_s1_s1 = RegNext(in.ar.bits.id);chisel3.dontTouch(ar_id_s1_s1)
     val ar_echo_s1 = RegNext(in.ar.bits.echo);chisel3.dontTouch(ar_echo_s1)
     val r_data = RegNext(rom(index));chisel3.dontTouch(r_data)
     //val r_mask = FillInterleaved(8, Fill(beatBytes, "b1".U) << offset)(beatBytes*8-1,0);chisel3.dontTouch(r_mask)
@@ -296,8 +295,8 @@ class AXI4IROM(
     chisel3.dontTouch(in.ar)
     chisel3.dontTouch(in.r)
     in.ar.ready := true.B
-    in.r.valid  := ar_fire_s1
-    in.r.bits.id   := ar_id_s1
+    in.r.valid  := ar_fire_s1_s1
+    in.r.bits.id   := ar_id_s1_s1
     in.r.bits.resp := Mux(ar_sel_s1, Mux(/*rcorrupt*/false.B, AXI4Parameters.RESP_SLVERR, AXI4Parameters.RESP_OKAY), AXI4Parameters.RESP_DECERR)
     in.r.bits.data := r_data
     in.r.bits.echo := ar_echo_s1
@@ -358,7 +357,7 @@ class AXI4PKTROM(
     
     /******************* push data to wind begin ******************/
     val idle :: send_datal :: send_datah :: Nil = Enum(3)
-    val ar_id = Reg(UInt())
+    val ar_id_s1 = Reg(UInt())
     val ar_echo = Reg(in.ar.bits.echo.cloneType)
     val state = RegInit(idle)
     val offset = Reg(UInt((log2Ceil(bigs.size +1)).W))
@@ -373,7 +372,7 @@ class AXI4PKTROM(
       is(idle) {
         when(in.ar.fire() && address.contains(in.ar.bits.addr)) {
           offset := 0.U
-          ar_id := in.ar.bits.id
+          ar_id_s1 := in.ar.bits.id
           ar_echo := in.ar.bits.echo
           state := send_datal
         }
@@ -381,7 +380,7 @@ class AXI4PKTROM(
       is(send_datal) {
         in.ar.ready := false.B
         in.r.valid := true.B
-        in.r.bits.id   := ar_id
+        in.r.bits.id   := ar_id_s1
         in.r.bits.resp := AXI4Parameters.RESP_OKAY
         in.r.bits.data := rom(offset)(63, 0)
         in.r.bits.echo := ar_echo
@@ -391,7 +390,7 @@ class AXI4PKTROM(
       is(send_datah) {        
         in.ar.ready := false.B
         in.r.valid := true.B
-        in.r.bits.id   := ar_id
+        in.r.bits.id   := ar_id_s1
         in.r.bits.resp := AXI4Parameters.RESP_OKAY
         in.r.bits.data := rom(offset)(127, 64)
         in.r.bits.echo := ar_echo

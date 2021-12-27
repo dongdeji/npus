@@ -16,23 +16,23 @@ import chisel3.experimental.chiselName
 import NpInstructions._
 
 trait NpusParams {
-  val supportNpInstr: Boolean = true
+  val supportNpInstr: Boolean = false
   val numCluster: Int = 1
   val numGroup: Int = 1
   val numNpu: Int = 1
   val numThread: Int = 1
   val numIramBank: Int = 1
 
-  val instrBytes: Int = 4
+  val instBytes: Int = 4
   val fetchInstrs: Int = 4
   
   val dataWidth: Int = 64
   val dataBytes = dataWidth/8
   val addrWidth = 32
 
-  val fetchBytes = instrBytes*fetchInstrs
+  val fetchBytes = instBytes*fetchInstrs
   val fetchWidth = fetchBytes*8
-  val instrWidth = instrBytes*8
+  val instWidth = instBytes*8
   val tidWidth = log2Up(numThread)
 
   def RequireAddressAlign(base: BigInt, size: BigInt) = 
@@ -95,16 +95,16 @@ trait NpusParams {
   def bigBits(x: BigInt, tail: List[Boolean] = Nil): List[Boolean] =
     if (x == 0) tail.reverse else bigBits(x >> 1, ((x & 1) == 1) :: tail)
   def mask(address: AddressSet, dataBytes:Int): List[Boolean] = bigBits(address.mask >> log2Ceil(dataBytes))
-  def haltCondition(instr:UInt): Bool =
+  def haltCondition(inst:UInt): Bool =
   {
     val memInstrHalt_list = if(memInstrHalt) Seq(LB.value.asUInt()(6,0), SB.value.asUInt()(6,0)) else Nil
     val halt_list = Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0)) ++ memInstrHalt_list
     val accInstrHaltCondition = 
         if(supportNpInstr) 
-        { ((instr(6,0) === LPKTWJAL.value.asUInt()(6,0)) && (instr(31,29) === LPKTWJAL.value.asUInt()(31,29))) }
+        { ((inst(6,0) === LPKTWJAL.value.asUInt()(6,0)) && (inst(31,29) === LPKTWJAL.value.asUInt()(31,29))) }
         else { false.B }
 
-    instr(6,0).isOneOf(halt_list) || accInstrHaltCondition
+    inst(6,0).isOneOf(halt_list) || accInstrHaltCondition
   }
 }
 

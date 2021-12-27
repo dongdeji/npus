@@ -20,7 +20,7 @@ _start:
   //csrr a0, mhartid
   la a1, _dtb
   jr s0
-  LPKTWJAL(4, 0)
+  //LPKTWJAL(4, 0)
 
 
 .section .text.hang, "ax", @progbits

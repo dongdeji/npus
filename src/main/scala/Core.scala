@@ -117,21 +117,21 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /****************************************************************/
     /****************** instruction decode begin ********************/
-    val decode_table = { if(supportNpInstr) Seq(new NpDecode) else Nil ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
-    val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.frontend.instr.bits.instr, decode_table); chisel3.dontTouch(id_ctrl)
-    id_uop_W.valid    := io.frontend.instr.valid && id_ctrl.legal
+    val decode_table = { /*if(supportNpInstr)*/ Seq(new NpDecode) /* else Nil*/ ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
+    val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.frontend.inst.bits.inst, decode_table); chisel3.dontTouch(id_ctrl)
+    id_uop_W.valid    := io.frontend.inst.valid && id_ctrl.legal
     id_uop_W.ctrl     := id_ctrl
-    id_uop_W.tid      := io.frontend.instr.bits.tid
-    id_uop_W.pc       := io.frontend.instr.bits.pc
-    id_uop_W.instr    := io.frontend.instr.bits.instr
+    id_uop_W.tid      := io.frontend.inst.bits.tid
+    id_uop_W.pc       := io.frontend.inst.bits.pc
+    id_uop_W.inst     := io.frontend.inst.bits.inst
     id_uop_W.rd_valid := false.B
-    id_uop_W.rd       := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.wxd , io.frontend.instr.bits.instr(11, 7), 0.U(5.W)) )
-    id_uop_W.rs1      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs1, io.frontend.instr.bits.instr(19,15), 0.U(5.W)) )
-    id_uop_W.rs2      := Cat(io.frontend.instr.bits.tid, Mux(id_ctrl.rxs2, io.frontend.instr.bits.instr(24,20), 0.U(5.W)) )
+    id_uop_W.rd       := Cat(io.frontend.inst.bits.tid, Mux(id_ctrl.wxd , io.frontend.inst.bits.inst(11, 7), 0.U(5.W)) )
+    id_uop_W.rs1      := Cat(io.frontend.inst.bits.tid, Mux(id_ctrl.rxs1, io.frontend.inst.bits.inst(19,15), 0.U(5.W)) )
+    id_uop_W.rs2      := Cat(io.frontend.inst.bits.tid, Mux(id_ctrl.rxs2, io.frontend.inst.bits.inst(24,20), 0.U(5.W)) )
     id_uop_W.rd_data  := 0.U
     id_uop_W.rs1_data := 0.U
     id_uop_W.rs2_data := 0.U
-    id_uop_W.make_ready := io.frontend.instr.bits.halt_last
+    id_uop_W.make_ready := io.frontend.inst.bits.halt_last
 
     /****************** instruction decode end **********************/
     /****************************************************************/
@@ -180,7 +180,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     val csr = Module(new CSRFile)
     csr.io.tid := ex_uop_R.tid
-    csr.io.rw.addr := ex_uop_R.instr(31,20)
+    csr.io.rw.addr := ex_uop_R.inst(31,20)
     csr.io.rw.cmd := ex_uop_R.ctrl.csr
     csr.io.rw.wdata := 0.U
 
@@ -189,7 +189,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     alu.io.fn := ex_uop_R.ctrl.alu_fn
     alu.io.in2 := MuxLookup(ex_uop_R.ctrl.sel_alu2, 0.S,
                                 Seq(  A2_RS2 -> ex_uop_W.rs2_data.asSInt,
-                                      A2_IMM -> ImmGen(ex_uop_R.ctrl.sel_imm, ex_uop_R.instr),
+                                      A2_IMM -> ImmGen(ex_uop_R.ctrl.sel_imm, ex_uop_R.inst),
                                       A2_SIZE -> Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S))).asUInt
 
     alu.io.in1 := MuxLookup(ex_uop_R.ctrl.sel_alu1, 0.S,
@@ -200,10 +200,10 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     ex_uop_W.rd_data := Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), csr.io.rw.rdata, alu.io.out)
     /* handle imem request */
     val nxt_target = Mux(ex_uop_R.ctrl.jalr, alu.io.out/*encodeVirtualAddress(alu.io.out, alu.io.out)*/,
-                            (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.instr),
-                                                      Mux(ex_uop_R.ctrl.jal, ImmGen(IMM_UJ, ex_uop_R.instr),
+                            (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.inst),
+                                                      Mux(ex_uop_R.ctrl.jal, ImmGen(IMM_UJ, ex_uop_R.inst),
                                                             Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
-    val acc_nxt_target = NpInstrImmGen(ex_uop_R.instr) + ex_uop_R.pc.asSInt
+    val acc_nxt_target = NpInstrImmGen(ex_uop_R.inst) + ex_uop_R.pc.asSInt
     chisel3.dontTouch(acc_nxt_target)
     val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
     val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && ex_uop_R.ctrl.acc else false.B
@@ -212,7 +212,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     io.frontend.redirect.bits.tid := ex_uop_R.tid
     io.frontend.redirect.bits.npc := Mux(redirectForAcc, acc_nxt_target.asUInt, Mux(redirectForMem, ex_uop_R.pc + 4.U, nxt_target))
     ex_uop_W.make_ready := ex_uop_R.make_ready || redirectForBJ
-    // erase instrs that following the redirected instr
+    // erase insts that following the redirected inst
     class TailEraseInfo extends Bundle with NpusParams {
       val valid = Bool() // valid after decode
       val tid = UInt(log2Up(numThread).W)
@@ -230,15 +230,15 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     { tailEraseInfo.valid := false.B }
 
     window.module.io.swap.offset := alu.io.adder_out
-    window.module.io.swap.size := ex_uop_W.instr(13,12)
-    window.module.io.swap.signed := !ex_uop_W.instr(14)
+    window.module.io.swap.size := ex_uop_W.inst(13,12)
+    window.module.io.swap.signed := !ex_uop_W.inst(14)
     chisel3.dontTouch(window.module.io)
 
     io.accinf.uop := ex_uop_W
     io.accinf.req.valid := ex_uop_W.valid && (ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) 
     io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
-    io.accinf.req.bits.size := ex_uop_W.instr(13,12)
-    io.accinf.req.bits.signed := !ex_uop_W.instr(14)
+    io.accinf.req.bits.size := ex_uop_W.inst(13,12)
+    io.accinf.req.bits.signed := !ex_uop_W.inst(14)
     io.accinf.req.bits.data := ex_uop_W.rs2_data
     io.accinf.req.bits.addr := alu.io.adder_out
     io.accinf.req.bits.tid := ex_uop_W.tid

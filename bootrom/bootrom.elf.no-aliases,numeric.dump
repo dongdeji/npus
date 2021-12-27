@@ -18,7 +18,6 @@ Disassembly of section .text.start:
   28:	00000597          	auipc	x11,0x0
   2c:	7d858593          	addi	x11,x11,2008 # 800 <_dtb>
   30:	00040067          	jalr	x0,0(x8)
-  34:	0000100b          	0x100b
 
 Disassembly of section .text.hang:
 
@@ -185,7 +184,7 @@ Disassembly of section .debug_line:
   78:	0100                	c.addi4spn	x8,x2,128
   7a:	08090103          	lb	x2,128(x18)
   7e:	0100                	c.addi4spn	x8,x2,128
-  80:	0809                	c.addi	x16,2
+  80:	0409                	c.addi	x8,2
   82:	0000                	c.unimp
   84:	0101                	c.addi	x2,0
   86:	0900                	c.addi4spn	x8,x2,144
@@ -978,7 +977,7 @@ Disassembly of section .debug_aranges:
    8:	0000                	c.unimp
    a:	0008                	0x8
 	...
-  18:	0038                	c.addi4spn	x14,x2,8
+  18:	0034                	c.addi4spn	x13,x2,8
   1a:	0000                	c.unimp
   1c:	0000                	c.unimp
   1e:	0000                	c.unimp
@@ -1141,7 +1140,7 @@ Disassembly of section .debug_rnglists:
    c:	00000007          	0x7
   10:	0000                	c.unimp
   12:	0000                	c.unimp
-  14:	3c00                	c.fld	f8,56(x8)
+  14:	3800                	c.fld	f8,48(x8)
   16:	00040007          	0x40007
   1a:	0000                	c.unimp
   1c:	0000                	c.unimp

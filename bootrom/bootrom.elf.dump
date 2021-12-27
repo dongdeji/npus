@@ -36,7 +36,6 @@ _start:
   2c:	7d858593          	addi	a1,a1,2008 # 800 <_dtb>
   jr s0
   30:	00040067          	jr	s0
-  34:	0000100b          	0x100b
 
 Disassembly of section .text.hang:
 
@@ -269,7 +268,7 @@ Disassembly of section .debug_line:
   78:	0100                	addi	s0,sp,128
   7a:	08090103          	lb	sp,128(s2)
   7e:	0100                	addi	s0,sp,128
-  80:	0809                	addi	a6,a6,2
+  80:	0409                	addi	s0,s0,2
   82:	0000                	unimp
   84:	0101                	addi	sp,sp,0
   86:	0900                	addi	s0,sp,144
@@ -1099,7 +1098,7 @@ Disassembly of section .debug_aranges:
    a:	0008                	0x8
 	...
   li   sp, 0x20ff0
-  18:	0038                	addi	a4,sp,8
+  18:	0034                	addi	a3,sp,8
   1a:	0000                	unimp
   1c:	0000                	unimp
   1e:	0000                	unimp
@@ -1282,7 +1281,7 @@ Disassembly of section .debug_rnglists:
   10:	0000                	unimp
   12:	0000                	unimp
   add  a2, a1, x0
-  14:	3c00                	fld	fs0,56(s0)
+  14:	3800                	fld	fs0,48(s0)
   16:	00040007          	0x40007
   li   sp, 0x20ff0
   1a:	0000                	unimp
