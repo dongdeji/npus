@@ -1,5 +1,7 @@
 #define DRAM_BASE 0x80000000
 
+#include "npinstr.h"
+
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
@@ -18,6 +20,8 @@ _start:
   //csrr a0, mhartid
   la a1, _dtb
   jr s0
+  LPKTWJAL(4, 0)
+
 
 .section .text.hang, "ax", @progbits
 .globl _hang

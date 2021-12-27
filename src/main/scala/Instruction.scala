@@ -199,25 +199,27 @@ class I64Decode extends DecodeConstants
 
 
 
-// | funct4:0000 | func3:000 | imm[9:5] | Imm[14:10] |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to pkt wind + jal
-// | funct4:0000 | func3:001 | imm[9:5] | Imm[14:10] |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to result wind + jal
-// | funct4:0000 | func3:010 | imm[9:5] | Imm[14:10] |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to rd + jal
-// | funct4:0001 | func3:000 | imm[9:5] | rs1        |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to pkt wind + jalr
-// | funct4:0001 | func3:001 | imm[9:5] | rs1        |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to result wind + jalr
-// | funct4:0001 | func3:010 | imm[9:5] | rs1        |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to rd + jalr
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:000 | rd | coustom0: 0001011 | -- swap pkt wind byte
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:001 | rd | coustom0: 0001011 | -- swap pkt wind halfword
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:010 | rd | coustom0: 0001011 | -- swap pkt wind word
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:011 | rd | coustom0: 0001011 | -- swap pkt wind doubleword
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:100 | rd | coustom0: 0001011 | -- swap pkt wind unsigned byte
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:101 | rd | coustom0: 0001011 | -- swap pkt wind unsigned halfword
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:110 | rd | coustom0: 0001011 | -- swap pkt wind unsigned word
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:000 | rd | coustom0: 0001011 | -- swap result wind byte
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:001 | rd | coustom0: 0001011 | -- swap result wind halfword
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:010 | rd | coustom0: 0001011 | -- swap result wind word
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:011 | rd | coustom0: 0001011 | -- swap result wind doubleword
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:100 | rd | coustom0: 0001011 | -- swap result wind unsigned byte
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:101 | rd | coustom0: 0001011 | -- swap result wind unsigned halfword
+// | b31~b28     | b27~b25   | b24~b20  | b19~b15    | b14~12     | b11~b7 | b6~b0             |
+// | funct4:0000 | func3:000 | imm[9:5] | imm[14:10] | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to pkt wind + jal
+// | funct4:0000 | func3:001 | imm[9:5] | imm[14:10] | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to result wind + jal
+// | funct4:0000 | func3:010 | imm[9:5] | imm[14:10] | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to rd + jal
+// | funct4:0001 | func3:000 | imm[9:5] | rs1        | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to pkt wind + jalr
+// | funct4:0001 | func3:001 | imm[9:5] | rs1        | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to result wind + jalr
+// | funct4:0001 | func3:010 | imm[9:5] | rs1        | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to rd + jalr
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:000 | rd     | coustom0: 0001011 | -- swap pkt wind byte
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:001 | rd     | coustom0: 0001011 | -- swap pkt wind halfword
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:010 | rd     | coustom0: 0001011 | -- swap pkt wind word
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:011 | rd     | coustom0: 0001011 | -- swap pkt wind doubleword
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:100 | rd     | coustom0: 0001011 | -- swap pkt wind unsigned byte
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:101 | rd     | coustom0: 0001011 | -- swap pkt wind unsigned halfword
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:110 | rd     | coustom0: 0001011 | -- swap pkt wind unsigned word
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:000 | rd     | coustom0: 0001011 | -- swap result wind byte
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:001 | rd     | coustom0: 0001011 | -- swap result wind halfword
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:010 | rd     | coustom0: 0001011 | -- swap result wind word
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:011 | rd     | coustom0: 0001011 | -- swap result wind doubleword
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:100 | rd     | coustom0: 0001011 | -- swap result wind unsigned byte
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:101 | rd     | coustom0: 0001011 | -- swap result wind unsigned halfword
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:110 | rd     | coustom0: 0001011 | -- swap result wind unsigned word
 // | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:110 | rd | coustom0: 0001011 | -- swap result wind unsigned word
 
 /* Automatically generated by parse-opcodes */
@@ -234,7 +236,7 @@ object NpInstructions {
   def SWAPPKTD          = BitPat("b0010000??????????011?????0001011")
   def SWAPPKTUB         = BitPat("b0010000??????????100?????0001011")
   def SWAPPKTUH         = BitPat("b0010000??????????101?????0001011")
-  def SWAPPKTUW         = BitPat("b0010000??????????110?????0001011")  
+  def SWAPPKTUW         = BitPat("b0010000??????????110?????0001011")
   def SWAPRESB          = BitPat("b0010001??????????000?????0001011")
   def SWAPRESH          = BitPat("b0010001??????????001?????0001011")
   def SWAPRESW          = BitPat("b0010001??????????010?????0001011")
