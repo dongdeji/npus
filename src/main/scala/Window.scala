@@ -38,7 +38,7 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     })
     chisel3.dontTouch(io)
 
-    val loadpktReqQ = Module(new Queue(io.loadpkt.req.bits.cloneType, numThread + 1))
+    val loadpktReqQ = Module(new Queue(io.loadpkt.req.bits.cloneType, numThread + 1, flow = true))
     loadpktReqQ.io.enq.valid := io.loadpkt.req.valid
     loadpktReqQ.io.enq.bits := io.loadpkt.req.bits
     loadpktReqQ.io.deq.ready := false.B

@@ -15,6 +15,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.tilelink._
+
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.GenericLogicalTreeNode
 import freechips.rocketchip.util._
 import freechips.rocketchip.rocket._
@@ -197,64 +198,53 @@ class I64Decode extends DecodeConstants
 }
 
 
-class CUSTOMDecode extends DecodeConstants
-{
-  val table: Array[(BitPat, List[BitPat])] = Array(
-                        // legal     jal       sel_alu2        sel_imm                             
-                        //   |  wind  | jalr    |     sel_alu1  |      alu_dw                       
-                        //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
-                        //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
-    CUSTOM0->           List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM0_RS1->       List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM0_RS1_RS2->   List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM0_RD->        List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM0_RD_RS1->    List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM0_RD_RS1_RS2->List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM1->           List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM1_RS1->       List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM1_RS1_RS2->   List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM1_RD->        List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM1_RD_RS1->    List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM1_RD_RS1_RS2->List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM2->           List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM2_RS1->       List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM2_RS1_RS2->   List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM2_RD->        List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM2_RD_RS1->    List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM2_RD_RS1_RS2->List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM3->           List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM3_RS1->       List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM3_RS1_RS2->   List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   N,CSR.N),
-    CUSTOM3_RD->        List(Y, N,Y,N,N,N,N,N,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM3_RD_RS1->    List(Y, N,Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
-    CUSTOM3_RD_RS1_RS2->List(Y, N,Y,N,N,N,Y,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N))
-}
 
-// | funct4:0000 | func3:000 | imm[9:5] | Imm[14:10] | imm[4:2] | rd | coustom0: 0001011 |  -- acc load to pkt wind + jal
-// | funct4:0000 | func3:001 | imm[9:5] | Imm[14:10] | imm[4:2] | rd | coustom0: 0001011 |  -- acc load to result wind + jal
-// | funct4:0000 | func3:002 | imm[9:5] | Imm[14:10] | imm[4:2] | rd | coustom0: 0001011 |  -- acc load to rd + jal
-// | funct4:0001 | func3:000 | imm[9:5] | rs1        | imm[4:2] | rd | coustom0: 0001011 |  -- acc load to pkt wind + jalr
-// | funct4:0001 | func3:001 | imm[9:5] | rs1        | imm[4:2] | rd | coustom0: 0001011 |  -- acc load to result wind + jalr
-// | funct4:0001 | func3:002 | imm[9:5] | rs1        | imm[4:2] | rd | coustom0: 0001011 |  -- acc load to rd + jalr
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size   | rd | coustom0: 0001011 |  -- pkt wind swap
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size   | rd | coustom0: 0001011 |  -- result wind swap
+// | funct4:0000 | func3:000 | imm[9:5] | Imm[14:10] |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to pkt wind + jal
+// | funct4:0000 | func3:001 | imm[9:5] | Imm[14:10] |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to result wind + jal
+// | funct4:0000 | func3:010 | imm[9:5] | Imm[14:10] |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to rd + jal
+// | funct4:0001 | func3:000 | imm[9:5] | rs1        |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to pkt wind + jalr
+// | funct4:0001 | func3:001 | imm[9:5] | rs1        |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to result wind + jalr
+// | funct4:0001 | func3:010 | imm[9:5] | rs1        |  imm[4:2]  | rd | coustom0: 0001011 | -- acc load to rd + jalr
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:000 | rd | coustom0: 0001011 | -- swap pkt wind byte
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:001 | rd | coustom0: 0001011 | -- swap pkt wind halfword
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:010 | rd | coustom0: 0001011 | -- swap pkt wind word
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:011 | rd | coustom0: 0001011 | -- swap pkt wind doubleword
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:100 | rd | coustom0: 0001011 | -- swap pkt wind unsigned byte
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:101 | rd | coustom0: 0001011 | -- swap pkt wind unsigned halfword
+// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:110 | rd | coustom0: 0001011 | -- swap pkt wind unsigned word
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:000 | rd | coustom0: 0001011 | -- swap result wind byte
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:001 | rd | coustom0: 0001011 | -- swap result wind halfword
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:010 | rd | coustom0: 0001011 | -- swap result wind word
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:011 | rd | coustom0: 0001011 | -- swap result wind doubleword
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:100 | rd | coustom0: 0001011 | -- swap result wind unsigned byte
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:101 | rd | coustom0: 0001011 | -- swap result wind unsigned halfword
+// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:110 | rd | coustom0: 0001011 | -- swap result wind unsigned word
 
 /* Automatically generated by parse-opcodes */
 object NpInstructions {
-  def NPSWAPB            = BitPat("b?????????????????000?????0001011")
-  def NPSWAPH            = BitPat("b?????????????????001?????0001011")
-  def NPSWAPW            = BitPat("b?????????????????010?????0001011")
-  def NPSWAPD            = BitPat("b?????????????????011?????0001011")
-  def NPSWAPBU           = BitPat("b?????????????????100?????0001011")
-  def NPSWAPHU           = BitPat("b?????????????????101?????0001011")
-  def NPSWAPWU           = BitPat("b?????????????????110?????0001011")
-
-  def NPRCV              = BitPat("b0000000??????????111?????0001011")  
-  def NPSEND             = BitPat("b0000001??????????111?????0001011")
+  def LPKTWJAL          = BitPat("b0000000??????????????????0001011")
+  def LRESWJAL          = BitPat("b0000001??????????????????0001011")
+  def LRDJAL            = BitPat("b0000010??????????????????0001011")
+  def LPKTWJALR         = BitPat("b0001000??????????????????0001011")
+  def LRESWJALR         = BitPat("b0001001??????????????????0001011")
+  def LRDJALR           = BitPat("b0001010??????????????????0001011")
+  def SWAPPKTB          = BitPat("b0010000??????????000?????0001011")
+  def SWAPPKTH          = BitPat("b0010000??????????001?????0001011")
+  def SWAPPKTW          = BitPat("b0010000??????????010?????0001011")
+  def SWAPPKTD          = BitPat("b0010000??????????011?????0001011")
+  def SWAPPKTUB         = BitPat("b0010000??????????100?????0001011")
+  def SWAPPKTUH         = BitPat("b0010000??????????101?????0001011")
+  def SWAPPKTUW         = BitPat("b0010000??????????110?????0001011")  
+  def SWAPRESB          = BitPat("b0010001??????????000?????0001011")
+  def SWAPRESH          = BitPat("b0010001??????????001?????0001011")
+  def SWAPRESW          = BitPat("b0010001??????????010?????0001011")
+  def SWAPRESD          = BitPat("b0010001??????????011?????0001011")
+  def SWAPRESUB         = BitPat("b0010001??????????100?????0001011")
+  def SWAPRESUH         = BitPat("b0010001??????????101?????0001011")
+  def SWAPRESUW         = BitPat("b0010001??????????110?????0001011")
 }
 
 import NpInstructions._
-
 class NpDecode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
@@ -262,13 +252,32 @@ class NpDecode extends DecodeConstants
                         //   |  wind  | jalr    |     sel_alu1  |      alu_dw                       
                         //   |  | acc | | rxs2  |       |       |      |      alu_fn    mem      wxd
                         //   |  | | br| | | rxs1|       |       |      |      |         | mem_cmd|  csr 
-    NPSWAPB ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPH ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPW ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPD ->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPBU->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPHU->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
-    NPSWAPWU->          List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N))
+  //JAL->               List(Y, N,N,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
+  //JALR->              List(Y, N,N,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X,   Y,CSR.N),
+    LPKTWJAL  ->        List(Y, Y,Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    LRESWJAL  ->        List(Y, Y,Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    LRDJAL    ->        List(Y, Y,Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    LPKTWJALR ->        List(Y, Y,Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    LRESWJALR ->        List(Y, Y,Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    LRDJALR   ->        List(Y, Y,Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+
+  //LB->                List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+  //LH->                List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+  //LW->                List(Y, N,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   Y,M_XRD, Y,CSR.N),
+    SWAPPKTB  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPPKTH  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPPKTW  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPPKTD  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPPKTUB ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPPKTUH ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPPKTUW ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPRESB  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPRESH  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPRESW  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPRESD  ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPRESUB ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPRESUH ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N),
+    SWAPRESUW ->        List(Y, Y,N,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD,   N,M_X  , Y,CSR.N))
 }
 
 class NpuALU extends Module with NpusParams

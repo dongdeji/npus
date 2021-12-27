@@ -361,11 +361,12 @@ class AXI4PKTROM(
     val ar_id = Reg(UInt())
     val ar_echo = Reg(in.ar.bits.echo.cloneType)
     val state = RegInit(idle)
-    val offset = Reg(UInt())
+    val offset = Reg(UInt((log2Ceil(bigs.size +1)).W))
     chisel3.dontTouch(in.ar)
     chisel3.dontTouch(in.r)
     in.ar.ready := true.B
     in.r.valid  := false.B
+    in.r.bits.last := false.B
 
     switch(state)
     {
@@ -388,8 +389,8 @@ class AXI4PKTROM(
         offset := offset + 1.U
         when(offset === 17.U)
         { 
-          state := idle 
           in.r.bits.last := true.B
+          state := idle 
         }
       }
     }
