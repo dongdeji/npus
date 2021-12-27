@@ -13,9 +13,10 @@ import freechips.rocketchip.rocket.Instructions._
 import freechips.rocketchip.diplomacy.{ AddressSet, LazyModule, LazyModuleImp, RegionType, LazyRawModuleImp, BigIntHexContext}
 import freechips.rocketchip.tile._
 import chisel3.experimental.chiselName
-
+import NpInstructions._
 
 trait NpusParams {
+  val supportNpInstr: Boolean = true
   val numCluster: Int = 1
   val numGroup: Int = 1
   val numNpu: Int = 1
@@ -96,9 +97,14 @@ trait NpusParams {
   def mask(address: AddressSet, dataBytes:Int): List[Boolean] = bigBits(address.mask >> log2Ceil(dataBytes))
   def haltCondition(instr:UInt): Bool =
   {
-    val memInstrhalt_list = if(memInstrHalt) Seq(LB.value.asUInt()(6,0), SB.value.asUInt()(6,0)) else Nil
-    val halt_list = Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0)) ++ memInstrhalt_list
-    instr(6,0).isOneOf(halt_list)
+    val memInstrHalt_list = if(memInstrHalt) Seq(LB.value.asUInt()(6,0), SB.value.asUInt()(6,0)) else Nil
+    val halt_list = Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0)) ++ memInstrHalt_list
+    val accInstrHaltCondition = 
+        if(supportNpInstr) 
+        { ((instr(6,0) === LPKTWJAL.value.asUInt()(6,0)) && (instr(31,29) === LPKTWJAL.value.asUInt()(31,29))) }
+        else { false.B }
+
+    instr(6,0).isOneOf(halt_list) || accInstrHaltCondition
   }
 }
 

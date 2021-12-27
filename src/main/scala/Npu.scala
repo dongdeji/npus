@@ -37,7 +37,7 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
   {
     core.module.io.frontend <> frontend.module.io.core
     accinf.module.io.core <> core.module.io.accinf
-    core.module.io.loadpkt <> accinf.module.io.loadpkt
+    core.module.io.accLoad <> accinf.module.io.accLoad
   }
 }
 

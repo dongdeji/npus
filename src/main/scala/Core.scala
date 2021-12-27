@@ -83,10 +83,10 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val io = IO(new Bundle {
       val frontend = Flipped(new FrontEndBundle)
       val accinf = new AccInfBundle
-      val loadpkt = Flipped(new LoadPktWindBundle)
+      val accLoad = Flipped(new AccLoadBundle)
     })
     chisel3.dontTouch(io)
-    window.module.io.loadpkt <> io.loadpkt
+    window.module.io.accLoad <> io.accLoad
     /****************************************************************/
     /**************** key pipe signal define begine******************/
     val rr0_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr0_uop_R)
@@ -117,7 +117,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /****************************************************************/
     /****************** instruction decode begin ********************/
-    val decode_table = { Seq(new NpDecode) ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
+    val decode_table = { if(supportNpInstr) Seq(new NpDecode) else Nil ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
     val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.frontend.instr.bits.instr, decode_table); chisel3.dontTouch(id_ctrl)
     id_uop_W.valid    := io.frontend.instr.valid && id_ctrl.legal
     id_uop_W.ctrl     := id_ctrl
@@ -203,12 +203,14 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                             (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.instr),
                                                       Mux(ex_uop_R.ctrl.jal, ImmGen(IMM_UJ, ex_uop_R.instr),
                                                             Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
+    val acc_nxt_target = NpInstrImmGen(ex_uop_R.instr) + ex_uop_R.pc.asSInt
+    chisel3.dontTouch(acc_nxt_target)
     val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
-    val redirectForAcc = ex_uop_W.valid && ex_uop_R.ctrl.acc
+    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && ex_uop_R.ctrl.acc else false.B
     val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr)
     io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
-    io.frontend.redirect.bits.npc := Mux(redirectForMem || redirectForAcc, ex_uop_R.pc + 4.U, nxt_target)
+    io.frontend.redirect.bits.npc := Mux(redirectForAcc, acc_nxt_target.asUInt, Mux(redirectForMem, ex_uop_R.pc + 4.U, nxt_target))
     ex_uop_W.make_ready := ex_uop_R.make_ready || redirectForBJ
     // erase instrs that following the redirected instr
     class TailEraseInfo extends Bundle with NpusParams {

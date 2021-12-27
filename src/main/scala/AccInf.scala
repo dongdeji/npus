@@ -116,7 +116,7 @@ class LoadPktReqBundle extends Bundle with NpusParams
   val addr = UInt(addrWidth.W)
   override def cloneType: this.type = (new LoadPktReqBundle).asInstanceOf[this.type]
 }
-class LoadPktWindBundle extends Bundle with NpusParams
+class AccLoadBundle extends Bundle with NpusParams
 {
   val req = Decoupled(new LoadPktReqBundle)
   val resp = Valid(new Bundle {
@@ -155,12 +155,13 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
   {
     val io = IO(new Bundle {
       val core = Flipped(new AccInfBundle)
-      val loadpkt = new LoadPktWindBundle  // to window
+      val accLoad = new AccLoadBundle  // to window
     })
     
-    io.loadpkt.req.valid := io.core.req.valid && io.core.uop.valid && io.core.uop.ctrl.legal //&& io.core.uop.ctrl.lwind
-    io.loadpkt.req.bits.tid := io.core.req.bits.tid
-    io.loadpkt.req.bits.addr := pktBuffBase.U
+    val accload = if(supportNpInstr) (io.core.uop.ctrl.wind && io.core.uop.ctrl.acc) else false.B
+    io.accLoad.req.valid := io.core.req.valid && io.core.uop.valid && io.core.uop.ctrl.legal && accload
+    io.accLoad.req.bits.tid := io.core.req.bits.tid
+    io.accLoad.req.bits.addr := pktBuffBase.U
 
     io.core.resp.valid := false.B  // set resp defaut
 

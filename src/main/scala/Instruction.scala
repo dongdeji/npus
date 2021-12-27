@@ -246,6 +246,16 @@ object NpInstructions {
   def SWAPRESUW         = BitPat("b0010001??????????110?????0001011")
 }
 
+object NpInstrImmGen {
+  def apply(inst: UInt) = {
+    val sign = Mux(inst(31, 28) === 0.U, inst(19), inst(24))
+    val b14_0 = Mux(inst(31, 28) === 0.U, Cat(inst(19,15), inst(24,20), inst(14,12)).asSInt, 
+                                                       Cat(inst(24,20), inst(14,12)).asSInt) << 2
+    val b31_15 = Fill(17, sign).asSInt
+    Cat(b31_15, b14_0).asSInt
+  }
+}
+
 import NpInstructions._
 class NpDecode extends DecodeConstants
 {
