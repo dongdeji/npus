@@ -1,27 +1,26 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Mon Dec 27 02:47:15 2021
+[*] Tue Dec 28 01:13:55 2021
 [*]
 [dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
-[dumpfile_mtime] "Mon Dec 27 02:42:22 2021"
-[dumpfile_size] 270713630
+[dumpfile_mtime] "Tue Dec 28 01:05:06 2021"
+[dumpfile_size] 188201058
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
-[timestart] 47
+[timestart] 0
 [size] 1920 1007
 [pos] -1 -1
-*-2.000000 53 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-15.000000 20025 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.npusTop.
 [treeopen] TOP.npusTop.cluster.
 [treeopen] TOP.npusTop.cluster.group.
 [treeopen] TOP.npusTop.cluster.group.npu.
-[treeopen] TOP.npusTop.cluster.group.npu.core.
 [treeopen] TOP.npusTop.cluster.group.npu.core.window.
 [treeopen] TOP.npusTop.pktbuff.
-[sst_width] 308
-[signals_width] 730
+[sst_width] 287
+[signals_width] 634
 [sst_expanded] 1
-[sst_vpaned_height] 430
+[sst_vpaned_height] 385
 @28
 TOP.npusTop.cluster.group.npu.core.reset
 TOP.npusTop.cluster.group.npu.core.clock
@@ -34,33 +33,25 @@ TOP.npusTop.cluster.group.npu.core.io_frontend_readys_valid
 TOP.npusTop.cluster.group.npu.core.id_uop_W_valid
 @22
 TOP.npusTop.cluster.group.npu.core.id_uop_W_rd[4:0]
-TOP.npusTop.cluster.group.npu.core.id_uop_W_instr[31:0]
 TOP.npusTop.cluster.group.npu.core.id_uop_W_pc[31:0]
-TOP.npusTop.cluster.group.npu.core.rr0_uop_R_instr[31:0]
 TOP.npusTop.cluster.group.npu.core.rr0_uop_R_pc[31:0]
 @28
 TOP.npusTop.cluster.group.npu.core.rr0_uop_R_valid
 @22
-TOP.npusTop.cluster.group.npu.core.rr1_uop_R_instr[31:0]
 TOP.npusTop.cluster.group.npu.core.rr1_uop_R_pc[31:0]
 @28
 TOP.npusTop.cluster.group.npu.core.rr1_uop_R_valid
 @22
-TOP.npusTop.cluster.group.npu.core.rr2_uop_R_instr[31:0]
 TOP.npusTop.cluster.group.npu.core.rr2_uop_R_pc[31:0]
 @28
 TOP.npusTop.cluster.group.npu.core.rr2_uop_R_valid
 @22
-[color] 2
-TOP.npusTop.cluster.group.npu.core.ex_uop_R_instr[31:0]
 [color] 2
 TOP.npusTop.cluster.group.npu.core.ex_uop_R_pc[31:0]
 @28
 [color] 2
 TOP.npusTop.cluster.group.npu.core.ex_uop_R_valid
 @22
-[color] 1
-TOP.npusTop.cluster.group.npu.core.wb_uop_R_instr[31:0]
 [color] 1
 TOP.npusTop.cluster.group.npu.core.wb_uop_R_pc[31:0]
 @28
@@ -99,20 +90,72 @@ TOP.npusTop.cluster.group.npu.core.io_frontend_redirect_bits_tid
 TOP.npusTop.cluster.group.npu.core.io_frontend_redirect_valid
 @200
 -accinf
-@28
-TOP.npusTop.cluster.group.npu.accinf.clock
-TOP.npusTop.cluster.group.npu.accinf.io_loadpkt_req_bits_tid
-TOP.npusTop.cluster.group.npu.accinf.io_loadpkt_req_valid
-@200
--window
 @22
-TOP.npusTop.cluster.group.npu.core.window.io_loadpkt_req_bits_addr[31:0]
+TOP.npusTop.cluster.group.npu.accinf.accouts_0_ar_bits_addr[30:0]
 @28
-TOP.npusTop.cluster.group.npu.core.window.io_loadpkt_req_bits_tid
-TOP.npusTop.cluster.group.npu.core.window.io_loadpkt_req_ready
-TOP.npusTop.cluster.group.npu.core.window.io_loadpkt_req_valid
-@201
--pktbuff
+TOP.npusTop.cluster.group.npu.accinf.accouts_0_ar_ready
+TOP.npusTop.cluster.group.npu.accinf.accouts_0_ar_valid
+@22
+TOP.npusTop.cluster.group.npu.accinf.accouts_0_r_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.npu.accinf.accouts_0_r_ready
+TOP.npusTop.cluster.group.npu.accinf.accouts_0_r_valid
+TOP.npusTop.cluster.group.npu.accinf.clock
+@200
+-accinf_accxbar
+@22
+TOP.npusTop.cluster.group.npu.accinf.accxbar.auto_out_1_r_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.npu.accinf.accxbar.auto_out_1_r_ready
+TOP.npusTop.cluster.group.npu.accinf.accxbar.auto_out_1_r_valid
+@200
+-npu_mmioxbar
+@22
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_in_0_ar_bits_addr[30:0]
+@28
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_in_0_ar_ready
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_in_0_ar_valid
+@22
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_in_0_r_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_in_0_r_ready
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_in_0_r_valid
+@22
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_ar_bits_addr[30:0]
+@28
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_ar_bits_id
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_ar_ready
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_ar_valid
+@22
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_r_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_r_bits_id
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_r_bits_last
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_r_ready
+TOP.npusTop.cluster.group.npu.mmioxbar.auto_out_r_valid
+@200
+-group_mmioxbar
+@22
+TOP.npusTop.cluster.group.mmioxbar.auto_out_ar_bits_addr[30:0]
+@28
+TOP.npusTop.cluster.group.mmioxbar.auto_out_ar_ready
+TOP.npusTop.cluster.group.mmioxbar.auto_out_ar_valid
+@22
+TOP.npusTop.cluster.group.mmioxbar.auto_out_r_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.mmioxbar.auto_out_r_ready
+TOP.npusTop.cluster.group.mmioxbar.auto_out_r_valid
+@22
+TOP.npusTop.cluster.group.mmioxbar.auto_in_ar_bits_addr[30:0]
+@28
+TOP.npusTop.cluster.group.mmioxbar.auto_in_ar_ready
+TOP.npusTop.cluster.group.mmioxbar.auto_in_ar_valid
+@22
+TOP.npusTop.cluster.group.mmioxbar.auto_in_r_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.mmioxbar.auto_in_r_bits_last
+TOP.npusTop.cluster.group.mmioxbar.auto_in_r_ready
+TOP.npusTop.cluster.group.mmioxbar.auto_in_r_valid
 @200
 -uart
 @28
@@ -120,32 +163,28 @@ TOP.npusTop.uart.clock
 @22
 TOP.npusTop.uart.in_aw_bits_addr[30:0]
 @28
-[color] 1
 TOP.npusTop.uart.in_aw_ready
-[color] 1
 TOP.npusTop.uart.in_aw_valid
 @22
 TOP.npusTop.uart.in_w_bits_data[127:0]
 @28
-[color] 1
 TOP.npusTop.uart.in_w_ready
-[color] 1
 TOP.npusTop.uart.in_w_valid
-TOP.npusTop.uart.in_b_bits_id
-TOP.npusTop.uart.in_b_bits_resp[1:0]
-TOP.npusTop.uart.in_b_ready
-TOP.npusTop.uart.in_b_valid
 @22
 TOP.npusTop.uart.in_ar_bits_addr[30:0]
 @28
+[color] 1
+TOP.npusTop.uart.in_ar_bits_id
+[color] 1
 TOP.npusTop.uart.in_ar_ready
+[color] 1
 TOP.npusTop.uart.in_ar_valid
-TOP.npusTop.uart.ar_fire
-TOP.npusTop.uart.aw_fire
 @22
-TOP.npusTop.uart.uart_reg[31:0]
 TOP.npusTop.uart.in_r_bits_data[127:0]
 @28
+[color] 1
+TOP.npusTop.uart.in_r_bits_id
+TOP.npusTop.uart.in_r_bits_last
 [color] 1
 TOP.npusTop.uart.in_r_ready
 [color] 1

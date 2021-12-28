@@ -141,7 +141,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   lram.frag.node := accxbar.node
 
   private val mmioxbar = LazyModule(new AXI4Xbar)
-  private val pktbuff = LazyModule(new AXI4PKTROM(file = "./bootrom/bootrom.img",
+  private val pktbuff = LazyModule(new AXI4PKTROM(file = "./src/test/resources/vxlan_pkts.img",
                                      address = AddressSet(pktBuffBase, pktBuffSize-1), 
                                      beatBytes = fetchBytes))
   pktbuff.frag.node := mmioxbar.node
