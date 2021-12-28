@@ -10,10 +10,10 @@ Disassembly of section .text.start:
    8:	2000108b          	0x2000108b
    c:	2000208b          	0x2000208b
   10:	2000308b          	0x2000308b
-  14:	2010008b          	0x2010008b
-  18:	2010108b          	0x2010108b
-  1c:	2010208b          	0x2010208b
-  20:	2010308b          	0x2010308b
+  14:	2000808b          	0x2000808b
+  18:	2000908b          	0x2000908b
+  1c:	2000a08b          	0x2000a08b
+  20:	2000b08b          	0x2000b08b
   24:	0000100b          	0x100b
   SWAPPKTB(1, 1)
   SWAPPKTH(1, 1)
@@ -241,8 +241,8 @@ Disassembly of section .debug_line:
   3e:	0000                	unimp
   li   sp, 0x20ff0
   40:	0300                	addi	s0,sp,384
-  42:	01030113          	addi	sp,t1,16 # ffffffffffffa010 <_dtb+0xffffffffffff9810>
-  46:	0409                	addi	s0,s0,2
+  42:	0114                	addi	a3,sp,128
+  44:	04090103          	lb	sp,64(s2)
   lb   a1, 0(sp)
   48:	0100                	addi	s0,sp,128
   4a:	04090103          	lb	sp,64(s2)
@@ -275,8 +275,8 @@ Disassembly of section .debug_line:
   8c:	0000                	unimp
   8e:	0000                	unimp
   90:	0300                	addi	s0,sp,384
-  92:	0126                	slli	sp,sp,0x9
-  94:	04090103          	lb	sp,64(s2)
+  92:	01030127          	0x1030127
+  96:	0409                	addi	s0,s0,2
   98:	0100                	addi	s0,sp,128
   9a:	04090103          	lb	sp,64(s2)
   9e:	0100                	addi	s0,sp,128
@@ -497,7 +497,7 @@ Disassembly of section .debug_line:
  28e:	0900                	addi	s0,sp,144
  290:	0004                	0x4
  292:	0501                	addi	a0,a0,0
- 294:	79030613          	addi	a2,t1,1936
+ 294:	79030613          	addi	a2,t1,1936 # ffffffffffffa790 <_dtb+0xffffffffffff9f90>
  298:	0409                	addi	s0,s0,2
  29a:	0100                	addi	s0,sp,128
  29c:	0305                	addi	t1,t1,1

@@ -262,9 +262,11 @@ object NpInstrImmGen {
     val sign = if(signed) Mux(inst(31, 28) === 0.U, inst(19), inst(24)) else 0.U(1.W)
     val b9_0 = Cat( inst(24,20), inst(14,12) ) << 2
     val b14_10 = Mux(inst(31, 28) === 0.U, inst(19,15).asSInt, sign.asSInt).asUInt
-    val b31_15 = Fill(17, sign)
+    val b31_15 = Fill(17, sign).asUInt
 
-    Cat(b31_15, b14_10, b9_0).asSInt
+    val imm = Mux(inst(31, 28).asUInt === 2.U, Cat(0.U(22.W), inst(24, 15)).asSInt, Cat(b31_15, b14_10, b9_0).asSInt)
+    chisel3.dontTouch(imm)
+    imm
   }
 }
 

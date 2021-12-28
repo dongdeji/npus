@@ -65,6 +65,7 @@ class RrBypassMux extends Module with NpusParams
 
 class SwapWindBundle extends Bundle with NpusParams
 {
+  val valid = Output(Bool())
   val offsetWith = 1 << log2Ceil(log2Ceil(windowSizePerNp))
   val offset = Output(UInt(offsetWith.W))
   val size = Output(UInt(2.W)) /* dmem_req.inst_32(13,12) */
@@ -138,8 +139,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /**********************************************************/
     /****************** register/wind read begin *******************/
-    val windOffset = NpInstrImmGen(false, ex_uop_R.inst).asUInt
-    chisel3.dontTouch(windOffset)
+    val windOffset = NpInstrImmGen(false, rr0_uop_R.inst).asUInt
+    window.module.io.swap.valid := rr0_uop_W.valid && rr0_uop_R.ctrl.legal && rr0_uop_R.ctrl.wind && !rr0_uop_R.ctrl.acc
     window.module.io.swap.offset := windOffset
     window.module.io.swap.size := rr0_uop_R.inst(13,12)
     window.module.io.swap.signed := !rr0_uop_R.inst(14)
@@ -167,6 +168,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr1_uop_W.rs1_data := rr1_bypass_mux.io.rs1_data
     rr1_uop_W.rs2_valid := rr1_bypass_mux.io.rs2_valid
     rr1_uop_W.rs2_data := rr1_bypass_mux.io.rs2_data
+
+    rr1_uop_W.rd_valid := rr1_uop_W.valid && rr1_uop_R.ctrl.legal && rr1_uop_R.ctrl.wind && !rr1_uop_R.ctrl.acc
+    rr1_uop_W.rd_data := window.module.io.swap.data
 
     //register read stage 2 bypass check
     val rr2_bypass_mux = Module(new RrBypassMux)
@@ -203,8 +207,11 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                                 Seq(  A1_RS1 -> ex_uop_W.rs1_data.asSInt,
                                       A1_PC -> ex_uop_W.pc.asSInt)).asUInt
 
-    ex_uop_W.rd_valid := ex_uop_W.valid && ex_uop_R.ctrl.wxd && !ex_uop_R.ctrl.mem
-    ex_uop_W.rd_data := Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), csr.io.rw.rdata, alu.io.out)
+    ex_uop_W.rd_valid := Mux(ex_uop_R.rd_valid, ex_uop_R.rd_valid, 
+                            ex_uop_W.valid && ex_uop_W.ctrl.legal && ex_uop_R.ctrl.wxd && 
+                               (!ex_uop_R.ctrl.mem && !(ex_uop_R.ctrl.wind && ex_uop_R.ctrl.acc)))
+    ex_uop_W.rd_data := Mux(ex_uop_R.rd_valid, ex_uop_R.rd_data, 
+                           Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), csr.io.rw.rdata, alu.io.out))
     /* handle imem request */
     val nxt_target = Mux(ex_uop_R.ctrl.jalr, alu.io.out/*encodeVirtualAddress(alu.io.out, alu.io.out)*/,
                             (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.inst),
@@ -215,7 +222,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     chisel3.dontTouch(acc_nxt_target)
 
     val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
-    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && ex_uop_R.ctrl.acc else false.B
+    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && (ex_uop_R.ctrl.wind && ex_uop_R.ctrl.acc) else false.B
     val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr)
     io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid

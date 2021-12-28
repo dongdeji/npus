@@ -10,10 +10,10 @@ Disassembly of section .text.start:
    8:	2000108b          	0x2000108b
    c:	2000208b          	0x2000208b
   10:	2000308b          	0x2000308b
-  14:	2010008b          	0x2010008b
-  18:	2010108b          	0x2010108b
-  1c:	2010208b          	0x2010208b
-  20:	2010308b          	0x2010308b
+  14:	2000808b          	0x2000808b
+  18:	2000908b          	0x2000908b
+  1c:	2000a08b          	0x2000a08b
+  20:	2000b08b          	0x2000b08b
   24:	0000100b          	0x100b
   28:	00000033          	add	x0,x0,x0
   2c:	00100513          	addi	x10,x0,1
@@ -173,8 +173,8 @@ Disassembly of section .debug_line:
   3c:	0000                	c.unimp
   3e:	0000                	c.unimp
   40:	0300                	c.addi4spn	x8,x2,384
-  42:	01030113          	addi	x2,x6,16 # ffffffffffffa010 <_dtb+0xffffffffffff9810>
-  46:	0409                	c.addi	x8,2
+  42:	0114                	c.addi4spn	x13,x2,128
+  44:	04090103          	lb	x2,64(x18)
   48:	0100                	c.addi4spn	x8,x2,128
   4a:	04090103          	lb	x2,64(x18)
   4e:	0100                	c.addi4spn	x8,x2,128
@@ -203,8 +203,8 @@ Disassembly of section .debug_line:
   8c:	0000                	c.unimp
   8e:	0000                	c.unimp
   90:	0300                	c.addi4spn	x8,x2,384
-  92:	0126                	c.slli	x2,0x9
-  94:	04090103          	lb	x2,64(x18)
+  92:	01030127          	0x1030127
+  96:	0409                	c.addi	x8,2
   98:	0100                	c.addi4spn	x8,x2,128
   9a:	04090103          	lb	x2,64(x18)
   9e:	0100                	c.addi4spn	x8,x2,128
@@ -264,7 +264,7 @@ Disassembly of section .debug_line:
  11a:	0902                	c.slli64	x18
  11c:	0000                	c.unimp
  11e:	0501                	c.addi	x10,0
- 120:	00030613          	addi	x12,x6,0
+ 120:	00030613          	addi	x12,x6,0 # ffffffffffffa000 <_dtb+0xffffffffffff9800>
  124:	0009                	c.addi	x0,2
  126:	0100                	c.addi4spn	x8,x2,128
  128:	1805                	c.addi	x16,-31

@@ -54,7 +54,9 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val byte_offset_s1 = RegNext(byte_offset)
     val size_s1 = RegNext(io.swap.size)
     val signed_s1 = RegNext(io.swap.signed)
-    val data_pakage = VecInit(Seq.tabulate(dataBytes) { i => banks(i).read(offset_pakage((i+1)*offsetWith-1, i*offsetWith)) }).asUInt
+    val data_pakage = VecInit(Seq.tabulate(dataBytes) { i => 
+                  val offset = offset_pakage((i+1)*offsetWith-1, i*offsetWith)
+                  banks(i).read(offset >> log2Ceil(dataBytes)) }).asUInt
     val data_raw_l = data_pakage >> (byte_offset_s1 << log2Ceil(8))
     val data_raw_h = (data_pakage << ((dataBytes.U - byte_offset_s1) << log2Ceil(8)))(dataWidth - 1, 0)
     val dataMask = ~( ((~(0.U(dataBytes.W))) << (1.U << size_s1)) (dataBytes-1,0) )
@@ -64,7 +66,7 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     /********** handle axi4 master interface end **********/
     val (out, edgeOut) = masternode.out(0)
 
-    val offset = RegInit(0.U(log2Ceil(windowSizePerNp/dataBytes)))
+    val offset = RegInit(0.U(log2Ceil(windowSizePerNp/dataBytes).W))
     val idle :: wind_ar_send :: wait_wind_r :: Nil = Enum(3)
     val load_state_R = RegInit(idle)
     val loadMata = RegInit(0.U.asTypeOf(new Bundle {
