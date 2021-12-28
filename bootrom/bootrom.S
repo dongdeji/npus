@@ -8,6 +8,15 @@ _start:
   //csrwi 0x7c1, 0 // disable chicken bits
   //csrr a0, mhartid
   LPKTWJAL(4, 0)
+  SWAPPKTB(0, 1)
+  SWAPPKTH(0, 1)
+  SWAPPKTW(0, 1)
+  SWAPPKTD(0, 1)
+  SWAPPKTB(1, 1)
+  SWAPPKTH(1, 1)
+  SWAPPKTW(1, 1)
+  SWAPPKTD(1, 1)
+  LPKTWJAL(4, 0)
   add  x0, x0, x0
   li   a0, 0x1  
   slli a1, a0, 12

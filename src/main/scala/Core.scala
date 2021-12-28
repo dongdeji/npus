@@ -137,7 +137,14 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /****************************************************************/
 
     /**********************************************************/
-    /****************** register read begin *******************/
+    /****************** register/wind read begin *******************/
+    val windOffset = NpInstrImmGen(false, ex_uop_R.inst).asUInt
+    chisel3.dontTouch(windOffset)
+    window.module.io.swap.offset := windOffset
+    window.module.io.swap.size := rr0_uop_R.inst(13,12)
+    window.module.io.swap.signed := !rr0_uop_R.inst(14)
+    chisel3.dontTouch(window.module.io)
+
     regfile.module.io.rs1 :=  rr0_uop_R.rs1
     regfile.module.io.rs2 :=  rr0_uop_R.rs2
 
@@ -203,8 +210,10 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                             (ex_uop_R.pc.asSInt + Mux(ex_uop_R.ctrl.br && alu.io.cmp_out, ImmGen(IMM_SB, ex_uop_R.inst),
                                                       Mux(ex_uop_R.ctrl.jal, ImmGen(IMM_UJ, ex_uop_R.inst),
                                                             Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S)))).asUInt); dontTouch(nxt_target);
-    val acc_nxt_target = NpInstrImmGen(ex_uop_R.inst) + ex_uop_R.pc.asSInt
+    
+    val acc_nxt_target = NpInstrImmGen(true, ex_uop_R.inst).asSInt + ex_uop_R.pc.asSInt
     chisel3.dontTouch(acc_nxt_target)
+
     val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
     val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && ex_uop_R.ctrl.acc else false.B
     val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr)
@@ -229,11 +238,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     when(tailEraseInfo.valid && ((ex_uop_R.valid && (ex_uop_R.tid =/= tailEraseInfo.tid)) || (!ex_uop_R.valid)))
     { tailEraseInfo.valid := false.B }
 
-    window.module.io.swap.offset := alu.io.adder_out
-    window.module.io.swap.size := ex_uop_W.inst(13,12)
-    window.module.io.swap.signed := !ex_uop_W.inst(14)
-    chisel3.dontTouch(window.module.io)
-
     io.accinf.uop := ex_uop_W
     io.accinf.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
                             ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
@@ -250,8 +254,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /*******************************************************/
     /****************** write back begin *******************/
 
-    wb_uop_W.rd_data := Mux(wb_uop_R.ctrl.wind, window.module.io.swap.data, wb_uop_R.rd_data)
-    wb_uop_W.rd_valid := Mux(wb_uop_R.ctrl.wind, true.B, wb_uop_R.rd_valid)
+    //wb_uop_W.rd_data := Mux(wb_uop_R.ctrl.wind, window.module.io.swap.data, wb_uop_R.rd_data)
+    //wb_uop_W.rd_valid := Mux(wb_uop_R.ctrl.wind, true.B, wb_uop_R.rd_valid)
 
     regfile.module.io.rd_write := wb_uop_W.valid & wb_uop_W.ctrl.legal & wb_uop_W.rd_valid
     regfile.module.io.rd_data  := wb_uop_W.rd_data

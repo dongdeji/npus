@@ -396,7 +396,7 @@ class AXI4PKTROM(
         in.r.bits.echo := ar_echo
         in.r.bits.last := false.B
         offset := offset + 1.U
-        when(offset(3,0) === 15.U)
+        when(offset(2,0) === 7.U)
         { 
           in.r.bits.last := true.B
           state := idle 

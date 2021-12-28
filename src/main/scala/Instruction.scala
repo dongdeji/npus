@@ -246,13 +246,25 @@ object NpInstructions {
   def SWAPRESUW         = BitPat("b0010001??????????110?????0001011")
 }
 
-object NpInstrImmGen {
+object NpInstrImmGenOld {
   def apply(inst: UInt) = {
     val sign = Mux(inst(31, 28) === 0.U, inst(19), inst(24))
     val b14_0 = Mux(inst(31, 28) === 0.U, Cat(inst(19,15), inst(24,20), inst(14,12)).asSInt, 
                                                        Cat(inst(24,20), inst(14,12)).asSInt) << 2
     val b31_15 = Fill(17, sign).asSInt
+
     Cat(b31_15, b14_0).asSInt
+  }
+}
+
+object NpInstrImmGen {
+  def apply(signed:Boolean, inst: UInt) = {
+    val sign = if(signed) Mux(inst(31, 28) === 0.U, inst(19), inst(24)) else 0.U(1.W)
+    val b9_0 = Cat( inst(24,20), inst(14,12) ) << 2
+    val b14_10 = Mux(inst(31, 28) === 0.U, inst(19,15).asSInt, sign.asSInt).asUInt
+    val b31_15 = Fill(17, sign)
+
+    Cat(b31_15, b14_10, b9_0).asSInt
   }
 }
 

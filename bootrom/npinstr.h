@@ -54,7 +54,7 @@
        (Usize                   << (7+5))        |  \
        (EXTRACT(woffset, 9, 0)  << (7+5+3+5))    |  \
        (func3                   << (7+5+3+10))   |  \
-       (1                       << (7+5+3+10+3))
+       (2                       << (7+5+3+10+3))
 
 
 #define LPKTWJAL(imm, rd)            .word LXJAL(0, imm, ## rd)
