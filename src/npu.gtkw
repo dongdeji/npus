@@ -1,13 +1,13 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Tue Dec 28 08:38:17 2021
+[*] Tue Dec 28 08:53:43 2021
 [*]
 [dumpfile] "(null)"
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
 [timestart] 32
 [size] 1920 1007
 [pos] -1 -1
-*-4.000000 69 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-4.000000 83 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.npusTop.
 [treeopen] TOP.npusTop.cluster.
@@ -109,7 +109,6 @@ TOP.npusTop.cluster.group.npu.core.rr0_uop_R_inst[31:0]
 TOP.npusTop.cluster.group.npu.core.rr0_uop_R_valid
 @22
 TOP.npusTop.cluster.group.npu.core.windOffset[31:0]
-@23
 TOP.npusTop.cluster.group.npu.core.windOffset_imm_lo_1[9:0]
 @200
 -window
@@ -160,18 +159,28 @@ TOP.npusTop.cluster.group.npu.core.rr2_uop_R_inst[31:0]
 @28
 TOP.npusTop.cluster.group.npu.core.rr2_uop_R_valid
 @22
+TOP.npusTop.cluster.group.npu.core.rr2_uop_W_rd[4:0]
+TOP.npusTop.cluster.group.npu.core.rr2_uop_W_rd_data[63:0]
+@28
+TOP.npusTop.cluster.group.npu.core.rr2_uop_W_rd_valid
+@22
 [color] 2
 TOP.npusTop.cluster.group.npu.core.ex_uop_R_pc[31:0]
 TOP.npusTop.cluster.group.npu.core.ex_uop_R_inst[31:0]
 @28
 [color] 2
 TOP.npusTop.cluster.group.npu.core.ex_uop_R_valid
-TOP.npusTop.cluster.group.npu.core.ex_uop_R_ctrl_acc
-TOP.npusTop.cluster.group.npu.core.ex_uop_R_ctrl_wind
+@22
+TOP.npusTop.cluster.group.npu.core.ex_uop_W_rd[4:0]
+TOP.npusTop.cluster.group.npu.core.ex_uop_W_rd_data[63:0]
+@28
+TOP.npusTop.cluster.group.npu.core.ex_uop_W_rd_valid
 @22
 TOP.npusTop.cluster.group.npu.core.acc_nxt_target[31:0]
+@23
 [color] 1
 TOP.npusTop.cluster.group.npu.core.wb_uop_R_pc[31:0]
+@22
 TOP.npusTop.cluster.group.npu.core.wb_uop_R_inst[31:0]
 @28
 [color] 1

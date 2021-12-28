@@ -12,11 +12,17 @@ _start:
   SWAPPKTH(0, 1)
   SWAPPKTW(0, 1)
   SWAPPKTD(0, 1)
-  
+
   SWAPPKTB(1, 1)
   SWAPPKTH(1, 1)
   SWAPPKTW(1, 1)
   SWAPPKTD(1, 1)
+
+  SWAPPKTB(2, 1)
+  SWAPPKTH(2, 1)
+  SWAPPKTW(2, 1)
+  SWAPPKTD(2, 1)
+
   LPKTWJAL(4, 0)
   add  x0, x0, x0
   li   a0, 0x1  

@@ -14,38 +14,42 @@ Disassembly of section .text.start:
   18:	2000908b          	0x2000908b
   1c:	2000a08b          	0x2000a08b
   20:	2000b08b          	0x2000b08b
-  24:	0000100b          	0x100b
-  SWAPPKTB(1, 1)
-  SWAPPKTH(1, 1)
-  SWAPPKTW(1, 1)
-  SWAPPKTD(1, 1)
+  24:	2001008b          	0x2001008b
+  28:	2001108b          	0x2001108b
+  2c:	2001208b          	0x2001208b
+  30:	2001308b          	0x2001308b
+  34:	0000100b          	0x100b
+  SWAPPKTH(2, 1)
+  SWAPPKTW(2, 1)
+  SWAPPKTD(2, 1)
+
   LPKTWJAL(4, 0)
   add  x0, x0, x0
-  28:	00000033          	add	zero,zero,zero
+  38:	00000033          	add	zero,zero,zero
   li   a0, 0x1  
-  2c:	00100513          	li	a0,1
+  3c:	00100513          	li	a0,1
   slli a1, a0, 12
-  30:	00c51593          	slli	a1,a0,0xc
+  40:	00c51593          	slli	a1,a0,0xc
   li   sp, 0x10000
-  34:	00010137          	lui	sp,0x10
+  44:	00010137          	lui	sp,0x10
   lb   a1, 9(sp)
-  38:	00910583          	lb	a1,9(sp) # 10009 <_dtb+0xf809>
+  48:	00910583          	lb	a1,9(sp) # 10009 <_dtb+0xf809>
   add  a2, a1, x0
-  3c:	00058633          	add	a2,a1,zero
+  4c:	00058633          	add	a2,a1,zero
   li   sp, 0x20ff0
-  40:	00021137          	lui	sp,0x21
-  44:	ff01011b          	addiw	sp,sp,-16
+  50:	00021137          	lui	sp,0x21
+  54:	ff01011b          	addiw	sp,sp,-16
   lb   a1, 0(sp)
-  48:	00010583          	lb	a1,0(sp) # 21000 <_dtb+0x20800>
+  58:	00010583          	lb	a1,0(sp) # 21000 <_dtb+0x20800>
   //csrr a0, mhartid
   call main
-  4c:	414000ef          	jal	ra,460 <main>
+  5c:	404000ef          	jal	ra,460 <main>
   //csrr a0, mhartid
   la a1, _dtb
-  50:	00000597          	auipc	a1,0x0
-  54:	7b058593          	addi	a1,a1,1968 # 800 <_dtb>
+  60:	00000597          	auipc	a1,0x0
+  64:	7a058593          	addi	a1,a1,1952 # 800 <_dtb>
   jr s0
-  58:	00040067          	jr	s0
+  68:	00040067          	jr	s0
 
 Disassembly of section .text.hang:
 
@@ -223,41 +227,41 @@ Disassembly of section .debug_line:
   1e:	0101                	addi	sp,sp,0
   20:	011f 0000 0000      	0x11f
   26:	0102                	c.slli64	sp
-  add  x0, x0, x0
   28:	021f 020f 0027      	0x27020f021f
-  li   a0, 0x1  
   2e:	0000                	unimp
-  slli a1, a0, 12
   30:	2700                	fld	fs0,8(a4)
   32:	0000                	unimp
-  li   sp, 0x10000
   34:	0000                	unimp
   36:	0900                	addi	s0,sp,144
-  lb   a1, 9(sp)
-  38:	2802                	fld	fa6,0(sp)
+  add  x0, x0, x0
+  38:	3802                	fld	fa6,32(sp)
   3a:	0000                	unimp
-  add  a2, a1, x0
+  li   a0, 0x1  
   3c:	0000                	unimp
   3e:	0000                	unimp
-  li   sp, 0x20ff0
+  slli a1, a0, 12
   40:	0300                	addi	s0,sp,384
-  42:	0114                	addi	a3,sp,128
+  42:	011a                	slli	sp,sp,0x6
+  li   sp, 0x10000
   44:	04090103          	lb	sp,64(s2)
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   48:	0100                	addi	s0,sp,128
   4a:	04090103          	lb	sp,64(s2)
-  call main
+  add  a2, a1, x0
   4e:	0100                	addi	s0,sp,128
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	04090103          	lb	sp,64(s2)
   54:	0100                	addi	s0,sp,128
   56:	04090103          	lb	sp,64(s2)
-  jr s0
+  lb   a1, 0(sp)
   5a:	0100                	addi	s0,sp,128
+  call main
   5c:	04090103          	lb	sp,64(s2)
+  la a1, _dtb
   60:	0100                	addi	s0,sp,128
   62:	04090103          	lb	sp,64(s2)
   66:	0100                	addi	s0,sp,128
+  jr s0
   68:	08090103          	lb	sp,128(s2)
   6c:	0100                	addi	s0,sp,128
   6e:	04090203          	lb	tp,64(s2)
@@ -275,8 +279,8 @@ Disassembly of section .debug_line:
   8c:	0000                	unimp
   8e:	0000                	unimp
   90:	0300                	addi	s0,sp,384
-  92:	01030127          	0x1030127
-  96:	0409                	addi	s0,s0,2
+  92:	012d                	addi	sp,sp,11
+  94:	04090103          	lb	sp,64(s2)
   98:	0100                	addi	s0,sp,128
   9a:	04090103          	lb	sp,64(s2)
   9e:	0100                	addi	s0,sp,128
@@ -593,40 +597,40 @@ Disassembly of section .debug_line_str:
   1e:	6f6f622f          	0x6f6f622f
   22:	7274                	ld	a3,224(a2)
   24:	62006d6f          	jal	s10,6644 <_dtb+0x5e44>
-  add  x0, x0, x0
   28:	72746f6f          	jal	t5,46f4e <_dtb+0x4674e>
-  li   a0, 0x1  
   2c:	532e6d6f          	jal	s10,e655e <_dtb+0xe5d5e>
-  slli a1, a0, 12
   30:	6d00                	ld	s0,24(a0)
   32:	6961                	lui	s2,0x18
-  li   sp, 0x10000
   34:	2e6e                	fld	ft8,216(sp)
   36:	6f2f0063          	beq	t5,s2,716 <main+0x2b6>
-  lb   a1, 9(sp)
+  add  x0, x0, x0
   3a:	7470                	ld	a2,232(s0)
-  add  a2, a1, x0
+  li   a0, 0x1  
   3c:	7369722f          	0x7369722f
-  li   sp, 0x20ff0
+  slli a1, a0, 12
   40:	722f7663          	bgeu	t5,sp,76c <main+0x30c>
+  li   sp, 0x10000
   44:	7369                	lui	t1,0xffffa
   46:	34367663          	bgeu	a2,gp,392 <ROM_BASE+0x392>
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   4a:	752d                	lui	a0,0xfffeb
-  call main
+  add  a2, a1, x0
   4c:	6b6e                	ld	s6,216(sp)
   4e:	6f6e                	ld	t5,216(sp)
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	652d6e77          	0x652d6e77
   54:	666c                	ld	a1,200(a2)
   56:	636e692f          	0x636e692f
-  jr s0
+  lb   a1, 0(sp)
   5a:	756c                	ld	a1,232(a0)
+  call main
   5c:	6564                	ld	s1,200(a0)
   5e:	63616d2f          	0x63616d2f
+  la a1, _dtb
   62:	6968                	ld	a0,208(a0)
   64:	656e                	ld	a0,216(sp)
   66:	2f00                	fld	fs0,24(a4)
+  jr s0
   68:	2f74706f          	j	47b5e <_dtb+0x4735e>
   6c:	6972                	ld	s2,280(sp)
   6e:	2f766373          	csrrsi	t1,0x2f7,12
@@ -673,45 +677,44 @@ Disassembly of section .debug_info:
   22:	3880                	fld	fs0,48(s1)
   24:	0002                	c.slli64	zero
   26:	0500                	addi	s0,sp,640
-  add  x0, x0, x0
   28:	0100                	addi	s0,sp,128
   2a:	1208                	addi	a0,sp,288
-  li   a0, 0x1  
   2c:	0000                	unimp
   2e:	0f00                	addi	s0,sp,912
-  slli a1, a0, 12
   30:	008a                	slli	ra,ra,0x2
   32:	0000                	unimp
-  li   sp, 0x10000
   34:	311d                	addiw	sp,sp,-25
   36:	0000                	unimp
-  lb   a1, 9(sp)
+  add  x0, x0, x0
   38:	0000                	unimp
   3a:	0000                	unimp
-  add  a2, a1, x0
+  li   a0, 0x1  
   3c:	b800                	fsd	fs0,48(s0)
 	...
-  li   sp, 0x20ff0
+  li   sp, 0x10000
   46:	0000                	unimp
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   48:	b800                	fsd	fs0,48(s0)
   4a:	0000                	unimp
-  call main
+  add  a2, a1, x0
   4c:	0100                	addi	s0,sp,128
   4e:	0601                	addi	a2,a2,0
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	0049                	c.nop	18
   52:	0000                	unimp
   54:	0101                	addi	sp,sp,0
   56:	4708                	lw	a0,8(a4)
-  jr s0
+  lb   a1, 0(sp)
   58:	0000                	unimp
   5a:	0100                	addi	s0,sp,128
+  call main
   5c:	0502                	c.slli64	a0
   5e:	00fa                	slli	ra,ra,0x1e
+  la a1, _dtb
   60:	0000                	unimp
   62:	0201                	addi	tp,tp,0
   64:	00006707          	0x6707
+  jr s0
   68:	0200                	addi	s0,sp,256
   6a:	003d                	c.nop	15
   6c:	0000                	unimp
@@ -959,41 +962,41 @@ Disassembly of section .debug_abbrev:
   1e:	0016                	c.slli	zero,0x5
   20:	0b3a0e03          	lb	t3,179(s4)
   24:	0b390b3b          	0xb390b3b
-  add  x0, x0, x0
   28:	1349                	addi	t1,t1,-14
   2a:	0000                	unimp
-  li   a0, 0x1  
   2c:	31000503          	lb	a0,784(zero) # 310 <ROM_BASE+0x310>
-  slli a1, a0, 12
   30:	00170213          	addi	tp,a4,1
-  li   sp, 0x10000
   34:	0400                	addi	s0,sp,512
   36:	1755010b          	0x1755010b
-  lb   a1, 9(sp)
+  add  x0, x0, x0
   3a:	0000                	unimp
-  add  a2, a1, x0
+  li   a0, 0x1  
   3c:	3405                	addiw	s0,s0,-31
   3e:	3100                	fld	fs0,32(a0)
-  li   sp, 0x20ff0
+  slli a1, a0, 12
   40:	00170213          	addi	tp,a4,1
+  li   sp, 0x10000
   44:	0600                	addi	s0,sp,768
   46:	0005                	c.nop	1
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   48:	1331                	addi	t1,t1,-20
   4a:	0000                	unimp
-  call main
+  add  a2, a1, x0
   4c:	31003407          	fld	fs0,784(zero) # 310 <ROM_BASE+0x310>
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	08000013          	li	zero,128
   54:	210b000f          	0x210b000f
-  jr s0
+  lb   a1, 0(sp)
   58:	4908                	lw	a0,16(a0)
   5a:	09000013          	li	zero,144
+  call main
   5e:	0026                	c.slli	zero,0x9
+  la a1, _dtb
   60:	1349                	addi	t1,t1,-14
   62:	0000                	unimp
   64:	1d0a                	slli	s10,s10,0x22
   66:	3101                	addiw	sp,sp,-32
+  jr s0
   68:	12011113          	0x12011113
   6c:	01215807          	0x1215807
   70:	0b59                	addi	s6,s6,22
@@ -1092,7 +1095,7 @@ Disassembly of section .debug_aranges:
    8:	0000                	unimp
    a:	0008                	0x8
 	...
-  18:	005c                	addi	a5,sp,4
+  18:	006c                	addi	a1,sp,12
   1a:	0000                	unimp
   1c:	0000                	unimp
   1e:	0000                	unimp
@@ -1100,35 +1103,38 @@ Disassembly of section .debug_aranges:
   22:	0000                	unimp
   24:	0000                	unimp
   26:	0000                	unimp
-  add  x0, x0, x0
   28:	001c                	0x1c
 	...
-  add  a2, a1, x0
+  li   a0, 0x1  
   3e:	0000                	unimp
-  li   sp, 0x20ff0
+  slli a1, a0, 12
   40:	003c                	addi	a5,sp,8
   42:	0000                	unimp
+  li   sp, 0x10000
   44:	0002                	c.slli64	zero
   46:	00000023          	sb	zero,0(zero) # 0 <ROM_BASE>
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   4a:	0008                	0x8
-  call main
+  add  a2, a1, x0
   4c:	0000                	unimp
   4e:	0000                	unimp
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	041c                	addi	a5,sp,512
   52:	0000                	unimp
   54:	0000                	unimp
   56:	0000                	unimp
-  jr s0
+  lb   a1, 0(sp)
   58:	0044                	addi	s1,sp,4
   5a:	0000                	unimp
+  call main
   5c:	0000                	unimp
   5e:	0000                	unimp
+  la a1, _dtb
   60:	0460                	addi	s0,sp,524
   62:	0000                	unimp
   64:	0000                	unimp
   66:	0000                	unimp
+  jr s0
   68:	005c                	addi	a5,sp,4
 	...
 
@@ -1150,38 +1156,37 @@ Disassembly of section .debug_str:
   22:	2f65                	addiw	t5,t5,25
   24:	706e                	0x706e
   26:	7375                	lui	t1,0xffffd
-  add  x0, x0, x0
   28:	6f6f622f          	0x6f6f622f
-  li   a0, 0x1  
   2c:	7274                	ld	a3,224(a2)
   2e:	47006d6f          	jal	s10,649e <_dtb+0x5c9e>
-  slli a1, a0, 12
   32:	554e                	lw	a0,240(sp)
-  li   sp, 0x10000
   34:	4120                	lw	s0,64(a0)
   36:	2e322053          	0x2e322053
-  lb   a1, 9(sp)
+  add  x0, x0, x0
   3a:	5f003733          	0x5f003733
-  add  a2, a1, x0
+  li   a0, 0x1  
   3e:	695f 746e 3233      	0x3233746e695f
-  li   sp, 0x20ff0
+  li   sp, 0x10000
   44:	745f 7500 736e      	0x736e7500745f
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   4a:	6769                	lui	a4,0x1a
-  call main
+  add  a2, a1, x0
   4c:	656e                	ld	a0,216(sp)
   4e:	2064                	fld	fs1,192(s0)
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	72616863          	bltu	sp,t1,780 <main+0x320>
   54:	6c00                	ld	s0,24(s0)
   56:	20676e6f          	jal	t3,7625c <_dtb+0x75a5c>
-  jr s0
+  lb   a1, 0(sp)
   5a:	6e75                	lui	t3,0x1d
+  call main
   5c:	6e676973          	csrrsi	s2,0x6e6,14
+  la a1, _dtb
   60:	6465                	lui	s0,0x19
   62:	6920                	ld	s0,80(a0)
   64:	746e                	ld	s0,248(sp)
   66:	7300                	ld	s0,32(a4)
+  jr s0
   68:	6f68                	ld	a0,216(a4)
   6a:	7472                	ld	s0,312(sp)
   6c:	7520                	ld	s0,104(a0)
@@ -1273,7 +1278,7 @@ Disassembly of section .debug_rnglists:
    c:	00000007          	0x7
   10:	0000                	unimp
   12:	0000                	unimp
-  14:	6000                	ld	s0,0(s0)
+  14:	7000                	ld	s0,32(s0)
   16:	00040007          	0x40007
   1a:	0000                	unimp
   1c:	0000                	unimp
@@ -1282,49 +1287,49 @@ Disassembly of section .debug_rnglists:
   22:	0000                	unimp
   24:	0500                	addi	s0,sp,640
   26:	0800                	addi	s0,sp,16
-  add  x0, x0, x0
   28:	0000                	unimp
   2a:	0000                	unimp
-  li   a0, 0x1  
   2c:	0600                	addi	s0,sp,768
   2e:	0460                	addi	s0,sp,524
-  slli a1, a0, 12
   30:	0000                	unimp
   32:	0000                	unimp
-  li   sp, 0x10000
   34:	0000                	unimp
   36:	0460                	addi	s0,sp,524
-  lb   a1, 9(sp)
+  add  x0, x0, x0
   38:	0000                	unimp
   3a:	0000                	unimp
-  add  a2, a1, x0
+  li   a0, 0x1  
   3c:	0000                	unimp
   3e:	6806                	ld	a6,64(sp)
-  li   sp, 0x20ff0
+  slli a1, a0, 12
   40:	0004                	0x4
   42:	0000                	unimp
+  li   sp, 0x10000
   44:	0000                	unimp
   46:	8c00                	0x8c00
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   48:	0004                	0x4
   4a:	0000                	unimp
-  call main
+  add  a2, a1, x0
   4c:	0000                	unimp
   4e:	0600                	addi	s0,sp,768
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	0490                	addi	a2,sp,576
   52:	0000                	unimp
   54:	0000                	unimp
   56:	0000                	unimp
-  jr s0
+  lb   a1, 0(sp)
   58:	0498                	addi	a4,sp,576
   5a:	0000                	unimp
+  call main
   5c:	0000                	unimp
   5e:	0000                	unimp
+  la a1, _dtb
   60:	0600                	addi	s0,sp,768
   62:	048c                	addi	a1,sp,576
   64:	0000                	unimp
   66:	0000                	unimp
+  jr s0
   68:	0000                	unimp
   6a:	0490                	addi	a2,sp,576
   6c:	0000                	unimp
@@ -1405,45 +1410,45 @@ Disassembly of section .debug_loclists:
   22:	0000                	unimp
   24:	0000                	unimp
   26:	9f00                	0x9f00
-  add  x0, x0, x0
   28:	00048807          	0x48807
-  li   a0, 0x1  
   2c:	0000                	unimp
   2e:	0000                	unimp
-  slli a1, a0, 12
   30:	9000                	0x9000
   32:	0004                	0x4
-  li   sp, 0x10000
   34:	0000                	unimp
   36:	0000                	unimp
-  lb   a1, 9(sp)
+  add  x0, x0, x0
   38:	0100                	addi	s0,sp,128
   3a:	005c                	addi	a5,sp,4
-  add  a2, a1, x0
+  li   a0, 0x1  
   3c:	00046007          	0x46007
-  li   sp, 0x20ff0
+  slli a1, a0, 12
   40:	0000                	unimp
   42:	0000                	unimp
+  li   sp, 0x10000
   44:	7000                	ld	s0,32(s0)
   46:	0004                	0x4
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   48:	0000                	unimp
   4a:	0000                	unimp
-  call main
+  add  a2, a1, x0
   4c:	0300                	addi	s0,sp,384
   4e:	4808                	lw	a0,16(s0)
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	079f 0488 0000      	0x488079f
   56:	0000                	unimp
-  jr s0
+  lb   a1, 0(sp)
   58:	0000                	unimp
   5a:	0490                	addi	a2,sp,576
+  call main
   5c:	0000                	unimp
   5e:	0000                	unimp
+  la a1, _dtb
   60:	0000                	unimp
   62:	5d01                	li	s10,-32
   64:	0700                	addi	s0,sp,896
   66:	0490                	addi	a2,sp,576
+  jr s0
   68:	0000                	unimp
   6a:	0000                	unimp
   6c:	0000                	unimp
@@ -1562,36 +1567,33 @@ Disassembly of section .debug_frame:
   22:	0000                	unimp
   24:	0000                	unimp
   26:	0000                	unimp
-  add  x0, x0, x0
   28:	0014                	0x14
   2a:	0000                	unimp
-  li   a0, 0x1  
   2c:	0000                	unimp
   2e:	0000                	unimp
-  slli a1, a0, 12
   30:	0434                	addi	a3,sp,520
   32:	0000                	unimp
-  li   sp, 0x10000
   34:	0000                	unimp
   36:	0000                	unimp
-  lb   a1, 9(sp)
+  add  x0, x0, x0
   38:	002c                	addi	a1,sp,8
   3a:	0000                	unimp
-  add  a2, a1, x0
+  li   a0, 0x1  
   3c:	0000                	unimp
   3e:	0000                	unimp
-  li   sp, 0x20ff0
+  slli a1, a0, 12
   40:	0014                	0x14
   42:	0000                	unimp
+  li   sp, 0x10000
   44:	0000                	unimp
   46:	0000                	unimp
-  lb   a1, 0(sp)
+  lb   a1, 9(sp)
   48:	0460                	addi	s0,sp,524
   4a:	0000                	unimp
-  call main
+  add  a2, a1, x0
   4c:	0000                	unimp
   4e:	0000                	unimp
-  la a1, _dtb
+  li   sp, 0x20ff0
   50:	005c                	addi	a5,sp,4
   52:	0000                	unimp
   54:	0000                	unimp
