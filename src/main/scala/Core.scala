@@ -117,7 +117,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /****************************************************************/
     /****************** instruction decode begin ********************/
-    val decode_table = { /*if(supportNpInstr)*/ Seq(new NpDecode) /* else Nil*/ ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
+    val decode_table = { (if(supportNpInstr) Seq(new NpDecode) else Nil) ++: Seq(new I64Decode) ++: Seq(new IDecode) } flatMap(_.table)
     val id_ctrl = Wire(new InstrCtrlSigs()).decode(io.frontend.inst.bits.inst, decode_table); chisel3.dontTouch(id_ctrl)
     id_uop_W.valid    := io.frontend.inst.valid && id_ctrl.legal
     id_uop_W.ctrl     := id_ctrl

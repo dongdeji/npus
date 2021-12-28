@@ -16,7 +16,7 @@ import chisel3.experimental.chiselName
 import NpInstructions._
 
 trait NpusParams {
-  val supportNpInstr: Boolean = false
+  val supportNpInstr: Boolean = true
   val numCluster: Int = 1
   val numGroup: Int = 1
   val numNpu: Int = 1
@@ -163,7 +163,8 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
       val success = Output(Bool())
       val start = Input(Bool())
     })
-    
+    val debugCounter = Counter(30000)
+    io.success := debugCounter.inc
     // to do by dongdeji
 
   }
