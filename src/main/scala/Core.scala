@@ -140,7 +140,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /**********************************************************/
     /****************** register/wind read begin *******************/
     val windOffset = NpInstrImmGen(false, rr0_uop_R.inst).asUInt
-    window.module.io.swap.valid := rr0_uop_W.valid && rr0_uop_R.ctrl.legal && rr0_uop_R.ctrl.wind && !rr0_uop_R.ctrl.acc
+    window.module.io.swap.valid := rr0_uop_W.valid && rr0_uop_R.ctrl.legal && rr0_uop_R.ctrl.swap
     window.module.io.swap.offset := windOffset
     window.module.io.swap.size := rr0_uop_R.inst(13,12)
     window.module.io.swap.signed := !rr0_uop_R.inst(14)
@@ -169,7 +169,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr1_uop_W.rs2_valid := rr1_bypass_mux.io.rs2_valid
     rr1_uop_W.rs2_data := rr1_bypass_mux.io.rs2_data
 
-    rr1_uop_W.rd_valid := rr1_uop_W.valid && rr1_uop_R.ctrl.legal && rr1_uop_R.ctrl.wind && !rr1_uop_R.ctrl.acc
+    rr1_uop_W.rd_valid := rr1_uop_W.valid && rr1_uop_R.ctrl.legal && rr1_uop_R.ctrl.swap
     rr1_uop_W.rd_data := window.module.io.swap.data
 
     //register read stage 2 bypass check
@@ -209,7 +209,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     ex_uop_W.rd_valid := Mux(ex_uop_R.rd_valid, ex_uop_R.rd_valid, 
                             ex_uop_W.valid && ex_uop_W.ctrl.legal && ex_uop_R.ctrl.wxd && 
-                               (!ex_uop_R.ctrl.mem && !(ex_uop_R.ctrl.wind && ex_uop_R.ctrl.acc)))
+                               (!ex_uop_R.ctrl.mem && !ex_uop_R.ctrl.npi))
     ex_uop_W.rd_data := Mux(ex_uop_R.rd_valid, ex_uop_R.rd_data, 
                            Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), csr.io.rw.rdata, alu.io.out))
     /* handle imem request */
@@ -222,7 +222,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     chisel3.dontTouch(acc_nxt_target)
 
     val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
-    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && (ex_uop_R.ctrl.wind && ex_uop_R.ctrl.acc) else false.B
+    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && (ex_uop_R.ctrl.jal && ex_uop_R.ctrl.acc) else false.B
     val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr)
     io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
@@ -260,10 +260,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     /*******************************************************/
     /****************** write back begin *******************/
-
-    //wb_uop_W.rd_data := Mux(wb_uop_R.ctrl.wind, window.module.io.swap.data, wb_uop_R.rd_data)
-    //wb_uop_W.rd_valid := Mux(wb_uop_R.ctrl.wind, true.B, wb_uop_R.rd_valid)
-
     regfile.module.io.rd_write := wb_uop_W.valid & wb_uop_W.ctrl.legal & wb_uop_W.rd_valid
     regfile.module.io.rd_data  := wb_uop_W.rd_data
     regfile.module.io.rd       := wb_uop_W.rd

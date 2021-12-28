@@ -94,18 +94,20 @@ class InstrCtrlSigs extends Bundle {
   val mclk = Bool()
   val wind = Bool()
   val acc = Bool()
+  val npi = Bool() //np instruction
+  val swap = Bool()
 
   def default: List[BitPat] =
                         // legal jal       sel_alu2        sel_imm                                 mclk
                         //   |   | jalr    |     sel_alu1  |      alu_dw                           | wind
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | 
-                        List(N,X,X,X,X,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   X,CSR.X, X,X,X)
+                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc  swap
+                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | npi |
+                        List(N,X,X,X,X,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   X,CSR.X, X,X,X, X, X)
 
   def decode(inst: UInt, table: Iterable[(BitPat, List[BitPat])]) = {
     val decoder = DecodeLogic(inst, default, table)
     val sigs = Seq(legal, br, jal, jalr, rxs2, rxs1, sel_alu2,
-                   sel_alu1, sel_imm, alu_dw, alu_fn, mem, mem_cmd, wxd, csr, mclk, wind, acc)
+                   sel_alu1, sel_imm, alu_dw, alu_fn, mem, mem_cmd, wxd, csr, mclk, wind, acc, npi, swap)
     sigs zip decoder map {case(s,d) => s := d}
     this
   }
@@ -116,57 +118,57 @@ class IDecode extends DecodeConstants
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal jal       sel_alu2        sel_imm                                 mclk
                         //   |   | jalr    |     sel_alu1  |      alu_dw                           | wind
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | 
-    BNE->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE, N,M_X,   N,CSR.N, N,N,N),
-    BEQ->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SEQ, N,M_X,   N,CSR.N, N,N,N),
-    BLT->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLT, N,M_X,   N,CSR.N, N,N,N),
-    BLTU->              List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLTU,N,M_X,   N,CSR.N, N,N,N),
-    BGE->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGE, N,M_X,   N,CSR.N, N,N,N),
-    BGEU->              List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGEU,N,M_X,   N,CSR.N, N,N,N),
+                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc  swap
+                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | npi |
+    BNE->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE, N,M_X,   N,CSR.N, N,N,N, N, N),
+    BEQ->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SEQ, N,M_X,   N,CSR.N, N,N,N, N, N),
+    BLT->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLT, N,M_X,   N,CSR.N, N,N,N, N, N),
+    BLTU->              List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLTU,N,M_X,   N,CSR.N, N,N,N, N, N),
+    BGE->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGE, N,M_X,   N,CSR.N, N,N,N, N, N),
+    BGEU->              List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGEU,N,M_X,   N,CSR.N, N,N,N, N, N),
 
-    JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
-    JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
-    AUIPC->             List(Y,N,N,N,N,N,  A2_IMM, A1_PC,  IMM_U, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
+    JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    AUIPC->             List(Y,N,N,N,N,N,  A2_IMM, A1_PC,  IMM_U, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, N, N),
 
-    LB->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    LH->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    LW->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    LBU->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    LHU->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    SB->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N),
-    SH->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N),
-    SW->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N),
+    LB->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, N, N),
+    LH->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, N, N),
+    LW->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, N, N),
+    LBU->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, N, N),
+    LHU->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, N, N),
+    SB->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N, N, N),
+    SH->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N, N, N),
+    SW->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N, N, N),
 
-    LUI->               List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_U, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
-    ADDI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
-    SLTI ->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SLT, N,M_X,   Y,CSR.N, N,N,N),
-    SLTIU->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SLTU,N,M_X,   Y,CSR.N, N,N,N),
-    ANDI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_AND, N,M_X,   Y,CSR.N, N,N,N),
-    ORI->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_OR,  N,M_X,   Y,CSR.N, N,N,N),
-    XORI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_XOR, N,M_X,   Y,CSR.N, N,N,N),
-    ADD->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
-    SUB->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SUB, N,M_X,   Y,CSR.N, N,N,N),
-    SLT->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SLT, N,M_X,   Y,CSR.N, N,N,N),
-    SLTU->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SLTU,N,M_X,   Y,CSR.N, N,N,N),
-    AND->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_AND, N,M_X,   Y,CSR.N, N,N,N),
-    OR->                List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_OR,  N,M_X,   Y,CSR.N, N,N,N),
-    XOR->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_XOR, N,M_X,   Y,CSR.N, N,N,N),
-    SLL->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SL,  N,M_X,   Y,CSR.N, N,N,N),
-    SRL->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SR,  N,M_X,   Y,CSR.N, N,N,N),
-    SRA->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SRA, N,M_X,   Y,CSR.N, N,N,N),
+    LUI->               List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_U, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    ADDI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SLTI ->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SLT, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SLTIU->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SLTU,N,M_X,   Y,CSR.N, N,N,N, N, N),
+    ANDI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_AND, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    ORI->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_OR,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    XORI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_XOR, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    ADD->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SUB->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SUB, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SLT->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SLT, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SLTU->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SLTU,N,M_X,   Y,CSR.N, N,N,N, N, N),
+    AND->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_AND, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    OR->                List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_OR,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    XOR->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_XOR, N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SLL->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SL,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRL->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SR,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRA->               List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_XPR,FN_SRA, N,M_X,   Y,CSR.N, N,N,N, N, N),
 
-    SCALL->             List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N),
-    SBREAK->            List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N),
-    MRET->              List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N),
-    WFI->               List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N),
-    CEASE->             List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N),
-    CSRRW->             List(Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.W, N,N,N),
-    CSRRS->             List(Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.S, N,N,N),
-    CSRRC->             List(Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.C, N,N,N),
-    CSRRWI->            List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD, N,M_X,   Y,CSR.W, N,N,N),
-    CSRRSI->            List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD, N,M_X,   Y,CSR.S, N,N,N),
-    CSRRCI->            List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD, N,M_X,   Y,CSR.C, N,N,N))
+    SCALL->             List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N, N, N),
+    SBREAK->            List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N, N, N),
+    MRET->              List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N, N, N),
+    WFI->               List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N, N, N),
+    CEASE->             List(Y,N,N,N,N,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   N,CSR.I, N,N,N, N, N),
+    CSRRW->             List(Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.W, N,N,N, N, N),
+    CSRRS->             List(Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.S, N,N,N, N, N),
+    CSRRC->             List(Y,N,N,N,N,Y,  A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD, N,M_X,   Y,CSR.C, N,N,N, N, N),
+    CSRRWI->            List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD, N,M_X,   Y,CSR.W, N,N,N, N, N),
+    CSRRSI->            List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD, N,M_X,   Y,CSR.S, N,N,N, N, N),
+    CSRRCI->            List(Y,N,N,N,N,N,  A2_IMM, A1_ZERO,IMM_Z, DW_XPR,FN_ADD, N,M_X,   Y,CSR.C, N,N,N, N, N))
 }
 
 
@@ -175,25 +177,25 @@ class I64Decode extends DecodeConstants
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal jal       sel_alu2        sel_imm                                 mclk
                         //   |   | jalr    |     sel_alu1  |      alu_dw                           | wind
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | 
-    LD->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    LWU->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    SD->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N),
-  
-    SLLI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SL,  N,M_X,   Y,CSR.N, N,N,N),
-    SRLI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SR,  N,M_X,   Y,CSR.N, N,N,N),
-    SRAI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SRA, N,M_X,   Y,CSR.N, N,N,N),
-  
-    ADDIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_ADD,  N,M_X,   Y,CSR.N, N,N,N),
-    SLLIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_SL,   N,M_X,   Y,CSR.N, N,N,N),
-    SRLIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_SR,   N,M_X,   Y,CSR.N, N,N,N),
-    SRAIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_SRA,  N,M_X,   Y,CSR.N, N,N,N),
-    ADDW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_ADD,  N,M_X,   Y,CSR.N, N,N,N),
-    SUBW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SUB,  N,M_X,   Y,CSR.N, N,N,N),
-    SLLW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SL,   N,M_X,   Y,CSR.N, N,N,N),
-    SRLW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SR,   N,M_X,   Y,CSR.N, N,N,N),
-    SRAW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SRA,  N,M_X,   Y,CSR.N, N,N,N))
+                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc  swap
+                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | npi |
+    LD->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, N, N),
+    LWU->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, N, N),
+
+    SD->                List(Y,N,N,N,Y,Y,  A2_IMM, A1_RS1, IMM_S, DW_XPR,FN_ADD, Y,M_XWR, N,CSR.N, N,N,N, N, N),
+    SLLI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SL,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRLI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SR,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRAI->              List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_SRA, N,M_X,   Y,CSR.N, N,N,N, N, N),
+
+    ADDIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_ADD,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SLLIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_SL,   N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRLIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_SR,   N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRAIW->             List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_32,FN_SRA,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    ADDW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_ADD,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SUBW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SUB,  N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SLLW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SL,   N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRLW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SR,   N,M_X,   Y,CSR.N, N,N,N, N, N),
+    SRAW->              List(Y,N,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_X, DW_32,FN_SRA,  N,M_X,   Y,CSR.N, N,N,N, N, N))
 }
 
 
@@ -275,34 +277,33 @@ class NpDecode extends DecodeConstants
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal jal       sel_alu2        sel_imm                                 mclk
                         //   |   | jalr    |     sel_alu1  |      alu_dw                           | wind
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | 
-  //JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
-  //JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N),
-    LPKTWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,Y),
-    LRESWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,Y),
-    LRDJAL    ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,Y),
-    LPKTWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,Y),
-    LRESWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,Y),
-    LRDJALR   ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,Y),
-
-  //LB->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-  //LH->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-  //LW->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N),
-    SWAPPKTB  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPPKTH  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPPKTW  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPPKTD  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPPKTUB ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPPKTUH ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPPKTUW ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPRESB  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPRESH  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPRESW  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPRESD  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPRESUB ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPRESUH ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N),
-    SWAPRESUW ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N))
+                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      wxd      | | acc  swap
+                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd|  csr   | | | npi |
+  //JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, Y, N),
+  //JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,CSR.N, N,N,N, Y, N),
+    LPKTWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, Y,Y,Y, Y, N),
+    LRESWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, Y,Y,Y, Y, N),
+    LRDJAL    ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, Y,Y,Y, Y, N),
+    LPKTWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, Y,Y,Y, Y, N),
+    LRESWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, Y,Y,Y, Y, N),
+    LRDJALR   ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, Y,Y,Y, Y, N),
+  //LB->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, Y, Y),
+  //LH->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, Y, Y),
+  //LW->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,CSR.N, N,N,N, Y, Y),
+    SWAPPKTB  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPPKTH  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPPKTW  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPPKTD  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPPKTUB ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPPKTUH ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPPKTUW ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPRESB  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPRESH  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPRESW  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPRESD  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPRESUB ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPRESUH ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y),
+    SWAPRESUW ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,CSR.N, N,Y,N, Y, Y))
 }
 
 class NpuALU extends Module with NpusParams
