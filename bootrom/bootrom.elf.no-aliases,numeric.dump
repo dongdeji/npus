@@ -5,19 +5,20 @@ bootrom.elf：     文件格式 elf64-littleriscv
 Disassembly of section .text.start:
 
 0000000000000000 <_start>:
-   0:	00000033          	add	x0,x0,x0
-   4:	00100513          	addi	x10,x0,1
-   8:	00c51593          	slli	x11,x10,0xc
-   c:	00010137          	lui	x2,0x10
-  10:	00910583          	lb	x11,9(x2) # 10009 <_dtb+0xf809>
-  14:	00058633          	add	x12,x11,x0
-  18:	00021137          	lui	x2,0x21
-  1c:	ff01011b          	addiw	x2,x2,-16
-  20:	00010583          	lb	x11,0(x2) # 21000 <_dtb+0x20800>
-  24:	43c000ef          	jal	x1,460 <main>
-  28:	00000597          	auipc	x11,0x0
-  2c:	7d858593          	addi	x11,x11,2008 # 800 <_dtb>
-  30:	00040067          	jalr	x0,0(x8)
+   0:	0000100b          	0x100b
+   4:	00000033          	add	x0,x0,x0
+   8:	00100513          	addi	x10,x0,1
+   c:	00c51593          	slli	x11,x10,0xc
+  10:	00010137          	lui	x2,0x10
+  14:	00910583          	lb	x11,9(x2) # 10009 <_dtb+0xf809>
+  18:	00058633          	add	x12,x11,x0
+  1c:	00021137          	lui	x2,0x21
+  20:	ff01011b          	addiw	x2,x2,-16
+  24:	00010583          	lb	x11,0(x2) # 21000 <_dtb+0x20800>
+  28:	438000ef          	jal	x1,460 <main>
+  2c:	00000597          	auipc	x11,0x0
+  30:	7d458593          	addi	x11,x11,2004 # 800 <_dtb>
+  34:	00040067          	jalr	x0,0(x8)
 
 Disassembly of section .text.hang:
 
@@ -158,12 +159,12 @@ Disassembly of section .debug_line:
   32:	0000                	c.unimp
   34:	0000                	c.unimp
   36:	0900                	c.addi4spn	x8,x2,144
-  38:	0002                	c.slli64	x0
+  38:	0402                	c.slli64	x8
   3a:	0000                	c.unimp
   3c:	0000                	c.unimp
   3e:	0000                	c.unimp
   40:	0300                	c.addi4spn	x8,x2,384
-  42:	0109                	c.addi	x2,2
+  42:	010a                	c.slli	x2,0x2
   44:	04090103          	lb	x2,64(x18)
   48:	0100                	c.addi4spn	x8,x2,128
   4a:	04090103          	lb	x2,64(x18)
@@ -193,7 +194,7 @@ Disassembly of section .debug_line:
   8c:	0000                	c.unimp
   8e:	0000                	c.unimp
   90:	0300                	c.addi4spn	x8,x2,384
-  92:	011c                	c.addi4spn	x15,x2,128
+  92:	011d                	c.addi	x2,7
   94:	04090103          	lb	x2,64(x18)
   98:	0100                	c.addi4spn	x8,x2,128
   9a:	04090103          	lb	x2,64(x18)
@@ -977,7 +978,7 @@ Disassembly of section .debug_aranges:
    8:	0000                	c.unimp
    a:	0008                	0x8
 	...
-  18:	0034                	c.addi4spn	x13,x2,8
+  18:	0038                	c.addi4spn	x14,x2,8
   1a:	0000                	c.unimp
   1c:	0000                	c.unimp
   1e:	0000                	c.unimp
@@ -1140,7 +1141,7 @@ Disassembly of section .debug_rnglists:
    c:	00000007          	0x7
   10:	0000                	c.unimp
   12:	0000                	c.unimp
-  14:	3800                	c.fld	f8,48(x8)
+  14:	3c00                	c.fld	f8,56(x8)
   16:	00040007          	0x40007
   1a:	0000                	c.unimp
   1c:	0000                	c.unimp

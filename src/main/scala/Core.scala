@@ -28,8 +28,8 @@ class RrBypassMux extends Module with NpusParams
                   val rr_uop_R = Input(new ThreadUop)
                   val ex_uop_W = Input(new ThreadUop)
                   val wb_uop_W = Input(new ThreadUop)
-                  val rs1_bypassed = Output(Bool())
-                  val rs2_bypassed = Output(Bool())
+                  val rs1_valid = Output(Bool())
+                  val rs2_valid = Output(Bool())
                   val rs1_data = Output(UInt(dataWidth.W))
                   val rs2_data = Output(UInt(dataWidth.W))
                 })
@@ -51,7 +51,7 @@ class RrBypassMux extends Module with NpusParams
   .otherwise// low priority
   { io.rs1_data := io.rr_uop_R.rs1_data}
 
-  io.rs1_bypassed := rs1_bypass_ex || rs1_bypass_wb
+  io.rs1_valid := rs1_bypass_ex || rs1_bypass_wb || io.rr_uop_R.rs1_valid
 
   when(rs2_bypass_ex) // high priority
   { io.rs2_data := io.ex_uop_W.rd_data } 
@@ -60,7 +60,7 @@ class RrBypassMux extends Module with NpusParams
   .otherwise// low priority
   { io.rs2_data := io.rr_uop_R.rs2_data}
 
-  io.rs2_bypassed := rs2_bypass_ex || rs2_bypass_wb
+  io.rs2_valid := rs2_bypass_ex || rs2_bypass_wb || io.rr_uop_R.rs2_valid
 }
 
 class SwapWindBundle extends Bundle with NpusParams
@@ -146,9 +146,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr0_bypass_mux.io.rr_uop_R := rr0_uop_R
     rr0_bypass_mux.io.ex_uop_W := ex_uop_W
     rr0_bypass_mux.io.wb_uop_W := wb_uop_W
-    rr0_uop_W.rs1_valid := rr0_bypass_mux.io.rs1_bypassed
+    rr0_uop_W.rs1_valid := rr0_bypass_mux.io.rs1_valid
     rr0_uop_W.rs1_data := rr0_bypass_mux.io.rs1_data
-    rr0_uop_W.rs2_valid := rr0_bypass_mux.io.rs2_bypassed
+    rr0_uop_W.rs2_valid := rr0_bypass_mux.io.rs2_valid
     rr0_uop_W.rs2_data := rr0_bypass_mux.io.rs2_data
 
     //register read stage 1 bypass check
@@ -156,9 +156,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr1_bypass_mux.io.rr_uop_R := rr1_uop_R
     rr1_bypass_mux.io.ex_uop_W := ex_uop_W
     rr1_bypass_mux.io.wb_uop_W := wb_uop_W
-    rr1_uop_W.rs1_valid := rr1_bypass_mux.io.rs1_bypassed
+    rr1_uop_W.rs1_valid := rr1_bypass_mux.io.rs1_valid
     rr1_uop_W.rs1_data := rr1_bypass_mux.io.rs1_data
-    rr1_uop_W.rs2_valid := rr1_bypass_mux.io.rs2_bypassed
+    rr1_uop_W.rs2_valid := rr1_bypass_mux.io.rs2_valid
     rr1_uop_W.rs2_data := rr1_bypass_mux.io.rs2_data
 
     //register read stage 2 bypass check
@@ -166,9 +166,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr2_bypass_mux.io.rr_uop_R := rr2_uop_R
     rr2_bypass_mux.io.ex_uop_W := ex_uop_W
     rr2_bypass_mux.io.wb_uop_W := wb_uop_W
-    rr2_uop_W.rs1_valid := rr2_bypass_mux.io.rs1_bypassed
+    rr2_uop_W.rs1_valid := rr2_bypass_mux.io.rs1_valid
     rr2_uop_W.rs1_data := rr2_bypass_mux.io.rs1_data
-    rr2_uop_W.rs2_valid := rr2_bypass_mux.io.rs2_bypassed
+    rr2_uop_W.rs2_valid := rr2_bypass_mux.io.rs2_valid
     rr2_uop_W.rs2_data := rr2_bypass_mux.io.rs2_data
     /****************** register read end *********************/
     /**********************************************************/
@@ -235,7 +235,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     chisel3.dontTouch(window.module.io)
 
     io.accinf.uop := ex_uop_W
-    io.accinf.req.valid := ex_uop_W.valid && (ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) 
+    io.accinf.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
+                            ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
+                               ex_uop_W.ctrl.acc )
     io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
     io.accinf.req.bits.size := ex_uop_W.inst(13,12)
     io.accinf.req.bits.signed := !ex_uop_W.inst(14)

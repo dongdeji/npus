@@ -7,6 +7,7 @@
 _start:
   //csrwi 0x7c1, 0 // disable chicken bits
   //csrr a0, mhartid
+  LPKTWJAL(4, 0)
   add  x0, x0, x0
   li   a0, 0x1  
   slli a1, a0, 12

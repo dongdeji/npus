@@ -360,7 +360,7 @@ class AXI4PKTROM(
     val ar_id_s1 = Reg(UInt())
     val ar_echo = Reg(in.ar.bits.echo.cloneType)
     val state = RegInit(idle)
-    val offset = Reg(UInt((log2Ceil(bigs.size +1)).W))
+    val offset = RegInit(0.U((log2Ceil(bigs.size +1)).W))
     chisel3.dontTouch(in.ar)
     chisel3.dontTouch(in.r)
     in.ar.ready := true.B
@@ -371,7 +371,7 @@ class AXI4PKTROM(
     {
       is(idle) {
         when(in.ar.fire() && address.contains(in.ar.bits.addr)) {
-          offset := 0.U
+          //offset := 0.U
           ar_id_s1 := in.ar.bits.id
           ar_echo := in.ar.bits.echo
           state := send_datal
@@ -396,7 +396,7 @@ class AXI4PKTROM(
         in.r.bits.echo := ar_echo
         in.r.bits.last := false.B
         offset := offset + 1.U
-        when(offset === 17.U)
+        when(offset(3,0) === 15.U)
         { 
           in.r.bits.last := true.B
           state := idle 
