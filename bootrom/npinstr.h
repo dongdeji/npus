@@ -39,11 +39,11 @@
        (func3                   << (7+5+3+5+5))  |  \
        (0                       << (7+5+3+5+5+3))
 
-#define LXJALR(func3, imm, rd, rs1)                 \
+#define LXJALR(func3, imm, rd, rs1_src)             \
        (XCUSTOM_OPCODE(0)       << (0))          |  \
        (rd                      << (7))          |  \
        (EXTRACT(imm, 4, 2)      << (7+5))        |  \
-       (rs1                     << (7+5+3))      |  \
+       (rs1_src                 << (7+5+3))      |  \
        (EXTRACT(imm, 9, 5)      << (7+5+3+5))    |  \
        (func3                   << (7+5+3+5+5))  |  \
        (1                       << (7+5+3+5+5+3))
@@ -58,8 +58,8 @@
 
 
 #define LPKTWJAL(imm, rd)            .word LXJAL(0, imm, ## rd)
-#define LRESWJAL(imm, rd)            .word LXJAL(1, imm, ## rd)
-#define LRDJAL(imm, rd)              .word LXJAL(2, imm, ## rd)
+#define LRESWJAL(imm, rd, src)       .word LXJALR(4, imm, ## rd, ## src)
+#define LRDJAL(imm, rd, src)         .word LXJALR(3, imm, ## rd, ## src)
 #define LPKTWJALR(imm, rd, rs1)      .word LXJALR(0, imm, ## rd, ## rs1)
 #define LRESWJALR(imm, rd, rs1)      .word LXJALR(1, imm, ## rd, ## rs1)
 #define LRDJALR(imm, rd, rs1)        .word LXJALR(2, imm, ## rd, ## rs1)
