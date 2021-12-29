@@ -31,9 +31,9 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
   lazy val module = new LazyModuleImp(this) 
   {
-    val offsetWith = 1 << log2Ceil(log2Ceil(windowSizePerNp))
+    val offsetWidth = 1 << log2Ceil(log2Ceil(windowSizePerNp))
     val io = IO(new Bundle {
-      val swap = Flipped(new SwapWindBundle)      
+      val swap = Flipped(new SwapWindBundle(offsetWidth))      
       val accLoad = Flipped(new AccLoadBundle)
     })
     chisel3.dontTouch(io)
@@ -47,19 +47,20 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val banks = Seq.tabulate(dataBytes) { i => SyncReadMem(windowSizePerNp/dataBytes, UInt(8.W)) }
     
     /********** handle swap req from pipe begin **********/
-    val offset_raw = VecInit(Seq.tabulate(dataBytes){ i => (io.swap.offset + i.U)(offsetWith-1, 0)}).asUInt
-    val byte_offset = io.swap.offset(log2Ceil(dataBytes)-1, 0)
-    val wide_offset_raw = offset_raw << (byte_offset << log2Ceil(offsetWith))
-    val offset_pakage = (wide_offset_raw >> offsetWith*dataBytes) | wide_offset_raw(offsetWith*dataBytes-1,0)
-    val byte_offset_s1 = RegNext(byte_offset)
+    val banks_offset = VecInit(Seq.tabulate(dataBytes){ i => (io.swap.offset + i.U)(offsetWidth-1, 0)}).asUInt
+    val group_offset = io.swap.offset(log2Ceil(dataBytes)-1, 0)
+    val banks_offset_wide = banks_offset << (group_offset << log2Ceil(offsetWidth))
+    val banks_offset_pakage = (banks_offset_wide >> offsetWidth*dataBytes) | banks_offset_wide(offsetWidth*dataBytes-1,0)
+    val group_offset_s1 = RegNext(group_offset)
     val size_s1 = RegNext(io.swap.size)
     val signed_s1 = RegNext(io.swap.signed)
     val data_pakage = VecInit(Seq.tabulate(dataBytes) { i => 
-                  val offset = offset_pakage((i+1)*offsetWith-1, i*offsetWith)
+                  val offset = banks_offset_pakage((i+1)*offsetWidth-1, i*offsetWidth)
                   banks(i).read(offset >> log2Ceil(dataBytes)) }).asUInt
-    val data_raw_l = data_pakage >> (byte_offset_s1 << log2Ceil(8))
-    val data_raw_h = (data_pakage << ((dataBytes.U - byte_offset_s1) << log2Ceil(8)))(dataWidth - 1, 0)
-    val dataMask = ~( ((~(0.U(dataBytes.W))) << (1.U << size_s1)) (dataBytes-1,0) )
+    val data_raw_l = data_pakage >> (group_offset_s1 << log2Ceil(8))
+    val data_raw_h = (data_pakage << ((dataBytes.U - group_offset_s1) << log2Ceil(8)))(dataWidth - 1, 0)
+    val allBitOne = ~(0.U(dataBytes.W))
+    val dataMask = ~( (allBitOne << (1.U << size_s1)) (dataBytes-1,0) )
     io.swap.data := (data_raw_h | data_raw_l) & FillInterleaved(8, dataMask)
     /********** handle swap req from pipe end **********/
 

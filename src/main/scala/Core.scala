@@ -63,14 +63,15 @@ class RrBypassMux extends Module with NpusParams
   io.rs2_valid := rs2_bypass_ex || rs2_bypass_wb || io.rr_uop_R.rs2_valid
 }
 
-class SwapWindBundle extends Bundle with NpusParams
+class SwapWindBundle(offsetWidth: Int) extends Bundle with NpusParams
 {
   val valid = Output(Bool())
-  val offsetWith = 1 << log2Ceil(log2Ceil(windowSizePerNp))
-  val offset = Output(UInt(offsetWith.W))
+  val offset = Output(UInt(offsetWidth.W))
   val size = Output(UInt(2.W)) /* dmem_req.inst_32(13,12) */
   val signed = Output(UInt(1.W)) /* !dmem_req.inst_32(14) */
   val data = Input(UInt(dataWidth.W))
+
+  override def cloneType: this.type = (new SwapWindBundle(offsetWidth)).asInstanceOf[this.type]
 }
 
 class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 

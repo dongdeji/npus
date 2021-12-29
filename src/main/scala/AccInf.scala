@@ -78,6 +78,14 @@ class DmemReqBundle extends Bundle with NpusParams {
   override def cloneType: this.type = (new DmemReqBundle).asInstanceOf[this.type]
 }
 
+class KeyBufReqBundle extends Bundle with NpusParams {  
+  val size = UInt(2.W) /* dmem_req.inst_32(13,12) */
+  val data = UInt(dataWidth.W)
+  val tid = UInt(log2Up(numThread).W)
+
+  override def cloneType: this.type = (new KeyBufReqBundle).asInstanceOf[this.type]
+}
+
 class DmemRespBundle extends Bundle with NpusParams {  
   val data = UInt(dataWidth.W)
   val addr = UInt(addrWidth.W)
@@ -177,10 +185,11 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     // handle keybuff access
     val keybuff = Module(new KeyBuff(ClusterId, GroupId, NpId))
-    keybuff.io.core.uop := io.core.uop
-    keybuff.io.core.req := io.core.req
-    when(keybuff.io.core.resp.valid)
-    { io.core.resp := keybuff.io.core.resp }
+    keybuff.io.core.valid := io.core.req.valid && io.core.uop.valid && io.core.uop.ctrl.legal && 
+                               io.core.uop.ctrl.npi && (io.core.uop.ctrl.npcmd === NpuCmd.NP_STK)
+    keybuff.io.core.bits.size := io.core.req.bits.size
+    keybuff.io.core.bits.data := io.core.req.bits.data
+    keybuff.io.core.bits.tid := io.core.req.bits.tid
 
     // handle acc/iram axi4 req    
     val accouts = accmasters.map { _.out(0)._1 }

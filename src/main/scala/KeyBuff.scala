@@ -25,50 +25,53 @@ import chisel3.experimental.chiselName
 
 class KeyBuff(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends Module with NpusParams 
 {
+    val offsetWidth = 1 << log2Ceil(log2Ceil(keyBuffSizePerNp))
     val io = IO(new Bundle {
-      val core = Flipped(new AccInfBundle)
+      val core = Flipped(Valid(new KeyBufReqBundle))
+      val sizes = Output(Vec(numThread, UInt(log2Ceil(keyBuffSizePerNp/numThread).W)))
+      //val read_addr = Input(UInt(offsetWidth.W))
+      //val read_tid = Input(UInt(log2Up(numThread).W))
+      //val read_data = Output(UInt(dataWidth.W))
+      //val resetBuffs = Input(Vec(numThread, Bool()))
     })
+    chisel3.dontTouch(io)
 
     val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
     val keyBuffAddress = AddressSet(keyBuffBase + keyBuffSizePerNp*Id, keyBuffSizePerNp-1)
+    val heads = RegInit(VecInit(Seq.fill(numThread)(0.U(offsetWidth.W))))
+    val head = heads(io.core.bits.tid)    
+    //chisel3.dontTouch(head)
+    val ramDepth = keyBuffSizePerNp/dataBytes
+    val banks = (0 until dataBytes ).map{ i => SyncReadMem(ramDepth, UInt(8.W)) }
+    /********** handle swap req from pipe begin **********/
+    val banks_offset = VecInit(Seq.tabulate(dataBytes){ i => (head + i.U)(offsetWidth-1, 0)}).asUInt
+    val banks_offset_wide = banks_offset << (head(log2Ceil(dataBytes)-1, 0) << log2Ceil(offsetWidth))
+    val banks_offset_pakage = (banks_offset_wide >> dataBytes*offsetWidth) | banks_offset_wide(dataBytes*offsetWidth-1,0)
+    chisel3.dontTouch(banks_offset_pakage)
 
-    /***************** handle dmem req begin *****************/
-    val req_valid_s1 = RegNext(io.core.req.valid)
-    val req_cmd_s1 = RegNext(io.core.req.bits.cmd)
-    val req_addr_s1 = RegNext(io.core.req.bits.addr)
-    val req_tid_s1 = RegNext(io.core.req.bits.tid)
-    val dramDepth = dramSizePerNp/dataBytes
-    val banks = (0 until dataBytes ).map{ i => SyncReadMem(dramDepth, UInt(8.W)) }
+    val allBitOne = ~(0.U(dataBytes.W))
+    val dataMask = ~( (allBitOne << (1.U << io.core.bits.size)) (dataBytes-1,0) )
+    val dataMask_wide = dataMask << head(log2Ceil(dataBytes)-1,0)
+    val dataMask_pakage = (dataMask_wide >> dataBytes) | dataMask_wide(dataBytes-1, 0)
+    chisel3.dontTouch(dataMask_pakage)
 
-    val wdata = Wire(Vec(dataBytes, UInt(8.W))); chisel3.dontTouch(wdata)
-    wdata := (new StoreGen(io.core.req.bits.size, 0.U, io.core.req.bits.data, 8).data).asTypeOf(Vec(dataBytes, UInt(8.W)))
-
-    val dsize = WireInit(1.U << io.core.req.bits.size); chisel3.dontTouch(dsize)
-    val addr_h = Cat(io.core.req.bits.tid, io.core.req.bits.addr(log2Ceil(dramDepth) - log2Ceil(numThread) - 1, log2Ceil(dataBytes)))
-    val addr_l = io.core.req.bits.addr(log2Ceil(dataBytes)-1, 0)
-    val unmask_l = WireInit((-1.S(dataBytes.W) >> addr_l) << addr_l); chisel3.dontTouch(unmask_l)
-    val unmask_h = WireInit((-1.S(dataBytes.W) >> (addr_l + dsize)) << (addr_l + dsize)); chisel3.dontTouch(unmask_h)
-    val dmask = WireInit((~unmask_h & unmask_l)(dataBytes -1, 0)); chisel3.dontTouch(dmask)
-    val enmask = WireInit(Fill(dataBytes, io.core.req.valid && io.core.req.bits.cmd.isOneOf(M_XRD, M_XWR)) & dmask); chisel3.dontTouch(enmask)
+    val data = io.core.bits.data
+    val data_wide = dataMask << (head(log2Ceil(dataBytes)-1,0) << log2Ceil(8))
+    val data_pakage = data_wide >> (dataBytes*8) | data_wide(dataBytes*8-1, 0)
 
     Seq.tabulate(dataBytes){ i =>
-      when(enmask(i) && io.core.req.bits.cmd.isOneOf(M_XWR))
-      { banks(i).write(addr_h, wdata(i)) }
+      val addr = banks_offset_pakage((i+1)*offsetWidth-1, i*offsetWidth)
+      val offset = Cat(io.core.bits.tid, addr(offsetWidth-1,log2Ceil(dataBytes)))
+      val wdata = data_pakage((i+1)*8-1, i*8)
+      when(dataMask_pakage(i) && io.core.fire()) 
+      { 
+        head := head + 1.U
+        banks(i).write(offset, wdata) 
+      }
     }
+    when(io.core.fire()) { head := head + (1.U << io.core.bits.size) }
 
-    val enmask_s1 = RegNext(enmask)
-    val rdatas = Seq.tabulate(dataBytes) { i => Mux(enmask_s1(i).asBool, banks(i).read(addr_h), 0.U) }
-    val rdata = WireInit(Cat(rdatas.reverse))
-
-    io.core.resp.valid := req_valid_s1 && keyBuffAddress.contains(req_addr_s1)
-    io.core.resp.bits.data := rdata >> (req_addr_s1(log2Ceil(dataBytes)-1, 0) << log2Ceil(8))
-    io.core.resp.bits.addr := req_addr_s1
-    io.core.resp.bits.tid := req_tid_s1 
-
-    /***************** handle dmem req end *****************/
-
-    io.core.readys.valid := io.core.resp.valid
-    io.core.readys.bits.thread := io.core.resp.valid << req_tid_s1
+    io.sizes := heads
 }
 
 
