@@ -271,8 +271,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         }
         is(send_reg_aw)
         { 
-          regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).uop.ctrl.wxd && 
-                                   accMeta_R(tid).buff_full
+          regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full && 
+                                   accMeta_R(tid).uop.ctrl.wxd && (accMeta_R(tid).uop.ctrl.wxdv === XdValid.XD_LLL)
           val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
           val npRegBase = (regfileGlobalBase + regfileSizePerNp*Id).U
           val threadRegAddr = npRegBase >> (log2Ceil(isaRegNumPerThread) + log2Ceil(dataBytes))

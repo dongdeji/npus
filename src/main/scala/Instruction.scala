@@ -142,9 +142,9 @@ class IDecode extends DecodeConstants
     BGE->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGE, N,M_X,   N,XD_X  , CSR.N,N,NP_X   ),
     BGEU->              List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SGEU,N,M_X,   N,XD_X  , CSR.N,N,NP_X   ),
  
-    JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,N,NP_X   ),
-    JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,N,NP_X   ),
-    AUIPC->             List(Y,N,N,N,N,N,  A2_IMM, A1_PC,  IMM_U, DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,N,NP_X   ),
+    JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,XD_ALU, CSR.N,N,NP_X   ),
+    JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,XD_ALU, CSR.N,N,NP_X   ),
+    AUIPC->             List(Y,N,N,N,N,N,  A2_IMM, A1_PC,  IMM_U, DW_XPR,FN_ADD, N,M_X,   Y,XD_ALU, CSR.N,N,NP_X   ),
  
     LB->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,XD_LLL, CSR.N,N,NP_X   ),
     LH->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,XD_LLL, CSR.N,N,NP_X   ),

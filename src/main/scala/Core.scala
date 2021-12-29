@@ -140,7 +140,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /**********************************************************/
     /****************** register/wind read begin *******************/
     val windOffset = NpInstrImmGen(false, rr0_uop_R.inst).asUInt
-    window.module.io.swap.valid := rr0_uop_W.valid && rr0_uop_R.ctrl.legal && rr0_uop_R.ctrl.npi && (rr0_uop_R.ctrl.npcmd === NpuCmd.NP_SWAP)
+    window.module.io.swap.valid := rr0_uop_W.valid && rr0_uop_R.ctrl.legal && 
+                                     rr0_uop_R.ctrl.npi && (rr0_uop_R.ctrl.npcmd === NpuCmd.NP_SWAP)
     window.module.io.swap.offset := windOffset
     window.module.io.swap.size := rr0_uop_R.inst(13,12)
     window.module.io.swap.signed := !rr0_uop_R.inst(14)
@@ -169,7 +170,9 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr1_uop_W.rs2_valid := rr1_bypass_mux.io.rs2_valid
     rr1_uop_W.rs2_data := rr1_bypass_mux.io.rs2_data
 
-    rr1_uop_W.rd_valid := rr1_uop_W.valid && rr1_uop_R.ctrl.legal && rr1_uop_R.ctrl.npi && (rr0_uop_R.ctrl.npcmd === NpuCmd.NP_SWAP)
+    rr1_uop_W.rd_valid := rr1_uop_W.valid && rr1_uop_R.ctrl.legal && rr1_uop_R.ctrl.npi && 
+                            (rr1_uop_R.ctrl.npcmd === NpuCmd.NP_SWAP) &&
+                              rr1_uop_R.ctrl.wxd && (rr1_uop_R.ctrl.wxdv === XdValid.XD_RR1)
     rr1_uop_W.rd_data := window.module.io.swap.data
 
     //register read stage 2 bypass check
@@ -208,8 +211,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
                                       A1_PC -> ex_uop_W.pc.asSInt)).asUInt
 
     ex_uop_W.rd_valid := Mux(ex_uop_R.rd_valid, ex_uop_R.rd_valid, 
-                            ex_uop_W.valid && ex_uop_W.ctrl.legal && ex_uop_R.ctrl.wxd && 
-                               (!ex_uop_R.ctrl.mem && !ex_uop_R.ctrl.npi))
+                           ex_uop_W.valid && ex_uop_W.ctrl.legal && ex_uop_R.ctrl.wxd && ex_uop_R.ctrl.wxdv === XdValid.XD_ALU)
     ex_uop_W.rd_data := Mux(ex_uop_R.rd_valid, ex_uop_R.rd_data, 
                            Mux(ex_uop_R.ctrl.csr.isOneOf(CSR.S, CSR.C, CSR.W), csr.io.rw.rdata, alu.io.out))
     /* handle imem request */
