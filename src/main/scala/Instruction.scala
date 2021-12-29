@@ -82,7 +82,6 @@ abstract trait DecodeConstants extends NpusParams {
   val MH = if (memInstrHalt) Y else N
 }
 
-
 class InstrCtrlSigs extends Bundle {
   val legal = Bool()
   val br = Bool()

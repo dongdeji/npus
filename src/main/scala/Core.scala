@@ -140,7 +140,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     /**********************************************************/
     /****************** register/wind read begin *******************/
     val windOffset = NpInstrImmGen(false, rr0_uop_R.inst).asUInt
-    window.module.io.swap.valid := rr0_uop_W.valid && rr0_uop_R.ctrl.legal && rr0_uop_R.ctrl.npi && rr0_uop_R.ctrl.swap
+    window.module.io.swap.valid := rr0_uop_W.valid && rr0_uop_R.ctrl.legal && rr0_uop_R.ctrl.npi && (rr0_uop_R.ctrl.npcmd === NpuCmd.NP_SWAP)
     window.module.io.swap.offset := windOffset
     window.module.io.swap.size := rr0_uop_R.inst(13,12)
     window.module.io.swap.signed := !rr0_uop_R.inst(14)
@@ -169,7 +169,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     rr1_uop_W.rs2_valid := rr1_bypass_mux.io.rs2_valid
     rr1_uop_W.rs2_data := rr1_bypass_mux.io.rs2_data
 
-    rr1_uop_W.rd_valid := rr1_uop_W.valid && rr1_uop_R.ctrl.legal && rr1_uop_R.ctrl.npi && rr1_uop_R.ctrl.swap
+    rr1_uop_W.rd_valid := rr1_uop_W.valid && rr1_uop_R.ctrl.legal && rr1_uop_R.ctrl.npi && (rr0_uop_R.ctrl.npcmd === NpuCmd.NP_SWAP)
     rr1_uop_W.rd_data := window.module.io.swap.data
 
     //register read stage 2 bypass check
@@ -222,7 +222,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     chisel3.dontTouch(acc_nxt_target)
 
     val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
-    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && (ex_uop_R.ctrl.jal && ex_uop_R.ctrl.npi && !ex_uop_R.ctrl.swap) else false.B
+    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && (ex_uop_R.ctrl.jal && ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_LDW)/*!ex_uop_R.ctrl.swap*/) else false.B
     val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr)
     io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
@@ -248,7 +248,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     io.accinf.uop := ex_uop_W
     io.accinf.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
                             ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
-                               (ex_uop_R.ctrl.npi && !ex_uop_R.ctrl.swap) )
+                               (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_LDW)/*!ex_uop_R.ctrl.swap*/) )
     io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
     io.accinf.req.bits.size := ex_uop_W.inst(13,12)
     io.accinf.req.bits.signed := !ex_uop_W.inst(14)
