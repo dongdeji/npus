@@ -114,9 +114,9 @@ class InstrCtrlSigs extends Bundle {
 
   def default: List[BitPat] =
                         // legal jal       sel_alu2        sel_imm                                
-                        //   |   | jalr    |     sel_alu1  |      alu_dw                  wxd          
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      | wxdv         npi
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd| |       csr  | npcmd
+                        //   |   | jalr    |     sel_alu1  |      alu_dw         mem_cmd  wxd          
+                        //   | br| | rxs2  |       |       |      |      alu_fn mem|      | wxdv    csr  npi
+                        //   | | | | | rxs1|       |       |      |      |       | |      | |       |     | npcmd
                         List(N,X,X,X,X,X,  A2_X,   A1_X,   IMM_X, DW_X,  FN_X,   N,M_X,   X,XD_X  , CSR.X,X,NP_X   )
 
   def decode(inst: UInt, table: Iterable[(BitPat, List[BitPat])]) = {
@@ -132,9 +132,9 @@ class IDecode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal jal       sel_alu2        sel_imm                                
-                        //   |   | jalr    |     sel_alu1  |      alu_dw                  wxd          
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      | wxdv         npi
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd| |       csr  | npcmd
+                        //   |   | jalr    |     sel_alu1  |      alu_dw         mem_cmd  wxd          
+                        //   | br| | rxs2  |       |       |      |      alu_fn mem|      | wxdv    csr  npi
+                        //   | | | | | rxs1|       |       |      |      |       | |      | |       |     | npcmd
     BNE->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SNE, N,M_X,   N,XD_X  , CSR.N,N,NP_X   ),
     BEQ->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SEQ, N,M_X,   N,XD_X  , CSR.N,N,NP_X   ),
     BLT->               List(Y,Y,N,N,Y,Y,  A2_RS2, A1_RS1, IMM_SB,DW_X,  FN_SLT, N,M_X,   N,XD_X  , CSR.N,N,NP_X   ),
@@ -191,9 +191,9 @@ class I64Decode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal jal       sel_alu2        sel_imm                                
-                        //   |   | jalr    |     sel_alu1  |      alu_dw                  wxd          
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      | wxdv         npi
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd| |       csr  | npcmd
+                        //   |   | jalr    |     sel_alu1  |      alu_dw         mem_cmd  wxd          
+                        //   | br| | rxs2  |       |       |      |      alu_fn mem|      | wxdv    csr  npi
+                        //   | | | | | rxs1|       |       |      |      |       | |      | |       |     | npcmd
     LD->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,XD_LLL, CSR.N,N,NP_X   ),
     LWU->               List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,XD_LLL, CSR.N,N,NP_X   ),
     
@@ -303,9 +303,9 @@ class NpDecode extends DecodeConstants
 {
   val table: Array[(BitPat, List[BitPat])] = Array(
                         // legal jal       sel_alu2        sel_imm                                
-                        //   |   | jalr    |     sel_alu1  |      alu_dw                  wxd          
-                        //   |   | | rxs2  |       |       |      |      alu_fn  mem      | wxdv         npi
-                        //   | br| | | rxs1|       |       |      |      |       | mem_cmd| |       csr  | npcmd
+                        //   |   | jalr    |     sel_alu1  |      alu_dw         mem_cmd  wxd          
+                        //   | br| | rxs2  |       |       |      |      alu_fn mem|      | wxdv    csr  npi
+                        //   | | | | | rxs1|       |       |      |      |       | |      | |       |     | npcmd
   //JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LDW ),
   //JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LDW ),
     LPKTWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LDW ),
