@@ -1,25 +1,24 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Thu Dec 30 14:00:28 2021
+[*] Thu Dec 30 14:16:14 2021
 [*]
 [dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
 [dumpfile_mtime] "Thu Dec 30 13:48:58 2021"
 [dumpfile_size] 119613804
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
-[timestart] 140
+[timestart] 125
 [size] 1920 1007
 [pos] -1 -1
-*-3.000000 157 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-3.000000 137 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.npusTop.
 [treeopen] TOP.npusTop.cluster.
 [treeopen] TOP.npusTop.cluster.group.
 [treeopen] TOP.npusTop.cluster.group.npu.
-[treeopen] TOP.npusTop.cluster.group.npu.accinf.
-[sst_width] 367
-[signals_width] 723
+[sst_width] 333
+[signals_width] 532
 [sst_expanded] 1
-[sst_vpaned_height] 420
+[sst_vpaned_height] 404
 @28
 TOP.npusTop.cluster.group.npu.core.clock
 TOP.npusTop.cluster.group.npu.core.reset
@@ -116,12 +115,67 @@ TOP.npusTop.cluster.group.npu.core.wb_uop_R_pc[31:0]
 [color] 1
 TOP.npusTop.cluster.group.npu.core.wb_uop_R_valid
 TOP.npusTop.cluster.group.npu.core.wb_uop_W_make_ready
+@200
+-regfile
 @22
 TOP.npusTop.cluster.group.npu.core.regfile_io_rd[4:0]
-@23
 TOP.npusTop.cluster.group.npu.core.regfile_io_rd_data[63:0]
 @28
 TOP.npusTop.cluster.group.npu.core.regfile_io_rd_write
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.in_aw_bits_addr[22:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.in_aw_ready
+TOP.npusTop.cluster.group.npu.core.regfile.in_aw_valid
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.in_w_bits_data[63:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.in_w_bits_last
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.in_w_bits_strb[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.in_w_ready
+TOP.npusTop.cluster.group.npu.core.regfile.in_w_valid
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_0_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_0_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_0_W0_en
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_1_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_1_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_1_W0_en
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_2_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_2_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_2_W0_en
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_3_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_3_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_3_W0_en
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_4_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_4_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_4_W0_en
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_5_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_5_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_5_W0_en
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_6_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_6_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_6_W0_en
+@22
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_7_W0_addr[4:0]
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_7_W0_data[7:0]
+@28
+TOP.npusTop.cluster.group.npu.core.regfile.regbanks1_7_W0_en
 @200
 -accinf
 @28
@@ -177,6 +231,16 @@ TOP.npusTop.cluster.group.npu.accinf.accouts_0_r_bits_data[127:0]
 TOP.npusTop.cluster.group.npu.accinf.accouts_0_r_bits_last
 TOP.npusTop.cluster.group.npu.accinf.accouts_0_r_ready
 TOP.npusTop.cluster.group.npu.accinf.accouts_0_r_valid
+@23
+TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_uop_rs1[4:0]
+TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_uop_rs1_data[63:0]
+@29
+TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_uop_rs1_valid
+@23
+TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_uop_rs2[4:0]
+TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_uop_rs2_data[63:0]
+@29
+TOP.npusTop.cluster.group.npu.accinf.accMeta_R_0_req_uop_rs2_valid
 @22
 TOP.npusTop.cluster.group.npu.accinf.regouts_0_aw_bits_addr[22:0]
 @28
@@ -188,6 +252,9 @@ TOP.npusTop.cluster.group.npu.accinf.regouts_0_w_bits_data[63:0]
 TOP.npusTop.cluster.group.npu.accinf.regouts_0_w_bits_last
 TOP.npusTop.cluster.group.npu.accinf.regouts_0_w_ready
 TOP.npusTop.cluster.group.npu.accinf.regouts_0_w_valid
+TOP.npusTop.cluster.group.npu.accinf.regouts_0_b_bits_id
+TOP.npusTop.cluster.group.npu.accinf.regouts_0_b_ready
+TOP.npusTop.cluster.group.npu.accinf.regouts_0_b_valid
 @200
 -window
 @22

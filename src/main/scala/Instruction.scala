@@ -217,32 +217,31 @@ class I64Decode extends DecodeConstants
 
 
 
-// | b31~b28     | b27~b25   | b24~b20   | b19~b15    | b14~12     | b11~b7        | b6~b0             |
-// | funct4:0000 | func3:000 | imm[9:5]  | imm[14:10] | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to pkt wind + jal
-// | funct4:0001 | func3:100 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- load key to match engin and retun to result wind + jal
-// | funct4:0001 | func3:011 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- load key to match engin and retun to rd + jal
-// | funct4:0001 | func3:000 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to pkt wind + jalr
-// | funct4:0001 | func3:001 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to result wind + jalr
-// | funct4:0001 | func3:010 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to rd + jalr
-// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap pkt wind byte
-// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap pkt wind halfword
-// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap pkt wind word
-// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap pkt wind doubleword
-// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned byte
-// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned halfword
-// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned word
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap result wind byte
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap result wind halfword
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap result wind word
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap result wind doubleword
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap result wind unsigned byte
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap result wind unsigned halfword
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap result wind unsigned word
-// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap result wind unsigned word
-// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:100 | reserve:00000 | coustom0: 0001011 | -- store unsigned byte key to buff
-// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:101 | reserve:00000 | coustom0: 0001011 | -- store unsigned halftword key to buff
-// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:110 | reserve:00000 | coustom0: 0001011 | -- store unsigned word key to buff
-// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:111 | reserve:00000 | coustom0: 0001011 | -- store unsigned doubleword key to buff
+//            | b31~b28     | b27~b25   | b24~b20   | b19~b15    | b14~12     | b11~b7        | b6~b0             |
+// LPKTWJAL   | funct4:0000 | func3:000 | imm[9:5]  | imm[14:10] | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to pkt wind + jal
+// LKRESWJAL  | funct4:0001 | func3:100 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- load key to match engin and retun to result wind + jal
+// LKRDJAL    | funct4:0001 | func3:011 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- load key to match engin and retun to rd + jal
+// LPKTWJALR  | funct4:0001 | func3:000 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to pkt wind + jalr
+// LRESWJALR  | funct4:0001 | func3:001 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to result wind + jalr
+// LRDJALR    | funct4:0001 | func3:010 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to rd + jalr
+// SWAPPKTB   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap pkt wind byte
+// SWAPPKTH   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap pkt wind halfword
+// SWAPPKTW   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap pkt wind word
+// SWAPPKTD   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap pkt wind doubleword
+// SWAPPKTUB  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned byte
+// SWAPPKTUH  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned halfword
+// SWAPPKTUW  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned word
+// SWAPRESB   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap result wind byte
+// SWAPRESH   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap result wind halfword
+// SWAPRESW   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap result wind word
+// SWAPRESD   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap result wind doubleword
+// SWAPRESUB  | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap result wind unsigned byte
+// SWAPRESUH  | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap result wind unsigned halfword
+// SWAPRESUW  | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap result wind unsigned word
+// STOREKEYBU | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:100 | reserve:00000 | coustom0: 0001011 | -- store unsigned byte key to buff
+// STOREKEYHU | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:101 | reserve:00000 | coustom0: 0001011 | -- store unsigned halftword key to buff
+// STOREKEYWU | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:110 | reserve:00000 | coustom0: 0001011 | -- store unsigned word key to buff
+// STOREKEYDU | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:111 | reserve:00000 | coustom0: 0001011 | -- store unsigned doubleword key to buff
 
 
 /* Automatically generated by parse-opcodes */
@@ -309,8 +308,8 @@ class NpDecode extends DecodeConstants
   //JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LWI ),
   //JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LWI ),
     LPKTWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
-    LKRESWJAL ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LKX ),
-    LKRDJAL   ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LKX ),
+    LKRESWJAL ->        List(Y,N,Y,N,N,Y,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LKX ),
+    LKRDJAL   ->        List(Y,N,Y,N,N,Y,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LKX ),
     LPKTWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
     LRESWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
     LRDJALR   ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
