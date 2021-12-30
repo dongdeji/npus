@@ -56,7 +56,7 @@ class KeyBuff(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ext
     chisel3.dontTouch(dataMask_pakage)
 
     val data = io.core.bits.data
-    val data_wide = dataMask << (head(log2Ceil(dataBytes)-1,0) << log2Ceil(8))
+    val data_wide = data << (head(log2Ceil(dataBytes)-1,0) << log2Ceil(8))
     val data_pakage = data_wide >> (dataBytes*8) | data_wide(dataBytes*8-1, 0)
 
     Seq.tabulate(dataBytes){ i =>

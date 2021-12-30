@@ -251,7 +251,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     io.accinf.uop := ex_uop_W
     io.accinf.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
                             ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
-                               (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_LDW)/*!ex_uop_R.ctrl.swap*/) )
+                             (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_LDW)) ||
+                             (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_STK)) )
     io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
     io.accinf.req.bits.size := ex_uop_W.inst(13,12)
     io.accinf.req.bits.signed := !ex_uop_W.inst(14)
