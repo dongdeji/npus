@@ -335,13 +335,18 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
               val loadgen = new LoadGen(Cat(0.U(1.W), accMeta_R(tid).req.size), accMeta_R(tid).req.signed.asBool, 
                                         accMeta_R(tid).req.addr, accouts(tid).r.bits.data, false.B, fetchBytes)
               accMeta_R(tid).buff := loadgen.data
-              accMeta_R(tid).buff_full := true.B
-              
+              accMeta_R(tid).buff_full := true.B              
               state_R(tid) := send_reg_aw
             }
           }
           when(accMeta_R(tid).queue_req)
           {
+            when(accouts(tid).r.fire())
+            { 
+              accMeta_R(tid).buff := accouts(tid).r.bits.data
+              accMeta_R(tid).buff_full := true.B              
+              state_R(tid) := send_reg_aw
+            }
           }
         }
         is(send_reg_aw)

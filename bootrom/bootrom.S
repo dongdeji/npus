@@ -14,7 +14,7 @@ _start:
   STOREKEYHU(1)
   STOREKEYHU(1)
 
-  //LKRDJAL(4,2,0)
+  LKRDJAL(4,2,0)
 
   SWAPPKTH(0, 1)
   SWAPPKTW(0, 1)

@@ -29,7 +29,7 @@ class KeyBuff(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ext
     val io = IO(new Bundle {
       val core = Flipped(Valid(new KeyBufReqBundle))
       val sizes = Output(Vec(numThread, UInt(log2Ceil(keyBuffSizePerNp/numThread).W)))
-      val read_offset = Input(UInt(offsetWidth.W))
+      val read_offset = Input(UInt((offsetWidth - log2Ceil(numThread) - log2Ceil(dataBytes)).W))
       val read_tid = Input(UInt(log2Up(numThread).W))
       val read_data = Output(UInt(dataWidth.W))
 
@@ -75,6 +75,9 @@ class KeyBuff(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ext
     when(io.core.fire()) { head := head + (1.U << io.core.bits.size) }
 
     io.sizes := heads
+
+    val read_offset = Cat(io.read_tid, io.read_offset)
+    io.read_data := VecInit(Seq.tabulate(dataBytes) { i => banks(i).read(read_offset) }).asUInt
 }
 
 

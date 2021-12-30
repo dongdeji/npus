@@ -118,45 +118,28 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
   {
     val (in, edgeIn) = node.in(0)
     chisel3.dontTouch(in)
-    val aw_fire_s1 = RegInit(false.B)
-    val ar_fire_s1 = RegInit(false.B)
+    val w_fire_s1 = RegInit(false.B)
     val aw_id_s1 = RegInit(0.U)
-    val ar_id_s1 = RegInit(0.U)
-    val tcam_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(tcam_reg)
-    in.aw.ready := true.B
-    in.w.ready := true.B
-    in.ar.ready := !ar_fire_s1    
+    val tcam_reg = RegInit(0x67654321.U(dataWidth.W)); chisel3.dontTouch(tcam_reg)
+    in.aw.ready := !w_fire_s1
+    in.w.ready := !w_fire_s1
+    in.ar.ready := true.B   
 
-    val IncCounter = Counter(5)
+    val IncCounter = Counter(10)
 
-    // handle aw/w->b begin
+    in.r.valid := w_fire_s1 && IncCounter.inc()
+    in.r.bits.id := aw_id_s1
+    in.r.bits.data := tcam_reg
+    when(w_fire_s1 && in.r.fire())
+    { w_fire_s1 := false.B }
+
     when(in.aw.fire() && address.contains(in.aw.bits.addr) && in.w.fire())
     { 
-      tcam_reg := in.w.bits.data(31,0) 
-      aw_fire_s1 := in.aw.fire()
+      tcam_reg := in.w.bits.data(dataWidth-1,0) 
+      w_fire_s1 := in.w.fire()
       aw_id_s1 := in.aw.bits.id
+      IncCounter.reset()
     }
-    in.b.valid := aw_fire_s1
-    in.b.bits.id := aw_id_s1
-    when(aw_fire_s1 && in.b.fire())
-    { aw_fire_s1 := false.B }
-    // handle aw/w->b end
-
-    // handle ar->r begin
-    val sel_s0 = address.contains(in.ar.bits.addr); chisel3.dontTouch(sel_s0)
-    when(in.ar.fire() && address.contains(in.ar.bits.addr))
-    { 
-      ar_fire_s1 := true.B
-      ar_id_s1 := in.ar.bits.id
-      IncCounter.reset
-    }
-
-    in.r.valid := ar_fire_s1 && IncCounter.inc
-    in.r.bits.data := ar_id_s1
-    in.r.bits.data := Cat(0.U(33.W), tcam_reg(30,0))
-    when(ar_fire_s1 && in.r.fire())
-    { ar_fire_s1 := false.B }
-    // handle ar->r end
 
   }
 }

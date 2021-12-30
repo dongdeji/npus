@@ -11,31 +11,32 @@ Disassembly of section .text.start:
    c:	2410500b          	0x2410500b
   10:	2410500b          	0x2410500b
   14:	2410500b          	0x2410500b
-  18:	2000108b          	0x2000108b
-  1c:	2000208b          	0x2000208b
-  20:	2000308b          	0x2000308b
-  24:	2000808b          	0x2000808b
-  28:	2000908b          	0x2000908b
-  2c:	2000a08b          	0x2000a08b
-  30:	2000b08b          	0x2000b08b
-  34:	2001008b          	0x2001008b
-  38:	2001108b          	0x2001108b
-  3c:	2001208b          	0x2001208b
-  40:	2001308b          	0x2001308b
-  44:	0000100b          	0x100b
-  48:	00000033          	add	x0,x0,x0
-  4c:	00100513          	addi	x10,x0,1
-  50:	00c51593          	slli	x11,x10,0xc
-  54:	00010137          	lui	x2,0x10
-  58:	00910583          	lb	x11,9(x2) # 10009 <_dtb+0xf809>
-  5c:	00058633          	add	x12,x11,x0
-  60:	00021137          	lui	x2,0x21
-  64:	ff01011b          	addiw	x2,x2,-16
-  68:	00010583          	lb	x11,0(x2) # 21000 <_dtb+0x20800>
-  6c:	3f4000ef          	jal	x1,460 <main>
-  70:	00000597          	auipc	x11,0x0
-  74:	79058593          	addi	x11,x11,1936 # 800 <_dtb>
-  78:	00040067          	jalr	x0,0(x8)
+  18:	1600110b          	0x1600110b
+  1c:	2000108b          	0x2000108b
+  20:	2000208b          	0x2000208b
+  24:	2000308b          	0x2000308b
+  28:	2000808b          	0x2000808b
+  2c:	2000908b          	0x2000908b
+  30:	2000a08b          	0x2000a08b
+  34:	2000b08b          	0x2000b08b
+  38:	2001008b          	0x2001008b
+  3c:	2001108b          	0x2001108b
+  40:	2001208b          	0x2001208b
+  44:	2001308b          	0x2001308b
+  48:	0000100b          	0x100b
+  4c:	00000033          	add	x0,x0,x0
+  50:	00100513          	addi	x10,x0,1
+  54:	00c51593          	slli	x11,x10,0xc
+  58:	00010137          	lui	x2,0x10
+  5c:	00910583          	lb	x11,9(x2) # 10009 <_dtb+0xf809>
+  60:	00058633          	add	x12,x11,x0
+  64:	00021137          	lui	x2,0x21
+  68:	ff01011b          	addiw	x2,x2,-16
+  6c:	00010583          	lb	x11,0(x2) # 21000 <_dtb+0x20800>
+  70:	3f0000ef          	jal	x1,460 <main>
+  74:	00000597          	auipc	x11,0x0
+  78:	78c58593          	addi	x11,x11,1932 # 800 <_dtb>
+  7c:	00040067          	jalr	x0,0(x8)
 
 Disassembly of section .text.hang:
 
@@ -176,7 +177,7 @@ Disassembly of section .debug_line:
   32:	0000                	c.unimp
   34:	0000                	c.unimp
   36:	0900                	c.addi4spn	x8,x2,144
-  38:	4802                	c.lwsp	x16,0(x2)
+  38:	4c02                	c.lwsp	x24,0(x2)
   3a:	0000                	c.unimp
   3c:	0000                	c.unimp
   3e:	0000                	c.unimp
@@ -995,7 +996,7 @@ Disassembly of section .debug_aranges:
    8:	0000                	c.unimp
    a:	0008                	0x8
 	...
-  18:	007c                	c.addi4spn	x15,x2,12
+  18:	0080                	c.addi4spn	x8,x2,64
   1a:	0000                	c.unimp
   1c:	0000                	c.unimp
   1e:	0000                	c.unimp
@@ -1158,7 +1159,7 @@ Disassembly of section .debug_rnglists:
    c:	00000007          	0x7
   10:	0000                	c.unimp
   12:	0000                	c.unimp
-  14:	8000                	0x8000
+  14:	8400                	0x8400
   16:	0701                	c.addi	x14,0
   18:	0400                	c.addi4spn	x8,x2,512
   1a:	0000                	c.unimp
