@@ -181,7 +181,7 @@ Disassembly of section .debug_line:
   3c:	0000                	c.unimp
   3e:	0000                	c.unimp
   40:	0300                	c.addi4spn	x8,x2,384
-  42:	011e                	c.slli	x2,0x7
+  42:	0121                	c.addi	x2,8
   44:	04090103          	lb	x2,64(x18)
   48:	0100                	c.addi4spn	x8,x2,128
   4a:	04090103          	lb	x2,64(x18)
@@ -211,7 +211,7 @@ Disassembly of section .debug_line:
   8c:	0000                	c.unimp
   8e:	0000                	c.unimp
   90:	0300                	c.addi4spn	x8,x2,384
-  92:	0131                	c.addi	x2,12
+  92:	0134                	c.addi4spn	x13,x2,136
   94:	04090103          	lb	x2,64(x18)
   98:	0100                	c.addi4spn	x8,x2,128
   9a:	04090103          	lb	x2,64(x18)

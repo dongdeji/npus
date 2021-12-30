@@ -133,7 +133,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     id_uop_W.rd_data  := 0.U
     id_uop_W.rs1_data := 0.U
     id_uop_W.rs2_data := 0.U
-    id_uop_W.make_ready := io.frontend.inst.bits.halt_last
+    id_uop_W.make_ready := io.frontend.inst.bits.halt_last && !id_ctrl.npi
 
     /****************** instruction decode end **********************/
     /****************************************************************/
@@ -225,8 +225,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     chisel3.dontTouch(acc_nxt_target)
 
     val redirectForMem = if(memInstrHalt) ex_uop_R.ctrl.mem else false.B
-    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && (ex_uop_R.ctrl.jal && ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_LDW)/*!ex_uop_R.ctrl.swap*/) else false.B
-    val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr)
+    val redirectForAcc = if(supportNpInstr) ex_uop_W.valid && (ex_uop_R.ctrl.jal && ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd.isOneOf(NpuCmd.NP_LDW,NpuCmd.NP_LKX))) else false.B
+    val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr) && !ex_uop_R.ctrl.npi
     io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
     io.frontend.redirect.bits.npc := Mux(redirectForAcc, acc_nxt_target.asUInt, Mux(redirectForMem, ex_uop_R.pc + 4.U, nxt_target))
@@ -250,13 +250,12 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
     io.accinf.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
                             ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
-                             (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_LDW)) ||
-                             (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_STK)) )
+                             (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd.isOneOf(NpuCmd.NP_LDW, NpuCmd.NP_LKX, NpuCmd.NP_STK))))
     io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
     io.accinf.req.bits.size := ex_uop_W.inst(13,12)
     io.accinf.req.bits.signed := !ex_uop_W.inst(14)
     io.accinf.req.bits.data := ex_uop_W.rs2_data
-    io.accinf.req.bits.addr := alu.io.adder_out
+    io.accinf.req.bits.addr := Mux(ex_uop_R.ctrl.npi, 0.U, alu.io.adder_out)
     io.accinf.req.bits.tid := ex_uop_W.tid
     io.accinf.req.bits.uop := ex_uop_W
     /****************** ex end *********************/

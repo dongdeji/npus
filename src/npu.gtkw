@@ -1,29 +1,49 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Thu Dec 30 02:52:42 2021
+[*] Thu Dec 30 07:49:44 2021
 [*]
-[dumpfile] "/home/dongdeji/share/code/npus/rv64ui-p-add.vcd"
-[dumpfile_mtime] "Thu Dec 30 02:52:03 2021"
-[dumpfile_size] 105313305
+[dumpfile] "(null)"
 [savefile] "/home/dongdeji/share/code/npus/src/npu.gtkw"
-[timestart] 3216
+[timestart] 40
 [size] 1920 1007
 [pos] -1 -1
-*-4.000000 3253 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-4.000000 79 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.npusTop.
 [treeopen] TOP.npusTop.cluster.
 [treeopen] TOP.npusTop.cluster.group.
 [treeopen] TOP.npusTop.cluster.group.npu.
 [treeopen] TOP.npusTop.cluster.group.npu.accinf.
-[treeopen] TOP.npusTop.cluster.group.npu.accinf.keybuff.
-[sst_width] 301
-[signals_width] 634
+[sst_width] 408
+[signals_width] 622
 [sst_expanded] 1
-[sst_vpaned_height] 380
+[sst_vpaned_height] 443
 @28
 TOP.npusTop.cluster.group.npu.core.clock
 TOP.npusTop.cluster.group.npu.core.reset
+@200
+-frontend
+@28
+TOP.npusTop.cluster.group.npu.frontend.io_core_readys_bits_thread
+TOP.npusTop.cluster.group.npu.frontend.io_core_readys_valid
+@22
+TOP.npusTop.cluster.group.npu.frontend.io_core_redirect_bits_npc[31:0]
+@28
+TOP.npusTop.cluster.group.npu.frontend.io_core_redirect_bits_tid
+TOP.npusTop.cluster.group.npu.frontend.io_core_redirect_valid
+TOP.npusTop.cluster.group.npu.frontend.thread_states_R_0
+TOP.npusTop.cluster.group.npu.frontend.fetch_state_R[2:0]
+@22
+TOP.npusTop.cluster.group.npu.frontend.fetch_pcs_R[127:0]
+TOP.npusTop.cluster.group.npu.frontend.fetch_data_R[127:0]
+@28
+TOP.npusTop.cluster.group.npu.frontend.io_core_inst_bits_halt_last
+@22
+TOP.npusTop.cluster.group.npu.frontend.io_core_inst_bits_inst[31:0]
+TOP.npusTop.cluster.group.npu.frontend.io_core_inst_bits_pc[31:0]
+@28
+TOP.npusTop.cluster.group.npu.frontend.io_core_inst_bits_tid
+TOP.npusTop.cluster.group.npu.frontend.io_core_inst_valid
 @200
 -core
 @22
@@ -93,6 +113,7 @@ TOP.npusTop.cluster.group.npu.core.wb_uop_R_pc[31:0]
 @28
 [color] 1
 TOP.npusTop.cluster.group.npu.core.wb_uop_R_valid
+TOP.npusTop.cluster.group.npu.core.wb_uop_W_make_ready
 @22
 TOP.npusTop.cluster.group.npu.core.regfile_io_rd[4:0]
 TOP.npusTop.cluster.group.npu.core.regfile_io_rd_data[63:0]
@@ -100,15 +121,53 @@ TOP.npusTop.cluster.group.npu.core.regfile_io_rd_data[63:0]
 TOP.npusTop.cluster.group.npu.core.regfile_io_rd_write
 @200
 -accinf
+@28
+TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_tid
+TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_uop_ctrl_npcmd[1:0]
+@22
+TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_uop_pc[31:0]
+TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_uop_inst[31:0]
+@28
+TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_uop_ctrl_npcmd[1:0]
+TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_uop_ctrl_npi
 @22
 TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_addr[31:0]
-TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_cmd[4:0]
-TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_data[63:0]
 @28
-TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_signed
-TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_size[1:0]
-TOP.npusTop.cluster.group.npu.accinf.io_core_req_bits_tid
 TOP.npusTop.cluster.group.npu.accinf.io_core_req_valid
+TOP.npusTop.cluster.group.npu.accinf.io_accLoad_req_bits_tid
+TOP.npusTop.cluster.group.npu.accinf.io_accLoad_req_valid
+TOP.npusTop.cluster.group.npu.accinf.matchReqQ_io_enq_bits_ctrl_npcmd[1:0]
+TOP.npusTop.cluster.group.npu.accinf.matchReqQ_io_enq_ready
+TOP.npusTop.cluster.group.npu.accinf.matchReqQ_io_enq_valid
+TOP.npusTop.cluster.group.npu.accinf.matchReqQ_io_count[1:0]
+TOP.npusTop.cluster.group.npu.accinf.matchReqQ_io_deq_bits_ctrl_npcmd[1:0]
+TOP.npusTop.cluster.group.npu.accinf.matchReqQ_io_deq_ready
+TOP.npusTop.cluster.group.npu.accinf.matchReqQ_io_deq_valid
+TOP.npusTop.cluster.group.npu.accinf.io_req
+TOP.npusTop.cluster.group.npu.accinf.queue_req
+TOP.npusTop.cluster.group.npu.accinf.io_core_readys_bits_thread
+@29
+TOP.npusTop.cluster.group.npu.accinf.io_core_readys_valid
+@200
+-window
+@22
+TOP.npusTop.cluster.group.npu.core.window.io_accLoad_req_bits_addr[31:0]
+@28
+TOP.npusTop.cluster.group.npu.core.window.io_accLoad_req_bits_tid
+TOP.npusTop.cluster.group.npu.core.window.io_accLoad_req_ready
+TOP.npusTop.cluster.group.npu.core.window.io_accLoad_req_valid
+@22
+TOP.npusTop.cluster.group.npu.core.window.auto_master_out_ar_bits_addr[30:0]
+@28
+TOP.npusTop.cluster.group.npu.core.window.auto_master_out_ar_ready
+TOP.npusTop.cluster.group.npu.core.window.auto_master_out_ar_valid
+@22
+TOP.npusTop.cluster.group.npu.core.window.auto_master_out_r_bits_data[127:0]
+@28
+TOP.npusTop.cluster.group.npu.core.window.auto_master_out_r_bits_last
+TOP.npusTop.cluster.group.npu.core.window.auto_master_out_r_valid
+TOP.npusTop.cluster.group.npu.core.window.io_accLoad_readys_bits_thread
+TOP.npusTop.cluster.group.npu.core.window.io_accLoad_readys_valid
 @200
 -keybuff
 @28
@@ -187,9 +246,8 @@ TOP.npusTop.cluster.group.npu.accinf.keybuff.banks_3_W0_data[7:0]
 @28
 [color] 1
 TOP.npusTop.cluster.group.npu.accinf.keybuff.banks_3_W0_en
-@23
-TOP.npusTop.cluster.group.npu.accinf.keybuff.banks_4_W0_addr[8:0]
 @22
+TOP.npusTop.cluster.group.npu.accinf.keybuff.banks_4_W0_addr[8:0]
 TOP.npusTop.cluster.group.npu.accinf.keybuff.banks_4_W0_data[7:0]
 @28
 [color] 1

@@ -37,6 +37,8 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       val accLoad = Flipped(new AccLoadBundle)
     })
     chisel3.dontTouch(io)
+    io.accLoad.readys.valid := false.B
+    io.accLoad.readys.bits.thread := 0.U
 
     val accLoadReqQ = Module(new Queue(io.accLoad.req.bits.cloneType, numThread + 1, flow = true))
     accLoadReqQ.io.enq.valid := io.accLoad.req.valid
@@ -101,7 +103,11 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
           Seq.tabulate(dataBytes) { i=> banks(i).write(offset, wdata(i)) }
           offset := offset + 1.U
           when(out.r.bits.last)
-          { load_state_R := idle }
+          { 
+            load_state_R := idle 
+            io.accLoad.readys.valid := true.B
+            io.accLoad.readys.bits.thread := 1.U << loadMata.tid
+          }
         }
       }
     }

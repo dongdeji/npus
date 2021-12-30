@@ -101,7 +101,10 @@ trait NpusParams {
     val halt_list = Seq(BEQ.value.asUInt()(6,0), JAL.value.asUInt()(6,0), JALR.value.asUInt()(6,0)) ++ memInstrHalt_list
     val accInstrHaltCondition = 
         if(supportNpInstr) 
-        { ((inst(6,0) === LPKTWJAL.value.asUInt()(6,0)) && (inst(31,29) === LPKTWJAL.value.asUInt()(31,29))) }
+        { 
+          ((inst(6,0) === LPKTWJAL.value.asUInt()(6,0)) && 
+            (inst(31,29).isOneOf(LPKTWJAL.value.asUInt()(31,29), LKRESWJAL.value.asUInt()(31,29))))
+        }
         else { false.B }
 
     inst(6,0).isOneOf(halt_list) || accInstrHaltCondition

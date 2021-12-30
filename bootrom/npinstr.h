@@ -20,8 +20,8 @@
        (0                       << (7+5+3+5+5+3))
 
 // | b31~b28     | b27~b25   | b24~b20   | b19~b15    | b14~12     | b11~b7        | b6~b0             |
-// | funct4:0001 | func3:100 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to result wind + jal
-// | funct4:0001 | func3:011 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to rd + jal
+// | funct4:0001 | func3:100 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- load key to match engin and retun to result wind + jal
+// | funct4:0001 | func3:011 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- load key to match engin and retun to rd + jal
 // | funct4:0001 | func3:000 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to pkt wind + jalr
 // | funct4:0001 | func3:001 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to result wind + jalr
 // | funct4:0001 | func3:010 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to rd + jalr
@@ -72,8 +72,8 @@
        (2                       << (7+5+3+5+5+3))
 
 #define LPKTWJAL(imm, rd)            .word LXJAL(0, imm, ## rd)
-#define LRESWJAL(imm, rd, src)       .word LXJALR(4, imm, ## rd, ## src)
-#define LRDJAL(imm, rd, src)         .word LXJALR(3, imm, ## rd, ## src)
+#define LKRESWJAL(imm, rd, src)      .word LXJALR(4, imm, ## rd, ## src)
+#define LKRDJAL(imm, rd, src)        .word LXJALR(3, imm, ## rd, ## src)
 #define LPKTWJALR(imm, rd, rs1)      .word LXJALR(0, imm, ## rd, ## rs1)
 #define LRESWJALR(imm, rd, rs1)      .word LXJALR(1, imm, ## rd, ## rs1)
 #define LRDJALR(imm, rd, rs1)        .word LXJALR(2, imm, ## rd, ## rs1)

@@ -127,10 +127,11 @@ class LoadPktReqBundle extends Bundle with NpusParams
 class AccLoadBundle extends Bundle with NpusParams
 {
   val req = Decoupled(new LoadPktReqBundle)
-  val resp = Valid(new Bundle {
-        val tid = UInt(log2Up(numThread).W)
-        val state = UInt(4.W)
-  })
+  val readys = Flipped(Valid(new Bundle { val thread = UInt(numThread.W) } ))
+  //val resp = Flipped(Valid(new Bundle {
+  //      val tid = UInt(log2Up(numThread).W)
+  //      val readys = UInt(numThread.W)
+  //}))
 }
 
 class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends LazyModule with NpusParams 
@@ -198,7 +199,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
     val matchReqQ = Module(new Queue(io.core.req.bits.uop.cloneType, numThread + 1, flow = true))
-    matchReqQ.io.enq.valid := io.core.req.valid
+    chisel3.dontTouch(matchReqQ.io)
+    matchReqQ.io.enq.valid := io.core.req.valid && io.core.req.bits.uop.ctrl.legal && 
+                                io.core.req.bits.uop.ctrl.npi && 
+                                (io.core.req.bits.uop.ctrl.npcmd === NpuCmd.NP_LKX)
     matchReqQ.io.enq.bits := io.core.req.bits.uop
     matchReqQ.io.deq.ready := false.B
 
@@ -237,8 +241,12 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       {
         is(idle) 
         {
-          val io_req = io.core.req.fire() && (tid.U === io.core.req.bits.tid) && slaves_address.map(_.contains(io.core.req.bits.addr)).orR
-          val queue_req = false.B
+          val io_req = io.core.req.valid && (tid.U === io.core.req.bits.tid) && 
+                          slaves_address.map(_.contains(io.core.req.bits.addr)).orR &&
+                            (io.core.req.bits.uop.ctrl.npcmd =/= NpuCmd.NP_LKX)
+          val queue_req = matchReqQ.io.deq.valid && (tid.U === matchReqQ.io.deq.bits.tid)
+          chisel3.dontTouch(io_req)
+          chisel3.dontTouch(queue_req)
           assert( (io_req && queue_req) =/= true.B )
           when(io_req || io_req) 
           { // remember the request meta
@@ -311,8 +319,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       } // end of switch(state_R(tid)) 
     } // end of Seq.tabulate(numThread)
     /***************** handle acc/iram axi4 req end *****************/
-    io.core.readys.valid := readys_thread.asUInt.orR || dmem.io.core.readys.valid
-    io.core.readys.bits.thread := readys_thread.asUInt | dmem.io.core.readys.bits.thread
+    io.core.readys.valid := readys_thread.asUInt.orR || dmem.io.core.readys.valid || io.accLoad.readys.valid
+    io.core.readys.bits.thread := readys_thread.asUInt | dmem.io.core.readys.bits.thread | io.accLoad.readys.bits.thread
   }
 }
 

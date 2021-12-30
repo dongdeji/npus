@@ -242,7 +242,7 @@ Disassembly of section .debug_line:
   3c:	0000                	unimp
   3e:	0000                	unimp
   40:	0300                	addi	s0,sp,384
-  42:	011e                	slli	sp,sp,0x7
+  42:	0121                	addi	sp,sp,8
   44:	04090103          	lb	sp,64(s2)
   add  x0, x0, x0
   48:	0100                	addi	s0,sp,128
@@ -283,7 +283,7 @@ Disassembly of section .debug_line:
   8c:	0000                	unimp
   8e:	0000                	unimp
   90:	0300                	addi	s0,sp,384
-  92:	0131                	addi	sp,sp,12
+  92:	0134                	addi	a3,sp,136
   94:	04090103          	lb	sp,64(s2)
   98:	0100                	addi	s0,sp,128
   9a:	04090103          	lb	sp,64(s2)
