@@ -197,8 +197,13 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val accedgeOuts = accmasters.map { _.out(0)._2 }
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
+    val matchReqQ = Module(new Queue(io.core.uop.cloneType, numThread + 1, flow = true))
+    matchReqQ.io.enq.valid := io.core.req.valid
+    matchReqQ.io.enq.bits := io.core.uop
+    matchReqQ.io.deq.ready := false.B
+
     /***************** handle acc/iram axi4 req begin *****************/
-    val idle :: acc_rw_send :: wait_acc_r :: send_reg_aw :: wait_reg_b :: wait_acc_b :: Nil = Enum(6)
+    val idle :: acc_rw_send :: wait_acc_r :: send_reg_aw :: wait_reg_b :: wait_acc_b :: key_read :: Nil = Enum(7)
     val state_R = RegInit(VecInit(Seq.fill(numThread)(idle))) ;state_R.foreach(chisel3.dontTouch(_))
     val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
     val debug1 = WireInit(0.U) ; chisel3.dontTouch(debug1)
@@ -231,9 +236,11 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       switch(state_R(tid)) 
       {
         is(idle) 
-        {           
-          when(io.core.req.valid && (tid.U === io.core.req.bits.tid) && 
-                 slaves_address.map(_.contains(io.core.req.bits.addr)).orR) 
+        {
+          val io_req = io.core.req.fire() && (tid.U === io.core.req.bits.tid) && slaves_address.map(_.contains(io.core.req.bits.addr)).orR
+          val queue_req = false.B
+          assert( (io_req && queue_req) =/= true.B )
+          when(io_req || io_req) 
           { // remember the request meta
             accMeta_R(tid).valid := true.B
             accMeta_R(tid).req := io.core.req.bits

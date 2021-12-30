@@ -409,6 +409,8 @@ class ThreadUop extends Bundle with NpusParams {
   val rs1_data = Bits(dataWidth.W) // valid at the end of ISSUE
   val rs2_data = Bits(dataWidth.W) // valid at the end of ISSUE
   val make_ready = Bool() // mark mem/acc responed
+
+  override def cloneType: this.type = (new ThreadUop).asInstanceOf[this.type]
 }
 
 
