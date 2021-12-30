@@ -114,6 +114,9 @@ class AccMetaBundle extends Bundle with NpusParams
   val resped = Bool()
   val buff = UInt(dataWidth.W)
   val buff_full = Bool()
+  val io_req = Bool()
+  val queue_req = Bool()
+  val keyOffset = UInt(log2Ceil(keyBuffSizePerNp).W)
 
   override def cloneType: this.type = (new AccMetaBundle).asInstanceOf[this.type]
 }
@@ -198,18 +201,19 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val accedgeOuts = accmasters.map { _.out(0)._2 }
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
-    val matchReqQ = Module(new Queue(io.core.req.bits.uop.cloneType, numThread + 1, flow = true))
+    val matchReqQ = Module(new Queue(io.core.req.bits.cloneType, numThread + 1, flow = true))
     chisel3.dontTouch(matchReqQ.io)
     matchReqQ.io.enq.valid := io.core.req.valid && io.core.req.bits.uop.ctrl.legal && 
                                 io.core.req.bits.uop.ctrl.npi && 
                                 (io.core.req.bits.uop.ctrl.npcmd === NpuCmd.NP_LKX)
-    matchReqQ.io.enq.bits := io.core.req.bits.uop
+    matchReqQ.io.enq.bits := io.core.req.bits
     matchReqQ.io.deq.ready := false.B
 
     /***************** handle acc/iram axi4 req begin *****************/
-    val idle :: acc_rw_send :: wait_acc_r :: send_reg_aw :: wait_reg_b :: wait_acc_b :: key_read :: Nil = Enum(7)
+    val idle :: acc_rw_send :: wait_acc_r :: send_reg_aw :: wait_reg_b :: wait_acc_b :: start_readkey :: Nil = Enum(7)
     val state_R = RegInit(VecInit(Seq.fill(numThread)(idle))) ;state_R.foreach(chisel3.dontTouch(_))
     val accMeta_R = RegInit(0.U.asTypeOf(Vec(numThread, new AccMetaBundle)))
+    accMeta_R.foreach(chisel3.dontTouch(_))
     val debug1 = WireInit(0.U) ; chisel3.dontTouch(debug1)
     val debug2 = WireInit(0.U) ; chisel3.dontTouch(debug2)
     Seq.tabulate(numThread)
@@ -248,48 +252,75 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
           chisel3.dontTouch(io_req)
           chisel3.dontTouch(queue_req)
           assert( (io_req && queue_req) =/= true.B )
-          when(io_req || io_req) 
+          when(io_req) 
           { // remember the request meta
+            accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle)
             accMeta_R(tid).valid := true.B
-            accMeta_R(tid).req := io.core.req.bits
-
+            accMeta_R(tid).req := io.core.req.bits            
+            accMeta_R(tid).io_req := true.B
             state_R(tid) := acc_rw_send
           }
+          when(queue_req) 
+          { // remember the request meta            
+            accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle)
+            accMeta_R(tid).valid := true.B            
+            accMeta_R(tid).req := matchReqQ.io.deq.bits          
+            accMeta_R(tid).queue_req := true.B         
+            accMeta_R(tid).keyOffset := 0.U
+            matchReqQ.io.deq.ready := true.B
+            state_R(tid) := start_readkey
+          }
+        }
+        is(start_readkey)
+        {
+          accMeta_R(tid).keyOffset := accMeta_R(tid).keyOffset + 1.U
+          state_R(tid) := idle
         }
         is(acc_rw_send) 
         { 
-          accouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
-                                    slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
-          //accouts(tid).ar.bits.id := 0.U
-          accouts(tid).ar.bits.addr := accMeta_R(tid).req.addr
+          assert( (accMeta_R(tid).io_req && accMeta_R(tid).queue_req) =/= true.B )
+          when(accMeta_R(tid).io_req)
+          {
+            accouts(tid).ar.valid := accMeta_R(tid).req.cmd.isOneOf(M_XRD) &&
+                                      slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
+            accouts(tid).ar.bits.addr := accMeta_R(tid).req.addr
+            accouts(tid).aw.valid := accMeta_R(tid).req.cmd.isOneOf(M_XWR) &&
+                                      slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
+            accouts(tid).aw.bits.addr := accMeta_R(tid).req.addr
+            accouts(tid).w.valid := accouts(tid).aw.valid
+            accouts(tid).w.bits.data := accMeta_R(tid).req.data
+            
+            when(accouts(tid).ar.fire()) 
+            { state_R(tid) := wait_acc_r }
 
-          accouts(tid).aw.valid := accMeta_R(tid).req.cmd.isOneOf(M_XWR) &&
-                                    slaves_address.map(_.contains(accMeta_R(tid).req.addr)).orR
-          //accouts(tid).aw.bits.id := 0.U
-          accouts(tid).aw.bits.addr := accMeta_R(tid).req.addr
-          accouts(tid).w.valid := accouts(tid).aw.valid
-          accouts(tid).w.bits.data := accMeta_R(tid).req.data
-          
-          when(accouts(tid).ar.fire()) 
-          { state_R(tid) := wait_acc_r }
-
-          when(accouts(tid).aw.fire() && accouts(tid).w.fire()) 
-          { 
-            accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) 
-            readys_thread(tid) := true.B
-            state_R(tid) := idle 
+            when(accouts(tid).aw.fire() && accouts(tid).w.fire()) 
+            { 
+              accMeta_R(tid) := 0.U.asTypeOf(new AccMetaBundle) 
+              readys_thread(tid) := true.B
+              state_R(tid) := idle 
+            }
+          }
+          when(accMeta_R(tid).queue_req)
+          {
           }
         }
         is(wait_acc_r)
         { 
-          when(accouts(tid).r.fire())
-          { 
-            val loadgen = new LoadGen(Cat(0.U(1.W), accMeta_R(tid).req.size), accMeta_R(tid).req.signed.asBool, 
-                                      accMeta_R(tid).req.addr, accouts(tid).r.bits.data, false.B, fetchBytes)
-            accMeta_R(tid).buff := loadgen.data
-            accMeta_R(tid).buff_full := true.B
-            
-            state_R(tid) := send_reg_aw
+          assert( (accMeta_R(tid).io_req && accMeta_R(tid).queue_req) =/= true.B )
+          when(accMeta_R(tid).io_req)
+          {
+            when(accouts(tid).r.fire())
+            { 
+              val loadgen = new LoadGen(Cat(0.U(1.W), accMeta_R(tid).req.size), accMeta_R(tid).req.signed.asBool, 
+                                        accMeta_R(tid).req.addr, accouts(tid).r.bits.data, false.B, fetchBytes)
+              accMeta_R(tid).buff := loadgen.data
+              accMeta_R(tid).buff_full := true.B
+              
+              state_R(tid) := send_reg_aw
+            }
+          }
+          when(accMeta_R(tid).queue_req)
+          {
           }
         }
         is(send_reg_aw)
