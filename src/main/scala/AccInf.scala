@@ -74,6 +74,7 @@ class DmemReqBundle extends Bundle with NpusParams {
   val data = UInt(dataWidth.W)
   val addr = UInt(addrWidth.W)
   val tid = UInt(log2Up(numThread).W)
+  val uop = new ThreadUop
 
   override def cloneType: this.type = (new DmemReqBundle).asInstanceOf[this.type]
 }
@@ -97,7 +98,6 @@ class DmemRespBundle extends Bundle with NpusParams {
 
 class AccInfBundle extends Bundle with NpusParams 
 {
-  val uop  = Output( new ThreadUop )
   val req  = Valid( new DmemReqBundle )
   val resp = Flipped(Valid( new DmemRespBundle ))
   val readys = Input(Valid(new Bundle { val thread = UInt(numThread.W) } ))
@@ -166,8 +166,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       val accLoad = new AccLoadBundle  // to window
     })
     
-    val accload = if(supportNpInstr) (io.core.uop.ctrl.npi && (io.core.uop.ctrl.npcmd === NpuCmd.NP_LDW)) else false.B
-    io.accLoad.req.valid := io.core.req.valid && io.core.uop.valid && io.core.uop.ctrl.legal && accload
+    val accload = if(supportNpInstr) (io.core.req.bits.uop.ctrl.npi && (io.core.req.bits.uop.ctrl.npcmd === NpuCmd.NP_LDW)) else false.B
+    io.accLoad.req.valid := io.core.req.valid && io.core.req.bits.uop.valid && io.core.req.bits.uop.ctrl.legal && accload
     io.accLoad.req.bits.tid := io.core.req.bits.tid
     io.accLoad.req.bits.addr := pktBuffBase.U
 
@@ -178,15 +178,15 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
 
     // handle dmem access
     val dmem = Module(new Dmem(ClusterId, GroupId, NpId))
-    dmem.io.core.uop := io.core.uop
+    dmem.io.core.req.bits.uop := io.core.req.bits.uop
     dmem.io.core.req := io.core.req
     when(dmem.io.core.resp.valid)
     { io.core.resp := dmem.io.core.resp }
 
     // handle keybuff access
     val keybuff = Module(new KeyBuff(ClusterId, GroupId, NpId))
-    keybuff.io.core.valid := io.core.req.valid && io.core.uop.valid && io.core.uop.ctrl.legal && 
-                               io.core.uop.ctrl.npi && (io.core.uop.ctrl.npcmd === NpuCmd.NP_STK)
+    keybuff.io.core.valid := io.core.req.valid && io.core.req.bits.uop.valid && io.core.req.bits.uop.ctrl.legal && 
+                               io.core.req.bits.uop.ctrl.npi && (io.core.req.bits.uop.ctrl.npcmd === NpuCmd.NP_STK)
     keybuff.io.core.bits.size := io.core.req.bits.size
     keybuff.io.core.bits.data := io.core.req.bits.data
     keybuff.io.core.bits.tid := io.core.req.bits.tid
@@ -197,9 +197,9 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     val accedgeOuts = accmasters.map { _.out(0)._2 }
     val regedgeOuts  = regmasters.map { _.out(0)._2 }
 
-    val matchReqQ = Module(new Queue(io.core.uop.cloneType, numThread + 1, flow = true))
+    val matchReqQ = Module(new Queue(io.core.req.bits.uop.cloneType, numThread + 1, flow = true))
     matchReqQ.io.enq.valid := io.core.req.valid
-    matchReqQ.io.enq.bits := io.core.uop
+    matchReqQ.io.enq.bits := io.core.req.bits.uop
     matchReqQ.io.deq.ready := false.B
 
     /***************** handle acc/iram axi4 req begin *****************/
@@ -244,7 +244,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
           { // remember the request meta
             accMeta_R(tid).valid := true.B
             accMeta_R(tid).req := io.core.req.bits
-            accMeta_R(tid).uop := io.core.uop
+            accMeta_R(tid).uop := io.core.req.bits.uop
 
             state_R(tid) := acc_rw_send
           }

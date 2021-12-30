@@ -248,7 +248,6 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     when(tailEraseInfo.valid && ((ex_uop_R.valid && (ex_uop_R.tid =/= tailEraseInfo.tid)) || (!ex_uop_R.valid)))
     { tailEraseInfo.valid := false.B }
 
-    io.accinf.uop := ex_uop_W
     io.accinf.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
                             ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
                              (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd === NpuCmd.NP_LDW)) ||
@@ -259,6 +258,7 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     io.accinf.req.bits.data := ex_uop_W.rs2_data
     io.accinf.req.bits.addr := alu.io.adder_out
     io.accinf.req.bits.tid := ex_uop_W.tid
+    io.accinf.req.bits.uop := ex_uop_W
     /****************** ex end *********************/
     /***********************************************/
 

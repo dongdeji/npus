@@ -42,7 +42,6 @@ class Window(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     accLoadReqQ.io.enq.valid := io.accLoad.req.valid
     accLoadReqQ.io.enq.bits := io.accLoad.req.bits
     accLoadReqQ.io.deq.ready := false.B
-    // to do by dongdeji
 
     val banks = Seq.tabulate(dataBytes) { i => SyncReadMem(windowSizePerNp/dataBytes, UInt(8.W)) }
     
