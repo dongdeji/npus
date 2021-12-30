@@ -29,12 +29,15 @@ class KeyBuff(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) ext
     val io = IO(new Bundle {
       val core = Flipped(Valid(new KeyBufReqBundle))
       val sizes = Output(Vec(numThread, UInt(log2Ceil(keyBuffSizePerNp/numThread).W)))
-      //val read_addr = Input(UInt(offsetWidth.W))
-      //val read_tid = Input(UInt(log2Up(numThread).W))
-      //val read_data = Output(UInt(dataWidth.W))
-      //val resetBuffs = Input(Vec(numThread, Bool()))
+      val read_offset = Input(UInt(offsetWidth.W))
+      val read_tid = Input(UInt(log2Up(numThread).W))
+      val read_data = Output(UInt(dataWidth.W))
+
+      val reset_head = Input(Bool())
+      val reset_tid = Input(UInt(log2Up(numThread).W))
     })
     chisel3.dontTouch(io)
+    io.read_data := 12345678.U // to do by dongdeji
 
     val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
     val keyBuffAddress = AddressSet(keyBuffBase + keyBuffSizePerNp*Id, keyBuffSizePerNp-1)

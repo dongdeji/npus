@@ -194,6 +194,10 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
     keybuff.io.core.bits.size := io.core.req.bits.size
     keybuff.io.core.bits.data := io.core.req.bits.data
     keybuff.io.core.bits.tid := io.core.req.bits.tid
+    keybuff.io.read_offset := 0.U
+    keybuff.io.read_tid := 0.U
+    keybuff.io.reset_head := false.B
+    keybuff.io.reset_tid := 0.U
 
     // handle acc/iram axi4 req    
     val accouts = accmasters.map { _.out(0)._1 }
@@ -274,7 +278,9 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         is(start_readkey)
         {
           accMeta_R(tid).keyOffset := accMeta_R(tid).keyOffset + 1.U
-          state_R(tid) := idle
+          keybuff.io.read_offset := accMeta_R(tid).keyOffset
+          keybuff.io.read_tid := accMeta_R(tid).req.tid
+          state_R(tid) := acc_rw_send
         }
         is(acc_rw_send) 
         { 
@@ -301,7 +307,21 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
             }
           }
           when(accMeta_R(tid).queue_req)
-          {
+          { // to do 
+            accouts(tid).aw.valid := accMeta_R(tid).keyOffset === 1.U
+            accouts(tid).aw.bits.addr := 0x54010000.U(addrWidth.W)
+            accouts(tid).w.valid := true.B
+            accouts(tid).w.bits.data := keybuff.io.read_data
+            accouts(tid).w.bits.last := true.B // to do by dongdeji
+
+            keybuff.io.reset_head := accouts(tid).w.bits.last
+            keybuff.io.reset_tid := accMeta_R(tid).req.tid
+
+            when(accouts(tid).w.fire())
+            { accMeta_R(tid).keyOffset := accMeta_R(tid).keyOffset + 1.U }
+
+            when(accouts(tid).w.fire() && accouts(tid).w.bits.last ) 
+            { state_R(tid) := wait_acc_r }
           }
         }
         is(wait_acc_r)
