@@ -8,28 +8,8 @@
 #define XCUSTOM_OPCODE_0 0b0001011
 #define XCUSTOM_OPCODE_1 0b0101011
 
-// | b31~b28     | b27~b25   | b24~b20  | b19~b15    | b14~12     | b11~b7 | b6~b0             |
-// | funct4:0000 | func3:000 | imm[9:5] | imm[14:10] | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to pkt wind + jal
-// | funct4:0000 | func3:001 | imm[9:5] | imm[14:10] | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to result wind + jal
-// | funct4:0000 | func3:010 | imm[9:5] | imm[14:10] | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to rd + jal
-// | funct4:0001 | func3:000 | imm[9:5] | rs1        | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to pkt wind + jalr
-// | funct4:0001 | func3:001 | imm[9:5] | rs1        | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to result wind + jalr
-// | funct4:0001 | func3:010 | imm[9:5] | rs1        | imm[4:2]   | rd     | coustom0: 0001011 | -- acc load to rd + jalr
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:000 | rd     | coustom0: 0001011 | -- swap pkt wind byte
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:001 | rd     | coustom0: 0001011 | -- swap pkt wind halfword
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:010 | rd     | coustom0: 0001011 | -- swap pkt wind word
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:011 | rd     | coustom0: 0001011 | -- swap pkt wind doubleword
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:100 | rd     | coustom0: 0001011 | -- swap pkt wind unsigned byte
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:101 | rd     | coustom0: 0001011 | -- swap pkt wind unsigned halfword
-// | funct4:0010 | func3:000 | windoffset[9:0]       | U+size:110 | rd     | coustom0: 0001011 | -- swap pkt wind unsigned word
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:000 | rd     | coustom0: 0001011 | -- swap result wind byte
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:001 | rd     | coustom0: 0001011 | -- swap result wind halfword
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:010 | rd     | coustom0: 0001011 | -- swap result wind word
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:011 | rd     | coustom0: 0001011 | -- swap result wind doubleword
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:100 | rd     | coustom0: 0001011 | -- swap result wind unsigned byte
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:101 | rd     | coustom0: 0001011 | -- swap result wind unsigned halfword
-// | funct4:0010 | func3:001 | windoffset[9:0]       | U+size:110 | rd     | coustom0: 0001011 | -- swap result wind unsigned word
-
+// | b31~b28     | b27~b25   | b24~b20   | b19~b15    | b14~12     | b11~b7        | b6~b0             |
+// | funct4:0000 | func3:000 | imm[9:5]  | imm[14:10] | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to pkt wind + jal
 #define LXJAL(func3, imm, rd)                       \
        (XCUSTOM_OPCODE(0)       << (0))          |  \
        (rd                      << (7))          |  \
@@ -39,6 +19,12 @@
        (func3                   << (7+5+3+5+5))  |  \
        (0                       << (7+5+3+5+5+3))
 
+// | b31~b28     | b27~b25   | b24~b20   | b19~b15    | b14~12     | b11~b7        | b6~b0             |
+// | funct4:0001 | func3:100 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to result wind + jal
+// | funct4:0001 | func3:011 | imm[9:5]  | src_table  | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to rd + jal
+// | funct4:0001 | func3:000 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to pkt wind + jalr
+// | funct4:0001 | func3:001 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to result wind + jalr
+// | funct4:0001 | func3:010 | imm[9:5]  | rs1        | imm[4:2]   | rd            | coustom0: 0001011 | -- acc load to rd + jalr
 #define LXJALR(func3, imm, rd, rs1_src)             \
        (XCUSTOM_OPCODE(0)       << (0))          |  \
        (rd                      << (7))          |  \
@@ -48,6 +34,21 @@
        (func3                   << (7+5+3+5+5))  |  \
        (1                       << (7+5+3+5+5+3))
 
+// | b31~b28     | b27~b25   | b24~b20   | b19~b15    | b14~12     | b11~b7        | b6~b0             |
+// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap pkt wind byte
+// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap pkt wind halfword
+// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap pkt wind word
+// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap pkt wind doubleword
+// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned byte
+// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned halfword
+// | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned word
+// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap result wind byte
+// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap result wind halfword
+// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap result wind word
+// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap result wind doubleword
+// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap result wind unsigned byte
+// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap result wind unsigned halfword
+// | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap result wind unsigned word
 #define SWAPXX(func3, woffset, Usize, rd)           \
        (XCUSTOM_OPCODE(0)       << (0))          |  \
        (rd                      << (7))          |  \
@@ -56,6 +57,19 @@
        (func3                   << (7+5+3+10))   |  \
        (2                       << (7+5+3+10+3))
 
+// | b31~b28     | b27~b25   | b24~b20   | b19~b15    | b14~12     | b11~b7        | b6~b0             |
+// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:100 | reserve:00000 | coustom0: 0001011 | -- store unsigned byte key to buff
+// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:101 | reserve:00000 | coustom0: 0001011 | -- store unsigned halftword key to buff
+// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:110 | reserve:00000 | coustom0: 0001011 | -- store unsigned word key to buff
+// | funct4:0010 | func3:010 | rs2        |func5:00000| U+size:111 | reserve:00000 | coustom0: 0001011 | -- store unsigned doubleword key to buff
+#define STOREKEYX(rs2, Usize)                        \
+       (XCUSTOM_OPCODE(0)       << (0))          |  \
+       (0                       << (7))          |  \
+       (Usize                   << (7+5))        |  \
+       (0                       << (7+5+3))      |  \
+       (EXTRACT(rs2, 4, 0)      << (7+5+3+5))    |  \
+       (2                       << (7+5+3+5+5))  |  \
+       (2                       << (7+5+3+5+5+3))
 
 #define LPKTWJAL(imm, rd)            .word LXJAL(0, imm, ## rd)
 #define LRESWJAL(imm, rd, src)       .word LXJALR(4, imm, ## rd, ## src)
@@ -77,6 +91,10 @@
 #define SWAPRESUB(woffset, rd)       .word SWAPXX(1, woffset, 4, ## rd)
 #define SWAPRESUH(woffset, rd)       .word SWAPXX(1, woffset, 5, ## rd)
 #define SWAPRESUW(woffset, rd)       .word SWAPXX(1, woffset, 6, ## rd)
+#define STOREKEYBU(rs2)              .word STOREKEYX(## rs2, 4)
+#define STOREKEYHU(rs2)              .word STOREKEYX(## rs2, 5)
+#define STOREKEYWU(rs2)              .word STOREKEYX(## rs2, 6)
+#define STOREKEYDU(rs2)              .word STOREKEYX(## rs2, 7)
 
 #define XCUSTOM(x, rd, rs1, rs2, funct)         \
   (XCUSTOM_OPCODE(x)    << (0))       |         \

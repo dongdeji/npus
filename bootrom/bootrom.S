@@ -8,7 +8,11 @@ _start:
   //csrwi 0x7c1, 0 // disable chicken bits
   //csrr a0, mhartid
   LPKTWJAL(4, 0)
-  SWAPPKTB(0, 1)
+  SWAPPKTH(0, 1)
+  STOREKEYHU(1)
+  STOREKEYHU(1)
+  STOREKEYHU(1)
+  STOREKEYHU(1)
   SWAPPKTH(0, 1)
   SWAPPKTW(0, 1)
   SWAPPKTD(0, 1)
