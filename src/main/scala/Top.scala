@@ -138,10 +138,12 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
                                                         name = s"FrontBuss_src",
                                                         id   = IdRange(0, 1 << 1))))))
   private val accxbar = LazyModule(new AXI4Xbar)
-  private val tcam = LazyModule(new Axi4Tcam(0))
-  private val lram = LazyModule(new Axi4Lram(0))
+  private val tcam = LazyModule(new Axi4MatchEngin(0, AddressSet(tcamBase, tcamSize-1), delay = 10))
+  private val lram = LazyModule(new Axi4MatchEngin(0, AddressSet(lramBase, lramSize-1), delay = 5))
+  private val eam = LazyModule(new Axi4MatchEngin(0, AddressSet(eamBase, eamSize-1), delay = 100))
   tcam.frag.node := accxbar.node
   lram.frag.node := accxbar.node
+  eam.frag.node := accxbar.node
 
   private val mmioxbar = LazyModule(new AXI4Xbar)
   private val pktbuff = LazyModule(new AXI4PKTROM(file = "./src/test/resources/vxlan_pkts.img",

@@ -18,15 +18,6 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{GenericLogicalTreeNode,BusMemoryLogicalTreeNode, LogicalModuleTree, LogicalTreeNode}
 import freechips.rocketchip.diplomaticobjectmodel.model.AXI4_Lite
-
-//import Chisel._
-//import freechips.rocketchip.config.Parameters
-//import freechips.rocketchip.diplomacy._
-//import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{BusMemoryLogicalTreeNode, LogicalModuleTree, LogicalTreeNode}
-//import freechips.rocketchip.diplomaticobjectmodel.model.AXI4_Lite
-//import freechips.rocketchip.amba.axi4._
-//import freechips.rocketchip.util._
-//import freechips.rocketchip.amba._
 import java.nio.file.{Files, Paths}
 import java.nio.ByteBuffer
 
@@ -95,9 +86,8 @@ class Axi4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 }
 
 
-class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
+class Axi4MatchEngin(id: Int, val address:AddressSet, delay:Int = 10)(implicit p: Parameters) extends LazyModule with NpusParams
 {
-  private val address = AddressSet(tcamBase, tcamSize-1)
   private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = Seq(address),
@@ -125,7 +115,7 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
     in.w.ready := !w_fire_s1
     in.ar.ready := true.B   
 
-    val IncCounter = Counter(10)
+    val IncCounter = Counter(delay)
 
     in.r.valid := w_fire_s1 && IncCounter.inc()
     in.r.bits.id := aw_id_s1
@@ -143,73 +133,6 @@ class Axi4Tcam(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 
   }
 }
-
-class Axi4Lram(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
-{
-  private val address = AddressSet(lramBase, lramSize-1)
-  private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
-    Seq(AXI4SlaveParameters(
-      address       = Seq(address),
-      //resources     = resources,
-      regionType    = if (true) RegionType.UNCACHED else RegionType.IDEMPOTENT,
-      executable    = true,
-      supportsRead  = TransferSizes(1, fetchBytes),
-      supportsWrite = TransferSizes(1, fetchBytes),
-      interleavedId = Some(0))),
-    beatBytes  = fetchBytes,
-    requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
-    minLatency = 1)))
-
-  val frag = LazyModule(new AXI4Fragmenter)
-  node := frag.node
-
-  lazy val module = new LazyModuleImp(this) 
-  {
-    val (in, edgeIn) = node.in(0)
-    chisel3.dontTouch(in)
-    val aw_fire_s1 = RegInit(false.B)
-    val ar_fire_s1 = RegInit(false.B)
-    val aw_id_s1 = RegInit(0.U)
-    val ar_id_s1 = RegInit(0.U)
-    val lram_reg = RegInit(0x72345678.U(32.W)); chisel3.dontTouch(lram_reg)
-    in.aw.ready := true.B
-    in.w.ready := true.B
-    in.ar.ready := !ar_fire_s1    
-
-    val IncCounter = Counter(5)
-
-    // handle aw/w->b begin
-    when(in.aw.fire() && address.contains(in.aw.bits.addr) && in.w.fire())
-    { 
-      lram_reg := in.w.bits.data(31,0) 
-      aw_fire_s1 := in.aw.fire()
-      aw_id_s1 := in.aw.bits.id
-    }
-    in.b.valid := aw_fire_s1
-    in.b.bits.id := aw_id_s1
-    when(aw_fire_s1 && in.b.fire())
-    { aw_fire_s1 := false.B }
-    // handle aw/w->b end
-
-    // handle ar->r begin
-    val sel_s0 = address.contains(in.ar.bits.addr); chisel3.dontTouch(sel_s0)
-    when(in.ar.fire() && address.contains(in.ar.bits.addr))
-    { 
-      ar_fire_s1 := true.B
-      ar_id_s1 := in.ar.bits.id
-      IncCounter.reset
-    }
-
-    in.r.valid := ar_fire_s1 && IncCounter.inc
-    in.r.bits.data := ar_id_s1
-    in.r.bits.data := Cat(0.U(33.W), lram_reg(30,0))
-    when(ar_fire_s1 && in.r.fire())
-    { ar_fire_s1 := false.B }
-    // handle ar->r end
-
-  }
-}
-
 
 class FileData(contentsDelayed: => Seq[Byte] ) { def Bytes = contentsDelayed }
 
