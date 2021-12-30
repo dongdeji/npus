@@ -108,7 +108,7 @@ class AccInfBundle extends Bundle with NpusParams
 class AccMetaBundle extends Bundle with NpusParams 
 {
   val valid = Bool()
-  val uop = new ThreadUop
+  //val uop = new ThreadUop
   val req = new DmemReqBundle
   val reqed = Bool()
   val resped = Bool()
@@ -244,7 +244,6 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
           { // remember the request meta
             accMeta_R(tid).valid := true.B
             accMeta_R(tid).req := io.core.req.bits
-            accMeta_R(tid).uop := io.core.req.bits.uop
 
             state_R(tid) := acc_rw_send
           }
@@ -288,11 +287,11 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
         is(send_reg_aw)
         { 
           regouts(tid).aw.valid := accMeta_R(tid).valid && accMeta_R(tid).buff_full && 
-                                   accMeta_R(tid).uop.ctrl.wxd && (accMeta_R(tid).uop.ctrl.wxdv === XdValid.XD_LLL)
+                                   accMeta_R(tid).req.uop.ctrl.wxd && (accMeta_R(tid).req.uop.ctrl.wxdv === XdValid.XD_LLL)
           val Id = ClusterId*numGroup*numNpu + GroupId*numNpu + NpId
           val npRegBase = (regfileGlobalBase + regfileSizePerNp*Id).U
           val threadRegAddr = npRegBase >> (log2Ceil(isaRegNumPerThread) + log2Ceil(dataBytes))
-          val threadRegOff  = Cat(accMeta_R(tid).uop.rd, 0.U(log2Ceil(dataBytes).W))
+          val threadRegOff  = Cat(accMeta_R(tid).req.uop.rd, 0.U(log2Ceil(dataBytes).W))
           regouts(tid).aw.bits.addr := Cat(threadRegAddr, threadRegOff)
           regouts(tid).w.valid := regouts(tid).aw.valid
 
