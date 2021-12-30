@@ -64,7 +64,7 @@ object NpuALU
 object NpuCmd {
   val NP_CMD = 2
   def NP_X    = BitPat("b??");
-  def NP_LDW  = 0.U;
+  def NP_LWI  = 0.U;
   def NP_LKX  = 1.U;//BitPat("b01");
   def NP_SWAP = 2.U;//BitPat("b10");
   def NP_STK  = 3.U;//BitPat("b11");
@@ -306,14 +306,14 @@ class NpDecode extends DecodeConstants
                         //   |   | jalr    |     sel_alu1  |      alu_dw         mem_cmd  wxd          
                         //   | br| | rxs2  |       |       |      |      alu_fn mem|      | wxdv    csr  npi
                         //   | | | | | rxs1|       |       |      |      |       | |      | |       |     | npcmd
-  //JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LDW ),
-  //JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LDW ),
-    LPKTWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LDW ),
+  //JAL->               List(Y,N,Y,N,N,N,  A2_SIZE,A1_PC,  IMM_UJ,DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LWI ),
+  //JALR->              List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X,   Y,XD_LLL, CSR.N,Y,NP_LWI ),
+    LPKTWJAL  ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
     LKRESWJAL ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LKX ),
     LKRDJAL   ->        List(Y,N,Y,N,N,N,  A2_SIZE, A1_PC, IMM_UJ,DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LKX ),
-    LPKTWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LDW ),
-    LRESWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LDW ),
-    LRDJALR   ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LDW ),
+    LPKTWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
+    LRESWJALR ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
+    LRDJALR   ->        List(Y,N,N,Y,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_LLL, CSR.N,Y,NP_LWI ),
   //LB->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,XD_RR1, CSR.N,Y,NP_SWAP),
   //LH->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,XD_RR1, CSR.N,Y,NP_SWAP),
   //LW->                List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, Y,M_XRD, Y,XD_RR1, CSR.N,Y,NP_SWAP),

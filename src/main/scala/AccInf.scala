@@ -167,7 +167,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       val accLoad = new AccLoadBundle  // to window
     })
     
-    val accload = if(supportNpInstr) (io.core.req.bits.uop.ctrl.npi && (io.core.req.bits.uop.ctrl.npcmd === NpuCmd.NP_LDW)) else false.B
+    val accload = if(supportNpInstr) (io.core.req.bits.uop.ctrl.npi && (io.core.req.bits.uop.ctrl.npcmd === NpuCmd.NP_LWI)) else false.B
     io.accLoad.req.valid := io.core.req.valid && io.core.req.bits.uop.valid && io.core.req.bits.uop.ctrl.legal && accload
     io.accLoad.req.bits.tid := io.core.req.bits.tid
     io.accLoad.req.bits.addr := pktBuffBase.U
