@@ -233,8 +233,8 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
       accouts(tid).r.ready := accMeta_R(tid).valid && (!accMeta_R(tid).buff_full)
       accouts(tid).aw.valid := false.B
       accouts(tid).aw.bits.id := 0.U
-      accouts(tid).w.bits.last := true.B
       accouts(tid).w.valid := false.B
+      accouts(tid).w.bits.last := false.B
       accouts(tid).b.ready := true.B
       regouts(tid).ar.valid := false.B
       regouts(tid).ar.bits.id := 0.U
@@ -295,6 +295,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
             accouts(tid).aw.bits.addr := accMeta_R(tid).req.addr
             accouts(tid).w.valid := accouts(tid).aw.valid
             accouts(tid).w.bits.data := accMeta_R(tid).req.data
+            accouts(tid).w.bits.last := true.B
             
             when(accouts(tid).ar.fire()) 
             { state_R(tid) := wait_acc_r }
