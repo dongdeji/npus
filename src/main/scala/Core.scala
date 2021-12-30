@@ -230,7 +230,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     val redirectForBJ = ex_uop_W.valid && ((ex_uop_R.ctrl.br && alu.io.cmp_out) || ex_uop_R.ctrl.jal || ex_uop_R.ctrl.jalr) && !ex_uop_R.ctrl.npi
     io.frontend.redirect.valid := ex_uop_W.valid && (redirectForBJ || redirectForAcc || redirectForMem)
     io.frontend.redirect.bits.tid := ex_uop_R.tid
-    io.frontend.redirect.bits.npc := Mux(redirectForAcc, acc_nxt_target.asUInt, Mux(redirectForMem, ex_uop_R.pc + 4.U, nxt_target))
+    io.frontend.redirect.bits.npc := Mux(redirectForAcc, acc_nxt_target.asUInt, 
+                                       Mux(redirectForMem, ex_uop_R.pc + 4.U, nxt_target))
     ex_uop_W.make_ready := ex_uop_R.make_ready || redirectForBJ
     // erase insts that following the redirected inst
     class TailEraseInfo extends Bundle with NpusParams {

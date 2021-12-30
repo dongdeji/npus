@@ -13,9 +13,9 @@
 #define LXJAL(func3, imm, rd)                       \
        (XCUSTOM_OPCODE(0)       << (0))          |  \
        (rd                      << (7))          |  \
-       (EXTRACT(imm, 4, 2)      << (7+5))        |  \
-       (EXTRACT(imm,14,10)      << (7+5+3))      |  \
-       (EXTRACT(imm, 9, 5)      << (7+5+3+5))    |  \
+       (EXTRACT(imm, 3, 2)      << (7+5))        |  \
+       (EXTRACT(imm, 5,10)      << (7+5+3))      |  \
+       (EXTRACT(imm, 5, 5)      << (7+5+3+5))    |  \
        (func3                   << (7+5+3+5+5))  |  \
        (0                       << (7+5+3+5+5+3))
 
@@ -28,9 +28,9 @@
 #define LXJALR(func3, imm, rd, rs1_src)             \
        (XCUSTOM_OPCODE(0)       << (0))          |  \
        (rd                      << (7))          |  \
-       (EXTRACT(imm, 4, 2)      << (7+5))        |  \
+       (EXTRACT(imm, 3, 2)      << (7+5))        |  \
        (rs1_src                 << (7+5+3))      |  \
-       (EXTRACT(imm, 9, 5)      << (7+5+3+5))    |  \
+       (EXTRACT(imm, 5, 5)      << (7+5+3+5))    |  \
        (func3                   << (7+5+3+5+5))  |  \
        (1                       << (7+5+3+5+5+3))
 
@@ -39,9 +39,9 @@
 // SWAPPKTH   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap pkt wind halfword
 // SWAPPKTW   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap pkt wind word
 // SWAPPKTD   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap pkt wind doubleword
-// SWAPPKTUB  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned byte
-// SWAPPKTUH  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned halfword
-// SWAPPKTUW  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned word
+// SWAPPKTBU  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned byte
+// SWAPPKTHU  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned halfword
+// SWAPPKTWU  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned word
 // SWAPRESB   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap result wind byte
 // SWAPRESH   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap result wind halfword
 // SWAPRESW   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap result wind word
@@ -53,7 +53,7 @@
        (XCUSTOM_OPCODE(0)       << (0))          |  \
        (rd                      << (7))          |  \
        (Usize                   << (7+5))        |  \
-       (EXTRACT(woffset, 9, 0)  << (7+5+3))      |  \
+       (EXTRACT(woffset,10, 0)  << (7+5+3))      |  \
        (func3                   << (7+5+3+10))   |  \
        (2                       << (7+5+3+10+3))
 
@@ -67,23 +67,24 @@
        (0                       << (7))          |  \
        (Usize                   << (7+5))        |  \
        (0                       << (7+5+3))      |  \
-       (EXTRACT(rs2, 4, 0)      << (7+5+3+5))    |  \
+       (EXTRACT(rs2, 5, 0)      << (7+5+3+5))    |  \
        (2                       << (7+5+3+5+5))  |  \
        (2                       << (7+5+3+5+5+3))
 
-#define LPKTWJAL(imm, rd)            .word LXJAL(0, imm, ## rd)
-#define LKRESWJAL(imm, rd, src)      .word LXJALR(4, imm, ## rd, ## src)
-#define LKRDJAL(imm, rd, src)        .word LXJALR(3, imm, ## rd, ## src)
-#define LPKTWJALR(imm, rd, rs1)      .word LXJALR(0, imm, ## rd, ## rs1)
-#define LRESWJALR(imm, rd, rs1)      .word LXJALR(1, imm, ## rd, ## rs1)
-#define LRDJALR(imm, rd, rs1)        .word LXJALR(2, imm, ## rd, ## rs1)
+
+#define LPKTWJAL(imm, rd)            .word LXJAL(0, (imm), ## rd)
+#define LKRESWJAL(imm, rd, src)      .word LXJALR(4, (imm), ## rd, ## src)
+#define LKRDJAL(imm, rd, src)        .word LXJALR(3, (imm), ## rd, ## src)
+#define LPKTWJALR(imm, rd, rs1)      .word LXJALR(0, (imm), ## rd, ## rs1)
+#define LRESWJALR(imm, rd, rs1)      .word LXJALR(1, (imm), ## rd, ## rs1)
+#define LRDJALR(imm, rd, rs1)        .word LXJALR(2, (imm), ## rd, ## rs1)
 #define SWAPPKTB(woffset, rd)        .word SWAPXX(0, woffset, 0, ## rd)
 #define SWAPPKTH(woffset, rd)        .word SWAPXX(0, woffset, 1, ## rd)
 #define SWAPPKTW(woffset, rd)        .word SWAPXX(0, woffset, 2, ## rd)
 #define SWAPPKTD(woffset, rd)        .word SWAPXX(0, woffset, 3, ## rd)
-#define SWAPPKTUB(woffset, rd)       .word SWAPXX(0, woffset, 4, ## rd)
-#define SWAPPKTUH(woffset, rd)       .word SWAPXX(0, woffset, 5, ## rd)
-#define SWAPPKTUW(woffset, rd)       .word SWAPXX(0, woffset, 6, ## rd)
+#define SWAPPKTBU(woffset, rd)       .word SWAPXX(0, woffset, 4, ## rd)
+#define SWAPPKTHU(woffset, rd)       .word SWAPXX(0, woffset, 5, ## rd)
+#define SWAPPKTWU(woffset, rd)       .word SWAPXX(0, woffset, 6, ## rd)
 #define SWAPRESB(woffset, rd)        .word SWAPXX(1, woffset, 0, ## rd)
 #define SWAPRESH(woffset, rd)        .word SWAPXX(1, woffset, 1, ## rd)
 #define SWAPRESW(woffset, rd)        .word SWAPXX(1, woffset, 2, ## rd)

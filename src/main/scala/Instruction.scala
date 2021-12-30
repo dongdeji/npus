@@ -228,9 +228,9 @@ class I64Decode extends DecodeConstants
 // SWAPPKTH   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap pkt wind halfword
 // SWAPPKTW   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap pkt wind word
 // SWAPPKTD   | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:011 | rd            | coustom0: 0001011 | -- swap pkt wind doubleword
-// SWAPPKTUB  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned byte
-// SWAPPKTUH  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned halfword
-// SWAPPKTUW  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned word
+// SWAPPKTBU  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:100 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned byte
+// SWAPPKTHU  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:101 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned halfword
+// SWAPPKTWU  | funct4:0010 | func3:000 | windoffset[9:0]        | U+size:110 | rd            | coustom0: 0001011 | -- swap pkt wind unsigned word
 // SWAPRESB   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:000 | rd            | coustom0: 0001011 | -- swap result wind byte
 // SWAPRESH   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:001 | rd            | coustom0: 0001011 | -- swap result wind halfword
 // SWAPRESW   | funct4:0010 | func3:001 | windoffset[9:0]        | U+size:010 | rd            | coustom0: 0001011 | -- swap result wind word
@@ -256,9 +256,9 @@ object NpInstructions {
   def SWAPPKTH          = BitPat("b0010000??????????001?????0001011")
   def SWAPPKTW          = BitPat("b0010000??????????010?????0001011")
   def SWAPPKTD          = BitPat("b0010000??????????011?????0001011")
-  def SWAPPKTUB         = BitPat("b0010000??????????100?????0001011")
-  def SWAPPKTUH         = BitPat("b0010000??????????101?????0001011")
-  def SWAPPKTUW         = BitPat("b0010000??????????110?????0001011")
+  def SWAPPKTBU         = BitPat("b0010000??????????100?????0001011")
+  def SWAPPKTHU         = BitPat("b0010000??????????101?????0001011")
+  def SWAPPKTWU         = BitPat("b0010000??????????110?????0001011")
   def SWAPRESB          = BitPat("b0010001??????????000?????0001011")
   def SWAPRESH          = BitPat("b0010001??????????001?????0001011")
   def SWAPRESW          = BitPat("b0010001??????????010?????0001011")
@@ -290,7 +290,10 @@ object NpInstrImmGen {
     val b9_0 = Cat( inst(24,20), inst(14,12) ) << 2
     val b14_10 = Mux(inst(31, 28) === 0.U, inst(19,15).asSInt, sign.asSInt).asUInt
     val b31_15 = Fill(17, sign).asUInt
-
+    chisel3.dontTouch(b9_0)
+    chisel3.dontTouch(b14_10)
+    chisel3.dontTouch(b31_15)
+    
     val imm = Mux(inst(31, 28).asUInt === 2.U, Cat(0.U(22.W), inst(24, 15)).asSInt, Cat(b31_15, b14_10, b9_0).asSInt)
     chisel3.dontTouch(imm)
     imm
@@ -320,9 +323,9 @@ class NpDecode extends DecodeConstants
     SWAPPKTH  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
     SWAPPKTW  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
     SWAPPKTD  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
-    SWAPPKTUB ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
-    SWAPPKTUH ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
-    SWAPPKTUW ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
+    SWAPPKTBU ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
+    SWAPPKTHU ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
+    SWAPPKTWU ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
     SWAPRESB  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
     SWAPRESH  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),
     SWAPRESW  ->        List(Y,N,N,N,N,Y,  A2_IMM, A1_RS1, IMM_I, DW_XPR,FN_ADD, N,M_X  , Y,XD_RR1, CSR.N,Y,NP_SWAP),

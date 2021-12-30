@@ -310,11 +310,11 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
           when(accMeta_R(tid).queue_req)
           { // to do 
             accouts(tid).aw.valid := accMeta_R(tid).keyOffset === 1.U
-            /*alu.io.in2 := MuxLookup(ex_uop_R.ctrl.sel_alu2, 0.S,
-                                Seq(  A2_RS2 -> ex_uop_W.rs2_data.asSInt,
-                                      A2_IMM -> ImmGen(ex_uop_R.ctrl.sel_imm, ex_uop_R.inst),
-                                      A2_SIZE -> Mux(/*ex_uop_R.rvc*/false.B, 2.S, 4.S))).asUInt*/
-            accouts(tid).aw.bits.addr := 0x54010000.U(addrWidth.W)
+            accouts(tid).aw.bits.addr := 
+                MuxLookup(accMeta_R(tid).req.uop.rs1, lramBase.U(addrWidth.W),
+                                Seq(  0.U -> tcamBase.U(addrWidth.W),
+                                      1.U -> lramBase.U(addrWidth.W),
+                                      2.U -> eamBase.U(addrWidth.W))).asUInt
             accouts(tid).w.valid := true.B
             accouts(tid).w.bits.data := keybuff.io.read_data
             accouts(tid).w.bits.last := true.B // to do by dongdeji
