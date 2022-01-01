@@ -16,6 +16,11 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
 
+sealed trait AXI4Channel extends AXI4BundleBase {
+  val channelName: String
+}
+
+sealed trait AXI4DataChannel extends AXI4Channel
 
 class AXI4Edge(
   master: AXI4MasterPortParameters,

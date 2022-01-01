@@ -3,7 +3,7 @@
 package npus
 
 import chisel3._
-import chisel3.util.{DecoupledIO, log2Ceil, Cat, RegEnable}
+import chisel3.util.{IrrevocableIO, DecoupledIO, log2Ceil, Cat, RegEnable}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
@@ -20,9 +20,10 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
                slaveFn  = { p => p.copy(beatBytes = innerBeatBytes) })
 
   lazy val module = new LazyModuleImp(this) {
+    
     //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
     def merge[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: DecoupledIO[T], 
-                                   edgeOut: AXI4EdgeParameters, out: DecoupledIO[T]) = {
+                                  edgeOut: AXI4EdgeParameters, out: DecoupledIO[T]) = {
 
       val inBytes = edgeIn.slave.beatBytes
       val outBytes = edgeOut.slave.beatBytes
@@ -88,16 +89,17 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       }*/
     }
 
-    /*
-    def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
-      val inBytes = edgeIn.manager.beatBytes
-      val outBytes = edgeOut.manager.beatBytes
+    //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
+    def split[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: DecoupledIO[T], 
+                                  edgeOut: AXI4EdgeParameters, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
+      val inBytes = edgeIn.slave.beatBytes
+      val outBytes = edgeOut.slave.beatBytes
       val ratio = inBytes / outBytes
       val keepBits  = log2Ceil(inBytes)
       val dropBits  = log2Ceil(outBytes)
       val countBits = log2Ceil(ratio)
 
-      val size    = edgeIn.size(in.bits)
+      /*val size    = edgeIn.size(in.bits)
       val hasData = edgeIn.hasData(in.bits)
       val limit   = UIntToOH1(size, keepBits) >> dropBits
 
@@ -122,17 +124,19 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         }
       }
 
-      val index  = sel | count
+      val index  = sel | count 
       def helper(idata: UInt, width: Int): UInt = {
         val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*width-1, i*outBytes*width) }
         mux(index)
       }
+      */
 
       out.bits := in.bits
       out.valid := in.valid
       in.ready := out.ready
 
       // Don't put down hardware if we never carry data
+      /*
       edgeOut.data(out.bits) := (if (edgeIn.staticHasData(in.bits) == Some(false)) 0.U else helper(edgeIn.data(in.bits), 8))
 
       (out.bits, in.bits) match {
@@ -145,15 +149,19 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
 
       // Repeat the input if we're not last
       !last
+      */
     }
     
-    def splice[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
-      if (edgeIn.manager.beatBytes == edgeOut.manager.beatBytes) {
+    //def splice[T <: TLDataChannel](edgeIn: AXI4Edge, in: DecoupledIO[T], edgeOut: AXI4Edge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
+    //def fanout[T <: AXI4BundleBase](input: IrrevocableIO[T], select: Seq[Bool]) = {
+    def splice[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: IrrevocableIO[T], 
+                                   edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], sourceMap: UInt => UInt) = {  
+      /*if (edgeIn.manager.beatBytes == edgeOut.manager.beatBytes) {*/
         // nothing to do; pass it through
         out.bits := in.bits
         out.valid := in.valid
         in.ready := out.ready
-      } else if (edgeIn.manager.beatBytes > edgeOut.manager.beatBytes) {
+      /*} else if (edgeIn.manager.beatBytes > edgeOut.manager.beatBytes) {
         // split input to output
         val repeat = Wire(Bool())
         val repeated = Repeater(in, repeat)
@@ -166,7 +174,7 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       } else {
         // merge input to output
         merge(edgeIn, in, edgeOut, out)
-      }
+      }*/
     }
 
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
@@ -177,7 +185,7 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       // To fix this, we record the relevant address bits for all sources.
       // The assumption is that this sort of situation happens only where
       // you connect a narrow master to the system bus, so there are few sources.
-
+/*
       def sourceMap(source: UInt) = {
         require (edgeOut.manager.beatBytes > edgeIn.manager.beatBytes)
         val keepBits = log2Ceil(edgeOut.manager.beatBytes)
@@ -195,25 +203,16 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         if (edgeIn.manager.minLatency > 0) sources(source)
         else Mux(bypass, a_sel, sources(source))
       }
+*/
+      def sourceMap(source: UInt) = { 0.U }
 
-      splice(edgeIn,  in.a,  edgeOut, out.a, sourceMap)
-      splice(edgeOut, out.d, edgeIn,  in.d,  sourceMap)
+      splice(edgeIn ,  in.aw, edgeOut, out.aw, sourceMap)
+      splice(edgeIn ,  in.w , edgeOut, out.w , sourceMap)
+      splice(edgeOut, out.b , edgeIn , in.b  , sourceMap)
+      splice(edgeOut, out.ar, edgeIn , in.ar , sourceMap)
+      splice(edgeOut, out.r , edgeIn , in.r  , sourceMap)
 
-      if (edgeOut.manager.anySupportAcquireB && edgeIn.client.anySupportProbe) {
-        splice(edgeOut, out.b, edgeIn,  in.b,  sourceMap)
-        splice(edgeIn,  in.c,  edgeOut, out.c, sourceMap)
-        out.e.valid := in.e.valid
-        out.e.bits := in.e.bits
-        in.e.ready := out.e.ready
-      } else {
-        in.b.valid := false.B
-        in.c.ready := true.B
-        in.e.ready := true.B
-        out.b.ready := true.B
-        out.c.valid := false.B
-        out.e.valid := false.B
-      }
-    }*/
+    }
   }
 }
 
