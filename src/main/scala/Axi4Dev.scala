@@ -13,7 +13,6 @@ import chipsalliance.rocketchip.config.Config
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.amba._
-
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{GenericLogicalTreeNode,BusMemoryLogicalTreeNode, LogicalModuleTree, LogicalTreeNode}
@@ -21,7 +20,7 @@ import freechips.rocketchip.diplomaticobjectmodel.model.AXI4_Lite
 import java.nio.file.{Files, Paths}
 import java.nio.ByteBuffer
 
-class Axi4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
+class AXI4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   private val address = AddressSet(uartBase, uartSize-1)
   private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
@@ -86,7 +85,7 @@ class Axi4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
 }
 
 
-class Axi4MatchEngin(id: Int, val address:AddressSet, delay:Int = 10)(implicit p: Parameters) extends LazyModule with NpusParams
+class AXI4MatchEngin(id: Int, val address:AddressSet, delay:Int = 10)(implicit p: Parameters) extends LazyModule with NpusParams
 {
   private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(

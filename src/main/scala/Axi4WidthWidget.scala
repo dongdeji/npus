@@ -8,27 +8,30 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tilelink._
+import freechips.rocketchip.amba._
+import freechips.rocketchip.amba.axi4._
 
 // innBeatBytes => the new client-facing bus width
-class Axi4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyModule
+class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyModule
 {
-  private def noChangeRequired(manager: TLManagerPortParameters) = manager.beatBytes == innerBeatBytes
-  val node = new TLAdapterNode(
-    clientFn  = { case c => c },
-    managerFn = { case m => m.v1copy(beatBytes = innerBeatBytes) }){
-    override def circuitIdentity = edges.out.map(_.manager).forall(noChangeRequired)
-  }
+  //private def noChangeRequired(manager: TLManagerPortParameters) = manager.beatBytes == innerBeatBytes
+  val node = AXI4AdapterNode(
+               masterFn = { p => p },
+               slaveFn  = { p => p.copy(beatBytes = innerBeatBytes) })
 
   lazy val module = new LazyModuleImp(this) {
-    def merge[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T]) = {
-      val inBytes = edgeIn.manager.beatBytes
-      val outBytes = edgeOut.manager.beatBytes
+    //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
+    def merge[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: DecoupledIO[T], 
+                                   edgeOut: AXI4EdgeParameters, out: DecoupledIO[T]) = {
+
+      val inBytes = edgeIn.slave.beatBytes
+      val outBytes = edgeOut.slave.beatBytes
       val ratio = outBytes / inBytes
       val keepBits  = log2Ceil(outBytes)
       val dropBits  = log2Ceil(inBytes)
       val countBits = log2Ceil(ratio)
 
-      val size    = edgeIn.size(in.bits)
+      /*val size    = edgeIn.size(in.bits)
       val hasData = edgeIn.hasData(in.bits)
       val limit   = UIntToOH1(size, keepBits) >> dropBits
 
@@ -82,9 +85,10 @@ class Axi4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         case (o: TLBundleC, i: TLBundleC) => ()
         case (o: TLBundleD, i: TLBundleD) => ()
         case _ => require(false, "Impossible bundle combination in WidthWidget")
-      }
+      }*/
     }
 
+    /*
     def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
       val inBytes = edgeIn.manager.beatBytes
       val outBytes = edgeOut.manager.beatBytes
@@ -209,18 +213,17 @@ class Axi4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         out.c.valid := false.B
         out.e.valid := false.B
       }
-    }
+    }*/
   }
 }
 
-object Axi4WidthWidget
+object AXI4WidthWidget
 {
-  def apply(innerBeatBytes: Int)(implicit p: Parameters): TLNode =
+  def apply(innerBeatBytes: Int)(implicit p: Parameters): AXI4Node =
   {
-    val widget = LazyModule(new TLWidthWidget(innerBeatBytes))
-    widget.node
+    val axi4widget = LazyModule(new AXI4WidthWidget(innerBeatBytes))
+    axi4widget.node
   }
-  def apply(wrapper: TLBusWrapper)(implicit p: Parameters): TLNode = apply(wrapper.beatBytes)
 }
 
 

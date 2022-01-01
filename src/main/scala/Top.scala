@@ -138,9 +138,9 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
                                                         name = s"FrontBuss_src",
                                                         id   = IdRange(0, 1 << 1))))))
   private val accxbar = LazyModule(new AXI4Xbar)
-  private val tcam = LazyModule(new Axi4MatchEngin(0, AddressSet(tcamBase, tcamSize-1), delay = 10))
-  private val lram = LazyModule(new Axi4MatchEngin(0, AddressSet(lramBase, lramSize-1), delay = 5))
-  private val eam = LazyModule(new Axi4MatchEngin(0, AddressSet(eamBase, eamSize-1), delay = 100))
+  private val tcam = LazyModule(new AXI4MatchEngin(0, AddressSet(tcamBase, tcamSize-1), delay = 10))
+  private val lram = LazyModule(new AXI4MatchEngin(0, AddressSet(lramBase, lramSize-1), delay = 5))
+  private val eam = LazyModule(new AXI4MatchEngin(0, AddressSet(eamBase, eamSize-1), delay = 100))
   tcam.frag.node := accxbar.node
   lram.frag.node := accxbar.node
   eam.frag.node := accxbar.node
@@ -150,7 +150,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
                                      address = AddressSet(pktBuffBase, pktBuffSize-1), 
                                      beatBytes = fetchBytes))
   pktbuff.frag.node := mmioxbar.node
-  private val uart = LazyModule(new Axi4Uart(0))
+  private val uart = LazyModule(new AXI4Uart(0))
   uart.frag.node := mmioxbar.node
   
   private val clusters = Seq.tabulate(numCluster) 
