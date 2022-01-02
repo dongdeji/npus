@@ -3,7 +3,7 @@
 package npus
 
 import chisel3._
-import chisel3.util.{IrrevocableIO, DecoupledIO, log2Ceil, Cat, RegEnable}
+import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
@@ -25,6 +25,7 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
 
     class AXI4Meta(edge: AXI4EdgeParameters) extends Bundle
     {
+      val id     = UInt(edge.bundle.idBits.W)
       val addr   = UInt(edge.bundle.addrBits.W)
       val len    = UInt(edge.bundle.lenBits.W)  // number of beats - 1
       val size   = UInt(edge.bundle.sizeBits.W) // bytes in beat = 2^size
@@ -100,24 +101,20 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
 
     //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
     def split[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: IrrevocableIO[T], 
-                                  edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], meta: AXI4Meta) = {
+                                  edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], metaOut: AXI4Meta) = {
+      require(edgeIn.slave.beatBytes > edgeOut.slave.beatBytes)
       val inBytes = edgeIn.slave.beatBytes
       val outBytes = edgeOut.slave.beatBytes
       val ratio = inBytes / outBytes
+      require(isPow2(ratio))
       val keepBits  = log2Ceil(inBytes)
       val dropBits  = log2Ceil(outBytes)
       val countBits = log2Ceil(ratio)
-
-      //val size    = edgeIn.size(in.bits)
-      //val hasData = edgeIn.hasData(in.bits)
-      val limit   = UIntToOH1(meta.size, keepBits) >> dropBits
-
-      val count = RegInit(0.U(countBits.W))
+      
+      val hasData = axi4hasData(in) // to do by dongdeji
+      val count = RegInit(0.U(metaOut.len.getWidth.W))
       val first = count === 0.U
-      val id = axi4id(in)
-      val idHold = Mux(first, id, RegEnable(id, first))
-      //val last  = count === limit || !hasData
-      val last  = count === limit // to do by dongdeji
+      val last  = count === metaOut.len || !hasData.B
 
       when (out.fire()) {
         count := count + 1.U
@@ -137,9 +134,9 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       }*/
 
       //val index  = sel | count 
-      val index  = count 
-      def helper(idata: UInt, width: Int): UInt = {
-        val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*width-1, i*outBytes*width) }
+      val index = count 
+      def helper(idata: UInt): UInt = {
+        val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*8-1, i*outBytes*8) }
         mux(index)
       }      
 
@@ -147,19 +144,9 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       out.valid := in.valid
       in.ready := out.ready
 
-      // Don't put down hardware if we never carry data
-      /*
-      edgeOut.data(out.bits) := (if (edgeIn.staticHasData(in.bits) == Some(false)) 0.U else helper(edgeIn.data(in.bits), 8))
+      axi4data(out) := helper(axi4data(in))
+      axi4strb(out) := helper(axi4strb(in))
 
-      (out.bits, in.bits) match {
-        case (o: TLBundleA, i: TLBundleA) => o.mask := helper(i.mask, 1)
-        case (o: TLBundleB, i: TLBundleB) => o.mask := helper(i.mask, 1)
-        case (o: TLBundleC, i: TLBundleC) => () // replicating corrupt to all beats is ok
-        case (o: TLBundleD, i: TLBundleD) => ()
-        case _ => require(false, "Impossbile bundle combination in WidthWidget")
-      }
-      */
-      // Repeat the input if we're not last
       !last
     }
     
@@ -180,10 +167,11 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         axi4strb(cated) := Cat(
               axi4strb(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
               axi4strb(in)(edgeOut.slave.beatBytes*8-1, 0))
+
         axi4data(cated) := Cat(
               axi4data(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
               axi4data(in)(edgeOut.slave.beatBytes*8-1, 0))
-        
+
         repeat := split(edgeIn, cated, edgeOut, out, meta)
       } else {
         // merge input to output
@@ -208,8 +196,9 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       def getAWMetaR(id: UInt): AXI4Meta = {
         val meta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
         when (in.aw.fire()) {
+          meta(in.aw.bits.id).id   := in.aw.bits.id
           meta(in.aw.bits.id).addr := in.aw.bits.addr
-          meta(in.aw.bits.id).len := in.aw.bits.len
+          meta(in.aw.bits.id).len  := in.aw.bits.len
           meta(in.aw.bits.id).size := in.aw.bits.size
         }
         meta(id)
@@ -217,8 +206,9 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       def getARMetaR(id: UInt): AXI4Meta = {
         val meta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
         when (in.ar.fire()) {
+          meta(in.ar.bits.id).id   := in.ar.bits.id
           meta(in.ar.bits.id).addr := in.ar.bits.addr
-          meta(in.ar.bits.id).len := in.ar.bits.len
+          meta(in.ar.bits.id).len  := in.ar.bits.len
           meta(in.ar.bits.id).size := in.ar.bits.size
         }
         meta(id)

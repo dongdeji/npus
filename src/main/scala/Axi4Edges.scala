@@ -2,7 +2,7 @@
 
 package freechips.rocketchip.tilelink
 
-import Chisel._
+//import Chisel._
 import chisel3.internal.sourceinfo.SourceInfo
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
@@ -49,13 +49,33 @@ class TLEdgeIn(
 object AXI4EdgeUtil {
 
   def axi4data[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
-     io.bits match { case w: AXI4BundleW => w.data
-                     case r: AXI4BundleR => r.data } }
+     io.bits match { case aw: AXI4BundleAW => WireInit(0.U)
+                     case  w: AXI4BundleW  => w.data
+                     case  b: AXI4BundleB  => WireInit(0.U)
+                     case ar: AXI4BundleAR => WireInit(0.U)
+                     case  r: AXI4BundleR  => r.data } }
 
   def axi4strb[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
-     io.bits match { case w: AXI4BundleW => w.strb } }
+     io.bits match { case aw: AXI4BundleAW => WireInit(0.U)
+                     case  w: AXI4BundleW  => w.strb
+                     case  b: AXI4BundleB  => WireInit(0.U)
+                     case ar: AXI4BundleAR => WireInit(0.U)
+                     case  r: AXI4BundleR  => WireInit(0.U) } }
 
   def axi4id[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case aw: AXI4BundleAW => aw.id
-                     case ar: AXI4BundleAR => ar.id } }
+                     case  w: AXI4BundleW  => WireInit(0.U)
+                     case  b: AXI4BundleB  => WireInit(0.U)
+                     case ar: AXI4BundleAR => ar.id
+                     case  r: AXI4BundleR  => WireInit(0.U) } }
+
+  def axi4hasData[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+     io.bits match { case aw: AXI4BundleAW => false
+                     case  w: AXI4BundleW  => true
+                     case  b: AXI4BundleB  => false
+                     case ar: AXI4BundleAR => false
+                     case  r: AXI4BundleR  => true } }
 }
+
+
+
