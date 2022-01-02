@@ -32,9 +32,9 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
     }
 
     //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
-    def merge[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: IrrevocableIO[T], 
+    def merge[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters,  in: IrrevocableIO[T], metaIn: AXI4Meta, 
                                   edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T]) = {
-
+      require( edgeIn.slave.beatBytes < edgeOut.slave.beatBytes )
       val inBytes = edgeIn.slave.beatBytes
       val outBytes = edgeOut.slave.beatBytes
       val ratio = outBytes / inBytes
@@ -42,29 +42,24 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       val dropBits  = log2Ceil(inBytes)
       val countBits = log2Ceil(ratio)
 
-      /*val size    = edgeIn.size(in.bits)
-      val hasData = edgeIn.hasData(in.bits)
-      val limit   = UIntToOH1(size, keepBits) >> dropBits
+      //val size    = edgeIn.size(in.bits)
+      val hasData = axi4hasData(in)
+      //val limit   = UIntToOH1(size, keepBits) >> dropBits
+      val limit   = metaIn.len
 
       val count  = RegInit(0.U(countBits.W))
       val first  = count === 0.U
-      val last   = count === limit || !hasData
+      val last   = count === limit || !hasData.B
       val enable = Seq.tabulate(ratio) { i => !((count ^ i.U) & limit).orR }
-
-      val corrupt_reg = RegInit(false.B)
-      val corrupt_in = edgeIn.corrupt(in.bits)
-      val corrupt_out = corrupt_in || corrupt_reg
 
       when (in.fire()) {
         count := count + 1.U
-        corrupt_reg := corrupt_out
         when (last) {
           count := 0.U
-          corrupt_reg := false.B
         }
       }
 
-      def helper(idata: UInt): UInt = {
+      /*def helper(idata: UInt): UInt = {
         // rdata is X until the first time a multi-beat write occurs.
         // Prevent the X from leaking outside by jamming the mux control until
         // the first time rdata is written (and hence no longer X).
@@ -100,41 +95,30 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
     }
 
     //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
-    def split[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: IrrevocableIO[T], 
-                                  edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], metaOut: AXI4Meta) = {
+    def split[T <: AXI4BundleBase]( edgeIn: AXI4EdgeParameters,  in: IrrevocableIO[T],  metaIn: AXI4Meta, 
+                                   edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T] ) = {
       require(edgeIn.slave.beatBytes > edgeOut.slave.beatBytes)
       val inBytes = edgeIn.slave.beatBytes
       val outBytes = edgeOut.slave.beatBytes
       val ratio = inBytes / outBytes
-      require(isPow2(ratio))
-      val keepBits  = log2Ceil(inBytes)
+      val keepBits = log2Ceil(inBytes)
       val dropBits  = log2Ceil(outBytes)
       val countBits = log2Ceil(ratio)
-      
+
+      val size    = metaIn.size
       val hasData = axi4hasData(in) // to do by dongdeji
-      val count = RegInit(0.U(metaOut.len.getWidth.W))
+      val limit   = UIntToOH1(size, keepBits) >> dropBits
+
+      val count = RegInit(0.U(countBits.W))
       val first = count === 0.U
-      val last  = count === metaOut.len || !hasData.B
+      val last  = count === limit || !(hasData.B)
 
       when (out.fire()) {
         count := count + 1.U
         when (last) { count := 0.U }
       }
 
-      // For sub-beat transfer, extract which part matters
-      /*val sel = in.bits match {
-        case a: TLBundleA => a.address(keepBits-1, dropBits)
-        case b: TLBundleB => b.address(keepBits-1, dropBits)
-        case c: TLBundleC => c.address(keepBits-1, dropBits)
-        case d: TLBundleD => {
-          val sel = sourceMap(d.source)
-          val hold = Mux(first, sel, RegEnable(sel, first)) // a_first is not for whole xfer
-          hold & ~limit // if more than one a_first/xfer, the address must be aligned anyway
-        }
-      }*/
-
-      //val index  = sel | count 
-      val index = count 
+      val index = count
       def helper(idata: UInt): UInt = {
         val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*8-1, i*outBytes*8) }
         mux(index)
@@ -146,12 +130,13 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
 
       axi4data(out) := helper(axi4data(in))
       axi4strb(out) := helper(axi4strb(in))
+      axi4last(out) := axi4last(in) && last
 
-      !last
+      !last  // lock NpRepeater 
     }
     
-    def splice[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: IrrevocableIO[T], 
-                                   edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], meta: AXI4Meta) = {  
+    def splice[T <: AXI4BundleBase]( edgeIn: AXI4EdgeParameters,  in: IrrevocableIO[T], metaIn: AXI4Meta, 
+                                    edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T] ) = {  
       if (edgeIn.slave.beatBytes == edgeOut.slave.beatBytes) {
         // nothing to do; pass it through
         out.bits := in.bits
@@ -172,10 +157,10 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
               axi4data(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
               axi4data(in)(edgeOut.slave.beatBytes*8-1, 0))
 
-        repeat := split(edgeIn, cated, edgeOut, out, meta)
+        repeat := split(edgeIn, cated, metaIn, edgeOut, out)
       } else {
         // merge input to output
-        merge(edgeIn, in, edgeOut, out)
+        merge(edgeIn, in, metaIn, edgeOut, out)
       }
     }
 
@@ -194,30 +179,36 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       val aridHold = Mux(in.ar.fire(), arid, RegEnable(arid, in.ar.fire()))
 
       def getAWMetaR(id: UInt): AXI4Meta = {
-        val meta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
+        val awmeta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
         when (in.aw.fire()) {
-          meta(in.aw.bits.id).id   := in.aw.bits.id
-          meta(in.aw.bits.id).addr := in.aw.bits.addr
-          meta(in.aw.bits.id).len  := in.aw.bits.len
-          meta(in.aw.bits.id).size := in.aw.bits.size
+          awmeta(in.aw.bits.id).id   := in.aw.bits.id
+          awmeta(in.aw.bits.id).addr := in.aw.bits.addr
+          awmeta(in.aw.bits.id).len  := in.aw.bits.len
+          awmeta(in.aw.bits.id).size := in.aw.bits.size
         }
-        meta(id)
+        awmeta(id)
       }
+
       def getARMetaR(id: UInt): AXI4Meta = {
-        val meta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
+        val armeta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
+        val shift = log2Ceil(edgeIn.slave.beatBytes) - log2Ceil(edgeOut.slave.beatBytes)
+        val len = if(shift >= 0) in.ar.bits.len << shift else in.ar.bits.len >> shift.abs
+        val size = if(shift >= 0) in.ar.bits.size >> shift else in.ar.bits.size << shift.abs
         when (in.ar.fire()) {
-          meta(in.ar.bits.id).id   := in.ar.bits.id
-          meta(in.ar.bits.id).addr := in.ar.bits.addr
-          meta(in.ar.bits.id).len  := in.ar.bits.len
-          meta(in.ar.bits.id).size := in.ar.bits.size
+          armeta(in.ar.bits.id).id   := in.ar.bits.id
+          armeta(in.ar.bits.id).addr := in.ar.bits.addr
+          armeta(in.ar.bits.id).len  := len
+          assert( (in.ar.bits.len >> (in.ar.bits.len.getWidth - shift)) === 0.U )
+          armeta(in.ar.bits.id).size := size
         }
-        meta(id)
+        armeta(id)
       }
-      splice(edgeIn ,  in.aw, edgeOut, out.aw, getAWMetaR(awidHold))
-      splice(edgeIn ,  in.w , edgeOut, out.w , getAWMetaR(awidHold))
-      splice(edgeOut, out.b , edgeIn , in.b  , getAWMetaR(awidHold))
-      splice(edgeOut, out.ar, edgeIn , in.ar , getARMetaR(aridHold))
-      splice(edgeOut, out.r , edgeIn , in.r  , getARMetaR(aridHold))
+
+      splice(edgeIn ,  in.aw, getAWMetaR(awidHold), edgeOut, out.aw)
+      splice(edgeIn ,  in.w , getAWMetaR(awidHold), edgeOut, out.w )
+      splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
+      splice(edgeOut, out.ar, getARMetaR(aridHold), edgeIn , in.ar )
+      splice(edgeOut, out.r , getARMetaR(aridHold), edgeIn , in.r  )
 
     }
   }

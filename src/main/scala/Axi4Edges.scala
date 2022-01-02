@@ -69,6 +69,20 @@ object AXI4EdgeUtil {
                      case ar: AXI4BundleAR => ar.id
                      case  r: AXI4BundleR  => WireInit(0.U) } }
 
+  def axi4last[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+     io.bits match { case aw: AXI4BundleAW => WireInit(false.B)
+                     case  w: AXI4BundleW  => w.last
+                     case  b: AXI4BundleB  => WireInit(false.B)
+                     case ar: AXI4BundleAR => WireInit(false.B)
+                     case  r: AXI4BundleR  => r.last } }
+
+  def axi4size[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+     io.bits match { case aw: AXI4BundleAW => aw.size
+                     case  w: AXI4BundleW  => WireInit(0.U)
+                     case  b: AXI4BundleB  => WireInit(0.U)
+                     case ar: AXI4BundleAR => ar.size
+                     case  r: AXI4BundleR  => WireInit(0.U) } }
+
   def axi4hasData[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case aw: AXI4BundleAW => false
                      case  w: AXI4BundleW  => true
