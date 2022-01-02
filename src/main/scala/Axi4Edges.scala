@@ -48,11 +48,14 @@ class TLEdgeIn(
 
 object AXI4EdgeUtil {
 
-  def axi4Data[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+  def axi4data[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case w: AXI4BundleW => w.data
                      case r: AXI4BundleR => r.data } }
 
-  def axi4Id[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+  def axi4strb[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+     io.bits match { case w: AXI4BundleW => w.strb } }
+
+  def axi4id[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case aw: AXI4BundleAW => aw.id
                      case ar: AXI4BundleAR => ar.id } }
 }

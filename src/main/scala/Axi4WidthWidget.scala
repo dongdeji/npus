@@ -114,7 +114,7 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
 
       val count = RegInit(0.U(countBits.W))
       val first = count === 0.U
-      val id = axi4Id(in)
+      val id = axi4id(in)
       val idHold = Mux(first, id, RegEnable(id, first))
       //val last  = count === limit || !hasData
       val last  = count === limit // to do by dongdeji
@@ -177,9 +177,13 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         val cated = Wire(chiselTypeOf(repeated))
         cated <> repeated
       
-        axi4Data(cated) := Cat(
-              axi4Data(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
-              axi4Data(in)(edgeOut.slave.beatBytes*8-1, 0))
+        axi4strb(cated) := Cat(
+              axi4strb(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
+              axi4strb(in)(edgeOut.slave.beatBytes*8-1, 0))
+        axi4data(cated) := Cat(
+              axi4data(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
+              axi4data(in)(edgeOut.slave.beatBytes*8-1, 0))
+        
         repeat := split(edgeIn, cated, edgeOut, out, meta)
       } else {
         // merge input to output
@@ -196,9 +200,9 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       // The assumption is that this sort of situation happens only where
       // you connect a narrow master to the system bus, so there are few sources.
 
-      val awid = axi4Id(in.aw)
+      val awid = axi4id(in.aw)
       val awidHold = Mux(in.aw.fire(), awid, RegEnable(awid, in.aw.fire()))
-      val arid = axi4Id(in.ar)
+      val arid = axi4id(in.ar)
       val aridHold = Mux(in.ar.fire(), arid, RegEnable(arid, in.ar.fire()))
 
       def getAWMetaR(id: UInt): AXI4Meta = {
