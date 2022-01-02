@@ -8,19 +8,13 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
 
 import chisel3._
-import chisel3.util.{DecoupledIO, log2Ceil, Cat, RegEnable}
+import chisel3.util.{IrrevocableIO, DecoupledIO, log2Ceil, Cat, RegEnable}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
-
-sealed trait AXI4Channel extends AXI4BundleBase {
-  val channelName: String
-}
-
-sealed trait AXI4DataChannel extends AXI4Channel
 
 class AXI4Edge(
   master: AXI4MasterPortParameters,
@@ -50,4 +44,15 @@ class TLEdgeIn(
   extends AXI4Edge(master, slave, params, sourceInfo)
 {
 
+}
+
+object AXI4EdgeUtil {
+
+  def axi4Data[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+     io.bits match { case w: AXI4BundleW => w.data
+                     case r: AXI4BundleR => r.data } }
+
+  def axi4Id[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
+     io.bits match { case aw: AXI4BundleAW => aw.id
+                     case ar: AXI4BundleAR => ar.id } }
 }

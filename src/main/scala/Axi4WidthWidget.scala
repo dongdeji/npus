@@ -11,6 +11,8 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
 
+import AXI4EdgeUtil._
+
 // innBeatBytes => the new client-facing bus width
 class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyModule
 {
@@ -98,7 +100,7 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
 
     //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
     def split[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: IrrevocableIO[T], 
-                                  edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], sourceMap: UInt => AXI4Meta) = {
+                                  edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], meta: AXI4Meta) = {
       val inBytes = edgeIn.slave.beatBytes
       val outBytes = edgeOut.slave.beatBytes
       val ratio = inBytes / outBytes
@@ -106,28 +108,24 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       val dropBits  = log2Ceil(outBytes)
       val countBits = log2Ceil(ratio)
 
-      /*val size    = edgeIn.size(in.bits)
-      val hasData = edgeIn.hasData(in.bits)
-      val limit   = UIntToOH1(size, keepBits) >> dropBits*/
-
-      val id = in.bits match {
-        case aw: AXI4BundleAW => aw.id
-        case ar: AXI4BundleAR => ar.id
-      }
+      //val size    = edgeIn.size(in.bits)
+      //val hasData = edgeIn.hasData(in.bits)
+      val limit   = UIntToOH1(meta.size, keepBits) >> dropBits
 
       val count = RegInit(0.U(countBits.W))
       val first = count === 0.U
-      val holdId = Mux(first, id, RegEnable(id, first))
+      val id = axi4Id(in)
+      val idHold = Mux(first, id, RegEnable(id, first))
       //val last  = count === limit || !hasData
-      val last  = false.B // to do by dongdeji
+      val last  = count === limit // to do by dongdeji
 
-      /*when (out.fire()) {
+      when (out.fire()) {
         count := count + 1.U
         when (last) { count := 0.U }
       }
 
       // For sub-beat transfer, extract which part matters
-      val sel = in.bits match {
+      /*val sel = in.bits match {
         case a: TLBundleA => a.address(keepBits-1, dropBits)
         case b: TLBundleB => b.address(keepBits-1, dropBits)
         case c: TLBundleC => c.address(keepBits-1, dropBits)
@@ -136,14 +134,14 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
           val hold = Mux(first, sel, RegEnable(sel, first)) // a_first is not for whole xfer
           hold & ~limit // if more than one a_first/xfer, the address must be aligned anyway
         }
-      }
+      }*/
 
-      val index  = sel | count 
+      //val index  = sel | count 
+      val index  = count 
       def helper(idata: UInt, width: Int): UInt = {
         val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*width-1, i*outBytes*width) }
         mux(index)
-      }
-      */
+      }      
 
       out.bits := in.bits
       out.valid := in.valid
@@ -165,10 +163,8 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       !last
     }
     
-    //def splice[T <: TLDataChannel](edgeIn: AXI4Edge, in: DecoupledIO[T], edgeOut: AXI4Edge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
-    //def fanout[T <: AXI4BundleBase](input: IrrevocableIO[T], select: Seq[Bool]) = {
     def splice[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters, in: IrrevocableIO[T], 
-                                   edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], sourceMap: UInt => AXI4Meta) = {  
+                                   edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T], meta: AXI4Meta) = {  
       if (edgeIn.slave.beatBytes == edgeOut.slave.beatBytes) {
         // nothing to do; pass it through
         out.bits := in.bits
@@ -180,18 +176,11 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         val repeated = NpRepeater(in, repeat)
         val cated = Wire(chiselTypeOf(repeated))
         cated <> repeated
-        
-        def GetData(io: IrrevocableIO[T]) = {
-           io.bits match { case w: AXI4BundleW => w.data
-                           case r: AXI4BundleR => r.data } }
-
-        GetData(cated) := Cat(
-          GetData(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
-          GetData(in)(edgeOut.slave.beatBytes*8-1, 0))
-        /*edgeIn.data(cated.bits) := Cat(
-          edgeIn.data(repeated.bits)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
-          edgeIn.data(in.bits)(edgeOut.slave.beatBytes*8-1, 0))*/
-        repeat := split(edgeIn, cated, edgeOut, out, sourceMap)
+      
+        axi4Data(cated) := Cat(
+              axi4Data(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
+              axi4Data(in)(edgeOut.slave.beatBytes*8-1, 0))
+        repeat := split(edgeIn, cated, edgeOut, out, meta)
       } else {
         // merge input to output
         merge(edgeIn, in, edgeOut, out)
@@ -207,7 +196,12 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       // The assumption is that this sort of situation happens only where
       // you connect a narrow master to the system bus, so there are few sources.
 
-      def GetAWMetaR(id: UInt): AXI4Meta = {
+      val awid = axi4Id(in.aw)
+      val awidHold = Mux(in.aw.fire(), awid, RegEnable(awid, in.aw.fire()))
+      val arid = axi4Id(in.ar)
+      val aridHold = Mux(in.ar.fire(), arid, RegEnable(arid, in.ar.fire()))
+
+      def getAWMetaR(id: UInt): AXI4Meta = {
         val meta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
         when (in.aw.fire()) {
           meta(in.aw.bits.id).addr := in.aw.bits.addr
@@ -216,7 +210,7 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         }
         meta(id)
       }
-      def GetARMetaR(id: UInt): AXI4Meta = {
+      def getARMetaR(id: UInt): AXI4Meta = {
         val meta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
         when (in.ar.fire()) {
           meta(in.ar.bits.id).addr := in.ar.bits.addr
@@ -225,11 +219,11 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         }
         meta(id)
       }
-      splice(edgeIn ,  in.aw, edgeOut, out.aw, GetAWMetaR)
-      splice(edgeIn ,  in.w , edgeOut, out.w , GetAWMetaR)
-      splice(edgeOut, out.b , edgeIn , in.b  , GetAWMetaR)
-      splice(edgeOut, out.ar, edgeIn , in.ar , GetARMetaR)
-      splice(edgeOut, out.r , edgeIn , in.r  , GetARMetaR)
+      splice(edgeIn ,  in.aw, edgeOut, out.aw, getAWMetaR(awidHold))
+      splice(edgeIn ,  in.w , edgeOut, out.w , getAWMetaR(awidHold))
+      splice(edgeOut, out.b , edgeIn , in.b  , getAWMetaR(awidHold))
+      splice(edgeOut, out.ar, edgeIn , in.ar , getARMetaR(aridHold))
+      splice(edgeOut, out.r , edgeIn , in.r  , getARMetaR(aridHold))
 
     }
   }
