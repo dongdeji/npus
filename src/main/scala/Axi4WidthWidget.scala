@@ -29,6 +29,8 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       val addr   = UInt(edge.bundle.addrBits.W)
       val len    = UInt(edge.bundle.lenBits.W)  // number of beats - 1
       val size   = UInt(edge.bundle.sizeBits.W) // bytes in beat = 2^size
+
+      override def cloneType: this.type = (new AXI4Meta(edge)).asInstanceOf[this.type]
     }
 
     //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
@@ -58,6 +60,12 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
           count := 0.U
         }
       }
+
+      val index = (count + (metaIn.addr >> dropBits))(countBits-1, 0)
+      val rdata = Reg(Vec(ratio-1, chiselTypeOf(axi4data(in))))
+      val rstrb = Reg(Vec(ratio-1, chiselTypeOf(axi4strb(in))))
+      when(in.fire()) { rdata(index) := axi4data(in) }
+      when(in.fire()) { rstrb(index) := axi4strb(in) }
 
       /*def helper(idata: UInt): UInt = {
         // rdata is X until the first time a multi-beat write occurs.
@@ -118,7 +126,7 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         when (last) { count := 0.U }
       }
 
-      val index = count
+      val index = (count + (metaIn.addr >> dropBits))(countBits-1, 0)
       def helper(idata: UInt): UInt = {
         val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*8-1, i*outBytes*8) }
         mux(index)
@@ -179,13 +187,14 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       val aridHold = Mux(in.ar.fire(), arid, RegEnable(arid, in.ar.fire()))
 
       def getAWMetaR(id: UInt): AXI4Meta = {
-        val awmeta  = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
-        when (in.aw.fire()) {
-          awmeta(in.aw.bits.id).id   := in.aw.bits.id
-          awmeta(in.aw.bits.id).addr := in.aw.bits.addr
-          awmeta(in.aw.bits.id).len  := in.aw.bits.len
-          awmeta(in.aw.bits.id).size := in.aw.bits.size
-        }
+        val awmeta_R = Reg(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
+        val awmeta   = Wire(Vec(edgeIn.master.endId, new AXI4Meta(edgeIn)))
+
+        awmeta(in.aw.bits.id).id   := Mux(in.ar.fire(), in.aw.bits.id  , RegEnable(in.aw.bits.id  , in.ar.fire()))
+        awmeta(in.aw.bits.id).addr := Mux(in.ar.fire(), in.aw.bits.addr, RegEnable(in.aw.bits.addr, in.ar.fire()))
+        awmeta(in.aw.bits.id).len  := Mux(in.ar.fire(), in.aw.bits.len , RegEnable(in.aw.bits.len , in.ar.fire()))
+        awmeta(in.aw.bits.id).size := Mux(in.ar.fire(), in.aw.bits.id  , RegEnable(in.aw.bits.size, in.ar.fire()))
+
         awmeta(id)
       }
 
