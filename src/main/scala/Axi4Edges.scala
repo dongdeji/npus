@@ -49,25 +49,25 @@ class TLEdgeIn(
 object AXI4EdgeUtil {
 
   def axi4data[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
-     io.bits match { case aw: AXI4BundleAW => WireInit(0.U)
+     io.bits match { case aw: AXI4BundleAW => WireInit(0.U(aw.params.dataBits.W))
                      case  w: AXI4BundleW  => w.data
-                     case  b: AXI4BundleB  => WireInit(0.U)
-                     case ar: AXI4BundleAR => WireInit(0.U)
+                     case  b: AXI4BundleB  => WireInit(0.U(b.params.dataBits.W))
+                     case ar: AXI4BundleAR => WireInit(0.U(ar.params.dataBits.W))
                      case  r: AXI4BundleR  => r.data } }
 
   def axi4strb[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
-     io.bits match { case aw: AXI4BundleAW => WireInit(0.U)
+     io.bits match { case aw: AXI4BundleAW => WireInit(0.U((aw.params.dataBits/8).W))
                      case  w: AXI4BundleW  => w.strb
-                     case  b: AXI4BundleB  => WireInit(0.U)
-                     case ar: AXI4BundleAR => WireInit(0.U)
-                     case  r: AXI4BundleR  => WireInit(0.U) } }
+                     case  b: AXI4BundleB  => WireInit(0.U((b.params.dataBits/8).W))
+                     case ar: AXI4BundleAR => WireInit(0.U((ar.params.dataBits/8).W))
+                     case  r: AXI4BundleR  => WireInit(0.U((r.params.dataBits/8).W)) } }
 
   def axi4id[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case aw: AXI4BundleAW => aw.id
-                     case  w: AXI4BundleW  => WireInit(0.U)
-                     case  b: AXI4BundleB  => WireInit(0.U)
+                     case  w: AXI4BundleW  => WireInit(0.U(w.params.idBits.W))
+                     case  b: AXI4BundleB  => WireInit(0.U(b.params.idBits.W))
                      case ar: AXI4BundleAR => ar.id
-                     case  r: AXI4BundleR  => WireInit(0.U) } }
+                     case  r: AXI4BundleR  => WireInit(0.U(r.params.idBits.W)) } }
 
   def axi4last[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case aw: AXI4BundleAW => WireInit(false.B)
@@ -78,10 +78,10 @@ object AXI4EdgeUtil {
 
   def axi4size[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case aw: AXI4BundleAW => aw.size
-                     case  w: AXI4BundleW  => WireInit(0.U)
-                     case  b: AXI4BundleB  => WireInit(0.U)
+                     case  w: AXI4BundleW  => WireInit(0.U(w.params.sizeBits.W))
+                     case  b: AXI4BundleB  => WireInit(0.U(b.params.sizeBits.W))
                      case ar: AXI4BundleAR => ar.size
-                     case  r: AXI4BundleR  => WireInit(0.U) } }
+                     case  r: AXI4BundleR  => WireInit(0.U(r.params.sizeBits.W)) } }
 
   def axi4hasData[T <: AXI4BundleBase](io: IrrevocableIO[T]) = {
      io.bits match { case aw: AXI4BundleAW => false

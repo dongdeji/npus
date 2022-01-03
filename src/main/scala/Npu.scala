@@ -27,7 +27,7 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
   val accxbar = LazyModule(new AXI4Xbar)
   val mmioxbar = LazyModule(new AXI4Xbar)
   iramxbar.node := frontend.masternode
-  iramxbar.node := AXI4WidthWidget(fetchBytes) := accinf.accxbar.node
+  iramxbar.node := AXI4WidthWidget(accBeatBytes) := accinf.accxbar.node
   mmioxbar.node := accinf.accxbar.node
   mmioxbar.node := core.window.masternode
   accxbar.node := accinf.accxbar.node

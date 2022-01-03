@@ -32,7 +32,7 @@ class AXI4Uart(id: Int)(implicit p: Parameters) extends LazyModule with NpusPara
       supportsRead  = TransferSizes(1, fetchBytes),
       supportsWrite = TransferSizes(1, fetchBytes),
       interleavedId = Some(0))),
-    beatBytes  = fetchBytes,
+    beatBytes  = mmioBeatBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 
@@ -96,7 +96,7 @@ class AXI4MatchEngin(id: Int, val address:AddressSet, delay:Int = 10)(implicit p
       supportsRead  = TransferSizes(1, fetchBytes),
       supportsWrite = TransferSizes(1, fetchBytes),
       interleavedId = Some(0))),
-    beatBytes  = fetchBytes,
+    beatBytes  = accBeatBytes,
     requestKeys = if (true) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 
@@ -155,7 +155,7 @@ class AXI4IROM(
 
   private val resources = device.reg("mem")
 
-  private val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+  val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address       = List(address) ++ errors,
       resources     = resources,
@@ -167,9 +167,6 @@ class AXI4IROM(
     beatBytes  = beatBytes,
     requestKeys = if (wcorrupt) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
-
-  val frag = LazyModule(new AXI4Fragmenter)
-  node := frag.node
 
   lazy val module = new LazyModuleImp(this) 
   {
@@ -297,7 +294,7 @@ class AXI4PKTROM(
         in.r.valid := true.B
         in.r.bits.id   := ar_id_s1
         in.r.bits.resp := AXI4Parameters.RESP_OKAY
-        in.r.bits.data := rom(offset)(127, 64)
+        //in.r.bits.data := rom(offset)(127, 64)
         in.r.bits.echo := ar_echo
         in.r.bits.last := false.B
         offset := offset + 1.U

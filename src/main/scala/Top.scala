@@ -35,6 +35,9 @@ trait NpusParams {
   val instWidth = instBytes*8
   val tidWidth = log2Up(numThread)
 
+  val mmioBeatBytes = 8
+  val accBeatBytes = 8
+
   def RequireAddressAlign(base: BigInt, size: BigInt) = 
   { 
     require(true == isPow2(size), s"size:${size} is not Pow2 !") 
@@ -148,7 +151,7 @@ class npusTop()(implicit p: Parameters) extends LazyModule with NpusParams
   private val mmioxbar = LazyModule(new AXI4Xbar)
   private val pktbuff = LazyModule(new AXI4PKTROM(file = "./src/test/resources/vxlan_pkts.img",
                                      address = AddressSet(pktBuffBase, pktBuffSize-1), 
-                                     beatBytes = fetchBytes))
+                                     beatBytes = accBeatBytes))
   pktbuff.frag.node := mmioxbar.node
   private val uart = LazyModule(new AXI4Uart(0))
   uart.frag.node := mmioxbar.node

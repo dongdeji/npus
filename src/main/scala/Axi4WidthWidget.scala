@@ -151,6 +151,8 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         out.valid := in.valid
         in.ready := out.ready
       } else if (edgeIn.slave.beatBytes > edgeOut.slave.beatBytes) {
+println(s"=== edgeIn.slave.beatBytes:${edgeIn.slave.beatBytes}")
+println(s"=== edgeOut.slave.beatBytes:${edgeOut.slave.beatBytes}")
         // split input to output
         val repeat = Wire(Bool())
         val repeated = NpRepeater(in, repeat)
@@ -215,9 +217,9 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
 
       splice(edgeIn ,  in.aw, getAWMetaR(awidHold), edgeOut, out.aw)
       splice(edgeIn ,  in.w , getAWMetaR(awidHold), edgeOut, out.w )
-      splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
-      splice(edgeOut, out.ar, getARMetaR(aridHold), edgeIn , in.ar )
-      splice(edgeOut, out.r , getARMetaR(aridHold), edgeIn , in.r  )
+      //splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
+      //splice(edgeOut, out.ar, getARMetaR(aridHold), edgeIn , in.ar )
+      //splice(edgeOut, out.r , getARMetaR(aridHold), edgeIn , in.r  )
 
     }
   }

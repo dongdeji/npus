@@ -337,7 +337,7 @@ class AccInf(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) exte
             when(accouts(tid).r.fire())
             { 
               val loadgen = new LoadGen(Cat(0.U(1.W), accMeta_R(tid).req.size), accMeta_R(tid).req.signed.asBool, 
-                                        accMeta_R(tid).req.addr, accouts(tid).r.bits.data, false.B, fetchBytes)
+                                        accMeta_R(tid).req.addr, accouts(tid).r.bits.data, false.B, mmioBeatBytes)
               accMeta_R(tid).buff := loadgen.data
               accMeta_R(tid).buff_full := true.B              
               state_R(tid) := send_reg_aw
