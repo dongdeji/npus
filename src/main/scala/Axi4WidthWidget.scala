@@ -10,16 +10,18 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.amba._
 import freechips.rocketchip.amba.axi4._
+import chisel3.experimental.chiselName
 
 import AXI4EdgeUtil._
 
 // innBeatBytes => the new client-facing bus width
-class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyModule
+@chiselName
+class AXI4WidthWidget_v0p1(innerBeatBytes: Int)(implicit p: Parameters) extends LazyModule
 {
   //private def noChangeRequired(manager: TLManagerPortParameters) = manager.beatBytes == innerBeatBytes
   val node = AXI4AdapterNode(
                masterFn = { p => p },
-               slaveFn  = { p => p.copy(beatBytes = innerBeatBytes) })
+               slaveFn  = { p => p.copy(beatBytes = innerBeatBytes) } )
 
   lazy val module = new LazyModuleImp(this) {
 
@@ -62,10 +64,14 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       }
 
       val index = (count + (metaIn.addr >> dropBits))(countBits-1, 0)
-      val rdata = Reg(Vec(ratio-1, chiselTypeOf(axi4data(in))))
-      val rstrb = Reg(Vec(ratio-1, chiselTypeOf(axi4strb(in))))
-      when(in.fire()) { rdata(index) := axi4data(in) }
-      when(in.fire()) { rstrb(index) := axi4strb(in) }
+      val rdata_R = Reg(Vec(ratio, chiselTypeOf(axi4data(in))))
+      val rdata_W = Wire(Vec(ratio, chiselTypeOf(axi4data(in))))
+      val rstrb_R = Reg(Vec(ratio, chiselTypeOf(axi4strb(in))))
+      val rstrb_W = Wire(Vec(ratio, chiselTypeOf(axi4strb(in))))
+      rdata_W := rdata_R
+      rstrb_W := rstrb_R
+      when(in.fire()) { rdata_R(index) := axi4data(in); rdata_W(index) := axi4data(in) }
+      when(in.fire()) { rstrb_R(index) := axi4strb(in); rstrb_W(index) := axi4strb(in) }
 
       /*def helper(idata: UInt): UInt = {
         // rdata is X until the first time a multi-beat write occurs.
@@ -83,14 +89,18 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
           (rdata zip mdata) foreach { case (r, m) => r := m }
         }
         Cat(mdata.reverse)
-      }
+      }*/
 
       in.ready := out.ready || !last
       out.valid := in.valid && last
       out.bits := in.bits
+      axi4data(out) := rdata_W.asUInt
+      axi4strb(out) := rstrb_W.asUInt
+      //axi4data(out) := Cat(axi4data(in).asUInt, rdata)
+      //axi4strb(out) := Cat(axi4strb(in).asUInt, rstrb)
 
       // Don't put down hardware if we never carry data
-      edgeOut.data(out.bits) := (if (edgeIn.staticHasData(in.bits) == Some(false)) 0.U else helper(edgeIn.data(in.bits)))
+      /*edgeOut.data(out.bits) := (if (edgeIn.staticHasData(in.bits) == Some(false)) 0.U else helper(edgeIn.data(in.bits)))
       edgeOut.corrupt(out.bits) := corrupt_out
 
       (out.bits, in.bits) match {
@@ -127,8 +137,8 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       }
 
       val index = (count + (metaIn.addr >> dropBits))(countBits-1, 0)
-      def helper(idata: UInt): UInt = {
-        val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*8-1, i*outBytes*8) }
+      def helper(idata: UInt, width: Int): UInt = {
+        val mux = VecInit.tabulate(ratio) { i => idata((i+1)*outBytes*width-1, i*outBytes*width) }
         mux(index)
       }      
 
@@ -136,8 +146,8 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
       out.valid := in.valid
       in.ready := out.ready
 
-      axi4data(out) := helper(axi4data(in))
-      axi4strb(out) := helper(axi4strb(in))
+      axi4data(out) := helper(axi4data(in), 8)
+      axi4strb(out) := helper(axi4strb(in), 1)
       axi4last(out) := axi4last(in) && last
 
       !last  // lock NpRepeater 
@@ -151,17 +161,16 @@ class AXI4WidthWidget(innerBeatBytes: Int)(implicit p: Parameters) extends LazyM
         out.valid := in.valid
         in.ready := out.ready
       } else if (edgeIn.slave.beatBytes > edgeOut.slave.beatBytes) {
-println(s"=== edgeIn.slave.beatBytes:${edgeIn.slave.beatBytes}")
-println(s"=== edgeOut.slave.beatBytes:${edgeOut.slave.beatBytes}")
+
         // split input to output
         val repeat = Wire(Bool())
         val repeated = NpRepeater(in, repeat)
         val cated = Wire(chiselTypeOf(repeated))
         cated <> repeated
-      
+
         axi4strb(cated) := Cat(
-              axi4strb(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
-              axi4strb(in)(edgeOut.slave.beatBytes*8-1, 0))
+              axi4strb(repeated)(edgeIn.slave.beatBytes-1, edgeOut.slave.beatBytes),
+              axi4strb(in)(edgeOut.slave.beatBytes-1, 0))
 
         axi4data(cated) := Cat(
               axi4data(repeated)(edgeIn.slave.beatBytes*8-1, edgeOut.slave.beatBytes*8),
@@ -217,9 +226,9 @@ println(s"=== edgeOut.slave.beatBytes:${edgeOut.slave.beatBytes}")
 
       splice(edgeIn ,  in.aw, getAWMetaR(awidHold), edgeOut, out.aw)
       splice(edgeIn ,  in.w , getAWMetaR(awidHold), edgeOut, out.w )
-      //splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
-      //splice(edgeOut, out.ar, getARMetaR(aridHold), edgeIn , in.ar )
-      //splice(edgeOut, out.r , getARMetaR(aridHold), edgeIn , in.r  )
+      splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
+      splice(edgeIn ,  in.ar, getARMetaR(aridHold), edgeOut, out.ar )
+      splice(edgeOut, out.r , getARMetaR(aridHold), edgeIn , in.r  )
 
     }
   }
@@ -229,7 +238,7 @@ object AXI4WidthWidget
 {
   def apply(innerBeatBytes: Int)(implicit p: Parameters): AXI4Node =
   {
-    val axi4widget = LazyModule(new AXI4WidthWidget(innerBeatBytes))
+    val axi4widget = LazyModule(new AXI4WidthWidget_v0p1(innerBeatBytes))
     axi4widget.node
   }
 }
