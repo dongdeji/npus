@@ -22,8 +22,7 @@ class AXI4WidthWidget_v0p1(innerBeatBytes: Int)(implicit p: Parameters) extends 
               masterFn = { mp => mp },
               slaveFn  = { sp => 
                 sp.copy(beatBytes = innerBeatBytes, 
-                        slaves = sp.slaves.map { 
-                          s => println(s"=== s.supportsWrite:${s.supportsWrite}"); 
+                        slaves = sp.slaves.map { s =>  
                           s.copy( supportsWrite = s.supportsWrite.intersect(
                                     TransferSizes(1, innerBeatBytes*(1 << AXI4Parameters.lenBits))),
                                   supportsRead =  s.supportsRead.intersect(
@@ -42,7 +41,6 @@ class AXI4WidthWidget_v0p1(innerBeatBytes: Int)(implicit p: Parameters) extends 
       override def cloneType: this.type = (new AXI4Meta(edge)).asInstanceOf[this.type]
     }
 
-    //def split[T <: TLDataChannel](edgeIn: TLEdge, in: DecoupledIO[T], edgeOut: TLEdge, out: DecoupledIO[T], sourceMap: UInt => UInt) = {
     def merge[T <: AXI4BundleBase](edgeIn: AXI4EdgeParameters,  in: IrrevocableIO[T], metaIn: AXI4Meta, 
                                   edgeOut: AXI4EdgeParameters, out: IrrevocableIO[T]) = {
       require( edgeIn.slave.beatBytes < edgeOut.slave.beatBytes )
@@ -194,9 +192,9 @@ class AXI4WidthWidget_v0p1(innerBeatBytes: Int)(implicit p: Parameters) extends 
         armeta(id)
       }
 
-      //splice(edgeIn ,  in.aw, getAWMetaR(awidHold), edgeOut, out.aw)
-      //splice(edgeIn ,  in.w , getAWMetaR(awidHold), edgeOut, out.w )
-      //splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
+      splice(edgeIn ,  in.aw, getAWMetaR(awidHold), edgeOut, out.aw)
+      splice(edgeIn ,  in.w , getAWMetaR(awidHold), edgeOut, out.w )
+      splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
       splice(edgeIn ,  in.ar, getARMetaR(aridHold), edgeOut, out.ar )
       splice(edgeOut, out.r , getARMetaR(aridHold), edgeIn , in.r  )
 
