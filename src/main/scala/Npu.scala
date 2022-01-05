@@ -22,22 +22,22 @@ class Npu(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extends
 {
   private val frontend = LazyModule(new FrontEnd(ClusterId, GroupId, NpId))
   private val core = LazyModule(new Core(ClusterId, GroupId, NpId))
-  private val accinf = LazyModule(new AccInf(ClusterId, GroupId, NpId))
+  //private val accinf = LazyModule(new AccInf(ClusterId, GroupId, NpId))
   val iramxbar = LazyModule(new AXI4Xbar)
   val accxbar = LazyModule(new AXI4Xbar)
   val mmioxbar = LazyModule(new AXI4Xbar)
   iramxbar.node := frontend.masternode
-  iramxbar.node := AXI4WidthWidget(accBeatBytes) := accinf.accxbar.node
-  mmioxbar.node := accinf.accxbar.node
+  iramxbar.node := AXI4WidthWidget(accBeatBytes) := core.accinf.accxbar.node
+  mmioxbar.node := core.accinf.accxbar.node
   mmioxbar.node := core.window.masternode
-  accxbar.node := accinf.accxbar.node
-  core.regfile.frag.node := accinf.regxbar.node
+  accxbar.node := core.accinf.accxbar.node
+  core.regfile.frag.node := core.accinf.regxbar.node
 
   lazy val module = new LazyModuleImp(this) 
   {
     core.module.io.frontend <> frontend.module.io.core
-    accinf.module.io.core <> core.module.io.accinf
-    core.module.io.accLoad <> accinf.module.io.accLoad
+    //accinf.module.io.core <> core.module.io.accinf
+    //core.module.io.accLoad <> core.accinf.module.io.accLoad
   }
 }
 

@@ -79,16 +79,16 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
 
   val window = LazyModule(new Window(ClusterId, GroupId, NpId))
   val regfile = LazyModule(new RegFiles(ClusterId, GroupId, NpId))
+  val accinf = LazyModule(new AccInf(ClusterId, GroupId, NpId))
 
   lazy val module = new LazyModuleImp(this) 
   {
     val io = IO(new Bundle {
       val frontend = Flipped(new FrontEndBundle)
-      val accinf = new AccInfBundle
-      val accLoad = Flipped(new AccLoadBundle)
     })
+
     chisel3.dontTouch(io)
-    window.module.io.accLoad <> io.accLoad
+    window.module.io.accLoad <> accinf.module.io.accLoad
     /****************************************************************/
     /**************** key pipe signal define begine******************/
     val rr0_uop_R = RegInit(0.U.asTypeOf(new ThreadUop));dontTouch(rr0_uop_R)
@@ -250,16 +250,17 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     when(tailEraseInfo.valid && ((ex_uop_R.valid && (ex_uop_R.tid =/= tailEraseInfo.tid)) || (!ex_uop_R.valid)))
     { tailEraseInfo.valid := false.B }
 
-    io.accinf.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
-                            ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
-                             (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd.isOneOf(NpuCmd.NP_LWI, NpuCmd.NP_LKX, NpuCmd.NP_STK))))
-    io.accinf.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
-    io.accinf.req.bits.size := ex_uop_W.inst(13,12)
-    io.accinf.req.bits.signed := !ex_uop_W.inst(14)
-    io.accinf.req.bits.data := ex_uop_W.rs2_data
-    io.accinf.req.bits.addr := Mux(ex_uop_R.ctrl.npi, 0.U, alu.io.adder_out)
-    io.accinf.req.bits.tid := ex_uop_W.tid
-    io.accinf.req.bits.uop := ex_uop_W
+    val acc = accinf.module.io.core
+    acc.req.valid := ex_uop_W.valid && ex_uop_W.ctrl.legal &&
+                         ((ex_uop_W.ctrl.mem && ex_uop_W.ctrl.mem_cmd.isOneOf(M_XRD, M_XWR)) ||
+                          (ex_uop_R.ctrl.npi && (ex_uop_R.ctrl.npcmd.isOneOf(NpuCmd.NP_LWI, NpuCmd.NP_LKX, NpuCmd.NP_STK))))
+    acc.req.bits.cmd := ex_uop_W.ctrl.mem_cmd
+    acc.req.bits.size := ex_uop_W.inst(13,12)
+    acc.req.bits.signed := !ex_uop_W.inst(14)
+    acc.req.bits.data := ex_uop_W.rs2_data
+    acc.req.bits.addr := Mux(ex_uop_R.ctrl.npi, 0.U, alu.io.adder_out)
+    acc.req.bits.tid := ex_uop_W.tid
+    acc.req.bits.uop := ex_uop_W
     /****************** ex end *********************/
     /***********************************************/
 
@@ -270,8 +271,8 @@ class Core(ClusterId:Int, GroupId:Int, NpId: Int)(implicit p: Parameters) extend
     regfile.module.io.rd       := wb_uop_W.rd
 
     val wb_make_ready = wb_uop_W.valid && wb_uop_W.ctrl.legal && wb_uop_W.make_ready
-    io.frontend.readys.valid := wb_make_ready | io.accinf.readys.valid
-    io.frontend.readys.bits.thread :=  (Fill(numThread, io.accinf.readys.valid) & io.accinf.readys.bits.thread) | 
+    io.frontend.readys.valid := wb_make_ready | acc.readys.valid
+    io.frontend.readys.bits.thread :=  (Fill(numThread, acc.readys.valid) & acc.readys.bits.thread) | 
                                        (Fill(numThread, wb_make_ready) & UIntToOH(wb_uop_W.tid))
 
     /****************** write back end *********************/
