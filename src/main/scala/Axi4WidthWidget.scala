@@ -185,9 +185,9 @@ class AXI4WidthWidget_v0p1(innerBeatBytes: Int)(implicit p: Parameters) extends 
         when (in.ar.fire()) {
           armeta(in.ar.bits.id).id   := in.ar.bits.id
           armeta(in.ar.bits.id).addr := in.ar.bits.addr
-          armeta(in.ar.bits.id).len  := len
+          armeta(in.ar.bits.id).len  := in.ar.bits.len
           assert( (in.ar.bits.len >> (in.ar.bits.len.getWidth - shift)) === 0.U )
-          armeta(in.ar.bits.id).size := size
+          armeta(in.ar.bits.id).size := in.ar.bits.size
         }
         armeta(id)
       }
@@ -197,7 +197,6 @@ class AXI4WidthWidget_v0p1(innerBeatBytes: Int)(implicit p: Parameters) extends 
       splice(edgeOut, out.b , getAWMetaR(awidHold), edgeIn , in.b  )
       splice(edgeIn ,  in.ar, getARMetaR(aridHold), edgeOut, out.ar )
       splice(edgeOut, out.r , getARMetaR(aridHold), edgeIn , in.r  )
-
     }
   }
 }

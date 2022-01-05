@@ -5,7 +5,7 @@
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
-  jal test1
+  //jal test1
   li x1,0x00450008        // ipv4 key
   li x2,0x11              // udp proto type key 
   li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
@@ -30,15 +30,15 @@ reloadpkt:
 notipv4:
 notudp:
 notvxlan:
-loop:
-  jal loop
+//loop:
+//  jal loop
 
 test1:
   add  x0, x0, x0
   li   a0, 0x1  
   slli a1, a0, 12
   li   sp, 0x10000
-  lb   a1, 9(sp)
+  lbu  a1, 9(sp)
   add  a2, a1, x0
   li   sp, 0x20ff0
   lb   a1, 0(sp)

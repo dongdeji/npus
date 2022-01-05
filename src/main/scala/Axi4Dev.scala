@@ -287,7 +287,7 @@ class AXI4PKTROM(
         in.r.valid := true.B
         in.r.bits.id   := ar_id_s1
         in.r.bits.resp := AXI4Parameters.RESP_OKAY
-        //in.r.bits.data := rom(offset)(127, 64)
+        in.r.bits.data := rom(offset)(beatBytes*8-1, 0)
         in.r.bits.echo := ar_echo
         in.r.bits.last := false.B
         offset := offset + 1.U
