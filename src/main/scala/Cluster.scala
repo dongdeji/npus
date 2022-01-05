@@ -30,7 +30,7 @@ class Cluster(ClusterId:Int)(implicit p: Parameters) extends LazyModule with Npu
     val iram = LazyModule(new AXI4IROM(file = "./bootrom/bootrom.img",
                                        address = AddressSet(iramGlobalBase + iramSizePerCluster*ClusterId + iramPerBankSize*i, iramPerBankSize-1), 
                                        beatBytes = fetchBytes))
-    iram.node := iramxbar.node
+    iram.frag.node := iramxbar.node
     iramxbar
   }
   /* groups */

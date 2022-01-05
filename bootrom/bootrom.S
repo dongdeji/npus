@@ -5,6 +5,7 @@
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
+  jal test1
   li x1,0x00450008        // ipv4 key
   li x2,0x11              // udp proto type key 
   li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan

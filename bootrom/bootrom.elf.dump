@@ -10,80 +10,82 @@ Disassembly of section .text.start:
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
+  jal test1
+   0:	050000ef          	jal	ra,50 <test1>
   li x1,0x00450008        // ipv4 key
-   0:	004500b7          	lui	ra,0x450
-   4:	0080809b          	addiw	ra,ra,8
+   4:	004500b7          	lui	ra,0x450
+   8:	0080809b          	addiw	ra,ra,8
   li x2,0x11              // udp proto type key 
-   8:	01100113          	li	sp,17
+   c:	01100113          	li	sp,17
   li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
-   c:	000011b7          	lui	gp,0x1
-  10:	2b51819b          	addiw	gp,gp,693
-  14:	0000100b          	0x100b
+  10:	000011b7          	lui	gp,0x1
+  14:	2b51819b          	addiw	gp,gp,693
+  18:	0000100b          	0x100b
 
-0000000000000018 <startcheck>:
-  18:	2006220b          	0x2006220b
+000000000000001c <startcheck>:
+  1c:	2006220b          	0x2006220b
   LPKTWJAL(4, 0)          // load eth pkt to pkt window and jump to +4, that is next instruction
 startcheck:   
   SWAPPKTW(12, 4)         // offset 12byte swap 4bytes to x4
   bne x4, x1, notipv4     // compare to ipv4 key
-  1c:	02121663          	bne	tp,ra,48 <loop>
-  20:	200b820b          	0x200b820b
+  20:	02121663          	bne	tp,ra,4c <loop>
+  24:	200b820b          	0x200b820b
   SWAPPKTB(23, 4)         // offset 23byte(ip proto) swap 1byte to x4
   bne x4, x2, notudp      // compare to udp proto type key
-  24:	02221263          	bne	tp,sp,48 <loop>
-  28:	2012120b          	0x2012120b
+  28:	02221263          	bne	tp,sp,4c <loop>
+  2c:	2012120b          	0x2012120b
   SWAPPKTH(36, 4)         // offset 36byte(udp port) swap 2byte to x4
   bne x4, x3, notvxlan    // compare to ipv4 key
-  2c:	00321e63          	bne	tp,gp,48 <loop>
+  30:	00321e63          	bne	tp,gp,4c <loop>
 
-0000000000000030 <make5keys>:
-  30:	200d328b          	0x200d328b
-  34:	2450700b          	0x2450700b
-  38:	2011228b          	0x2011228b
-  3c:	2450600b          	0x2450600b
-  40:	1600128b          	0x1600128b
+0000000000000034 <make5keys>:
+  34:	200d328b          	0x200d328b
+  38:	2450700b          	0x2450700b
+  3c:	2011228b          	0x2011228b
+  40:	2450600b          	0x2450600b
+  44:	1600128b          	0x1600128b
 
-0000000000000044 <reloadpkt>:
-  44:	01efd00b          	0x1efd00b
+0000000000000048 <reloadpkt>:
+  48:	01efd00b          	0x1efd00b
 
-0000000000000048 <loop>:
+000000000000004c <loop>:
 
 notipv4:
 notudp:
 notvxlan:
 loop:
   jal loop
-  48:	000000ef          	jal	ra,48 <loop>
+  4c:	000000ef          	jal	ra,4c <loop>
 
-000000000000004c <test1>:
+0000000000000050 <test1>:
 
 test1:
   add  x0, x0, x0
-  4c:	00000033          	add	zero,zero,zero
+  50:	00000033          	add	zero,zero,zero
   li   a0, 0x1  
-  50:	00100513          	li	a0,1
+  54:	00100513          	li	a0,1
   slli a1, a0, 12
-  54:	00c51593          	slli	a1,a0,0xc
+  58:	00c51593          	slli	a1,a0,0xc
   li   sp, 0x10000
-  58:	00010137          	lui	sp,0x10
+  5c:	00010137          	lui	sp,0x10
   lb   a1, 9(sp)
-  5c:	00910583          	lb	a1,9(sp) # 10009 <_dtb+0xf809>
+  60:	00910583          	lb	a1,9(sp) # 10009 <_dtb+0xf809>
   add  a2, a1, x0
-  60:	00058633          	add	a2,a1,zero
+  64:	00058633          	add	a2,a1,zero
   li   sp, 0x20ff0
-  64:	00021137          	lui	sp,0x21
-  68:	ff01011b          	addiw	sp,sp,-16
+  68:	00021137          	lui	sp,0x21
+  6c:	ff01011b          	addiw	sp,sp,-16
   lb   a1, 0(sp)
-  6c:	00010583          	lb	a1,0(sp) # 21000 <_dtb+0x20800>
+  70:	00010583          	lb	a1,0(sp) # 21000 <_dtb+0x20800>
   //csrr a0, mhartid
   call main
-  70:	3f0000ef          	jal	ra,460 <main>
+  74:	3ec000ef          	jal	ra,460 <main>
   //csrr a0, mhartid
   la a1, _dtb
-  74:	00000597          	auipc	a1,0x0
-  78:	78c58593          	addi	a1,a1,1932 # 800 <_dtb>
+  78:	00000597          	auipc	a1,0x0
+  7c:	78858593          	addi	a1,a1,1928 # 800 <_dtb>
   jr s0
-  7c:	00040067          	jr	s0
+  80:	00040067          	jr	s0
 
 Disassembly of section .text.hang:
 
@@ -212,69 +214,71 @@ Disassembly of section .rodata.str1.8:
 Disassembly of section .riscv.attributes:
 
 0000000000000000 <.riscv.attributes>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	1f41                	addi	t5,t5,-16
    2:	0000                	unimp
+  li x1,0x00450008        // ipv4 key
    4:	7200                	ld	s0,32(a2)
    6:	7369                	lui	t1,0xffffa
-  li x2,0x11              // udp proto type key 
    8:	01007663          	bgeu	zero,a6,14 <ROM_BASE+0x14>
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	0015                	c.nop	5
    e:	0000                	unimp
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	1004                	addi	s1,sp,32
   12:	7205                	lui	tp,0xfffe1
   14:	3676                	fld	fa2,376(sp)
   16:	6934                	ld	a3,80(a0)
   18:	7032                	0x7032
   1a:	0030                	addi	a2,sp,8
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	0108                	addi	a0,sp,128
   1e:	0b0a                	slli	s6,s6,0x2
 
 Disassembly of section .comment:
 
 0000000000000000 <.comment>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	3a434347          	fmsub.d	ft6,ft6,ft4,ft7,rmm
+  li x1,0x00450008        // ipv4 key
    4:	2820                	fld	fs0,80(s0)
    6:	29554e47          	fmsub.s	ft8,fa0,fs5,ft5,rmm
-  li x2,0x11              // udp proto type key 
    a:	3120                	fld	fs0,96(a0)
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	2e31                	addiw	t3,t3,12
    e:	2e31                	addiw	t3,t3,12
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	0030                	addi	a2,sp,8
 
 Disassembly of section .debug_line:
 
 0000000000000000 <.debug_line>:
-  li x1,0x00450008        // ipv4 key
-   0:	00dc                	addi	a5,sp,68
+  jal test1
+   0:	00e2                	slli	ra,ra,0x18
    2:	0000                	unimp
+  li x1,0x00450008        // ipv4 key
    4:	0005                	c.nop	1
    6:	0008                	0x8
-  li x2,0x11              // udp proto type key 
    8:	002a                	c.slli	zero,0xa
    a:	0000                	unimp
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	0101                	addi	sp,sp,0
    e:	fb01                	bnez	a4,ffffffffffffff1e <_dtb+0xfffffffffffff71e>
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	0d0e                	slli	s10,s10,0x3
   12:	0100                	addi	s0,sp,128
   14:	0101                	addi	sp,sp,0
   16:	0001                	nop
   18:	0000                	unimp
   1a:	0001                	nop
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	0100                	addi	s0,sp,128
   1e:	0101                	addi	sp,sp,0
+  bne x4, x1, notipv4     // compare to ipv4 key
   20:	011f 0000 0000      	0x11f
-  bne x4, x2, notudp      // compare to udp proto type key
   26:	0102                	c.slli64	sp
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	021f 020f 0027      	0x27020f021f
-  bne x4, x3, notvxlan    // compare to ipv4 key
   2e:	0000                	unimp
+  bne x4, x3, notvxlan    // compare to ipv4 key
   30:	2700                	fld	fs0,8(a4)
   32:	0000                	unimp
   34:	0000                	unimp
@@ -284,387 +288,390 @@ Disassembly of section .debug_line:
   3c:	0000                	unimp
   3e:	0000                	unimp
   40:	1900                	addi	s0,sp,176
-  42:	08090103          	lb	sp,128(s2)
+  42:	04090103          	lb	sp,64(s2)
   46:	0100                	addi	s0,sp,128
+  48:	08090103          	lb	sp,128(s2)
   jal loop
-  48:	04090103          	lb	sp,64(s2)
-  add  x0, x0, x0
   4c:	0100                	addi	s0,sp,128
-  4e:	10090403          	lb	s0,256(s2)
-  li   a0, 0x1  
+  4e:	04090103          	lb	sp,64(s2)
+  add  x0, x0, x0
   52:	0100                	addi	s0,sp,128
+  li   a0, 0x1  
+  54:	10090403          	lb	s0,256(s2)
   slli a1, a0, 12
-  54:	08090203          	lb	tp,128(s2)
-  li   sp, 0x10000
   58:	0100                	addi	s0,sp,128
   5a:	08090203          	lb	tp,128(s2)
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5e:	0100                	addi	s0,sp,128
+  lb   a1, 9(sp)
+  60:	08090203          	lb	tp,128(s2)
   add  a2, a1, x0
-  60:	1c090f03          	lb	t5,448(s2)
-  li   sp, 0x20ff0
   64:	0100                	addi	s0,sp,128
-  66:	04090303          	lb	t1,64(s2)
+  66:	1c090f03          	lb	t5,448(s2)
+  li   sp, 0x20ff0
   6a:	0100                	addi	s0,sp,128
+  6c:	04090303          	lb	t1,64(s2)
   lb   a1, 0(sp)
-  6c:	04090103          	lb	sp,64(s2)
-  call main
   70:	0100                	addi	s0,sp,128
   72:	04090103          	lb	sp,64(s2)
-  la a1, _dtb
+  call main
   76:	0100                	addi	s0,sp,128
+  la a1, _dtb
   78:	04090103          	lb	sp,64(s2)
-  jr s0
   7c:	0100                	addi	s0,sp,128
   7e:	04090103          	lb	sp,64(s2)
+  jr s0
   82:	0100                	addi	s0,sp,128
   84:	04090103          	lb	sp,64(s2)
   88:	0100                	addi	s0,sp,128
   8a:	04090103          	lb	sp,64(s2)
   8e:	0100                	addi	s0,sp,128
-  90:	08090103          	lb	sp,128(s2)
+  90:	04090103          	lb	sp,64(s2)
   94:	0100                	addi	s0,sp,128
-  96:	04090203          	lb	tp,64(s2)
+  96:	08090103          	lb	sp,128(s2)
   9a:	0100                	addi	s0,sp,128
   9c:	04090203          	lb	tp,64(s2)
   a0:	0100                	addi	s0,sp,128
-  a2:	08090103          	lb	sp,128(s2)
+  a2:	04090203          	lb	tp,64(s2)
   a6:	0100                	addi	s0,sp,128
-  a8:	0409                	addi	s0,s0,2
-  aa:	0000                	unimp
-  ac:	0101                	addi	sp,sp,0
-  ae:	0900                	addi	s0,sp,144
-  b0:	0002                	c.slli64	zero
-  b2:	0004                	0x4
-  b4:	0000                	unimp
-  b6:	0000                	unimp
-  b8:	0300                	addi	s0,sp,384
-  ba:	0134                	addi	a3,sp,136
-  bc:	04090103          	lb	sp,64(s2)
-  c0:	0100                	addi	s0,sp,128
+  a8:	08090103          	lb	sp,128(s2)
+  ac:	0100                	addi	s0,sp,128
+  ae:	0409                	addi	s0,s0,2
+  b0:	0000                	unimp
+  b2:	0101                	addi	sp,sp,0
+  b4:	0900                	addi	s0,sp,144
+  b6:	0002                	c.slli64	zero
+  b8:	0004                	0x4
+  ba:	0000                	unimp
+  bc:	0000                	unimp
+  be:	0300                	addi	s0,sp,384
+  c0:	0135                	addi	sp,sp,13
   c2:	04090103          	lb	sp,64(s2)
   c6:	0100                	addi	s0,sp,128
-  c8:	08090103          	lb	sp,128(s2)
+  c8:	04090103          	lb	sp,64(s2)
   cc:	0100                	addi	s0,sp,128
-  ce:	04090203          	lb	tp,64(s2)
+  ce:	08090103          	lb	sp,128(s2)
   d2:	0100                	addi	s0,sp,128
-  d4:	04090103          	lb	sp,64(s2)
+  d4:	04090203          	lb	tp,64(s2)
   d8:	0100                	addi	s0,sp,128
-  da:	0409                	addi	s0,s0,2
-  dc:	0000                	unimp
-  de:	0101                	addi	sp,sp,0
-  e0:	027d                	addi	tp,tp,31
+  da:	04090103          	lb	sp,64(s2)
+  de:	0100                	addi	s0,sp,128
+  e0:	0409                	addi	s0,s0,2
   e2:	0000                	unimp
-  e4:	0005                	c.nop	1
-  e6:	0008                	0x8
-  e8:	003c                	addi	a5,sp,8
-  ea:	0000                	unimp
-  ec:	0101                	addi	sp,sp,0
-  ee:	fb01                	bnez	a4,fffffffffffffffe <_dtb+0xfffffffffffff7fe>
-  f0:	0d0e                	slli	s10,s10,0x3
-  f2:	0100                	addi	s0,sp,128
-  f4:	0101                	addi	sp,sp,0
-  f6:	0001                	nop
-  f8:	0000                	unimp
-  fa:	0001                	nop
-  fc:	0100                	addi	s0,sp,128
-  fe:	0101                	addi	sp,sp,0
- 100:	031f 0000 0000      	0x31f
- 106:	0038                	addi	a4,sp,8
- 108:	0000                	unimp
- 10a:	00000067          	jr	zero # 0 <ROM_BASE>
- 10e:	0102                	c.slli64	sp
- 110:	021f 040f 0031      	0x31040f021f
- 116:	0000                	unimp
- 118:	3100                	fld	fs0,32(a0)
- 11a:	0000                	unimp
+  e4:	0101                	addi	sp,sp,0
+  e6:	027d                	addi	tp,tp,31
+  e8:	0000                	unimp
+  ea:	0005                	c.nop	1
+  ec:	0008                	0x8
+  ee:	003c                	addi	a5,sp,8
+  f0:	0000                	unimp
+  f2:	0101                	addi	sp,sp,0
+  f4:	fb01                	bnez	a4,4 <ROM_BASE+0x4>
+  f6:	0d0e                	slli	s10,s10,0x3
+  f8:	0100                	addi	s0,sp,128
+  fa:	0101                	addi	sp,sp,0
+  fc:	0001                	nop
+  fe:	0000                	unimp
+ 100:	0001                	nop
+ 102:	0100                	addi	s0,sp,128
+ 104:	0101                	addi	sp,sp,0
+ 106:	031f 0000 0000      	0x31f
+ 10c:	0038                	addi	a4,sp,8
+ 10e:	0000                	unimp
+ 110:	00000067          	jr	zero # 0 <ROM_BASE>
+ 114:	0102                	c.slli64	sp
+ 116:	021f 040f 0031      	0x31040f021f
  11c:	0000                	unimp
- 11e:	0092                	slli	ra,ra,0x4
+ 11e:	3100                	fld	fs0,32(a0)
  120:	0000                	unimp
- 122:	a301                	j	622 <main+0x1c2>
- 124:	0000                	unimp
- 126:	0200                	addi	s0,sp,256
- 128:	0105                	addi	sp,sp,1
- 12a:	0900                	addi	s0,sp,144
- 12c:	1c02                	slli	s8,s8,0x20
- 12e:	0004                	0x4
- 130:	0000                	unimp
- 132:	0000                	unimp
- 134:	0300                	addi	s0,sp,384
- 136:	00fe                	slli	ra,ra,0x1f
- 138:	0501                	addi	a0,a0,0
- 13a:	0302                	c.slli64	t1
- 13c:	0901                	addi	s2,s2,0
- 13e:	0000                	unimp
- 140:	0301                	addi	t1,t1,0
- 142:	0902                	c.slli64	s2
+ 122:	0000                	unimp
+ 124:	0092                	slli	ra,ra,0x4
+ 126:	0000                	unimp
+ 128:	a301                	j	628 <main+0x1c8>
+ 12a:	0000                	unimp
+ 12c:	0200                	addi	s0,sp,256
+ 12e:	0105                	addi	sp,sp,1
+ 130:	0900                	addi	s0,sp,144
+ 132:	1c02                	slli	s8,s8,0x20
+ 134:	0004                	0x4
+ 136:	0000                	unimp
+ 138:	0000                	unimp
+ 13a:	0300                	addi	s0,sp,384
+ 13c:	00fe                	slli	ra,ra,0x1f
+ 13e:	0501                	addi	a0,a0,0
+ 140:	0302                	c.slli64	t1
+ 142:	0901                	addi	s2,s2,0
  144:	0000                	unimp
- 146:	0501                	addi	a0,a0,0
- 148:	00030613          	mv	a2,t1
- 14c:	0009                	c.nop	2
- 14e:	0100                	addi	s0,sp,128
- 150:	1805                	addi	a6,a6,-31
- 152:	0200                	addi	s0,sp,256
- 154:	0104                	addi	s1,sp,128
- 156:	0306                	slli	t1,t1,0x1
- 158:	0900                	addi	s0,sp,144
- 15a:	0004                	0x4
- 15c:	0501                	addi	a0,a0,0
- 15e:	04020013          	addi	zero,tp,64 # fffffffffffe1040 <_dtb+0xfffffffffffe0840>
- 162:	0601                	addi	a2,a2,0
- 164:	00090003          	lb	zero,0(s2)
- 168:	0100                	addi	s0,sp,128
- 16a:	1805                	addi	a6,a6,-31
- 16c:	0200                	addi	s0,sp,256
- 16e:	0104                	addi	s1,sp,128
- 170:	04090003          	lb	zero,64(s2)
- 174:	0100                	addi	s0,sp,128
- 176:	0205                	addi	tp,tp,1
- 178:	0306                	slli	t1,t1,0x1
- 17a:	0901                	addi	s2,s2,0
- 17c:	0004                	0x4
- 17e:	0501                	addi	a0,a0,0
- 180:	0606                	slli	a2,a2,0x1
- 182:	00090003          	lb	zero,0(s2)
- 186:	0100                	addi	s0,sp,128
- 188:	0105                	addi	sp,sp,1
- 18a:	08090103          	lb	sp,128(s2)
- 18e:	0100                	addi	s0,sp,128
- 190:	0306                	slli	t1,t1,0x1
- 192:	00040903          	lb	s2,0(s0)
- 196:	0501                	addi	a0,a0,0
- 198:	0302                	c.slli64	t1
- 19a:	0901                	addi	s2,s2,0
- 19c:	0000                	unimp
- 19e:	0301                	addi	t1,t1,0
+ 146:	0301                	addi	t1,t1,0
+ 148:	0902                	c.slli64	s2
+ 14a:	0000                	unimp
+ 14c:	0501                	addi	a0,a0,0
+ 14e:	00030613          	mv	a2,t1
+ 152:	0009                	c.nop	2
+ 154:	0100                	addi	s0,sp,128
+ 156:	1805                	addi	a6,a6,-31
+ 158:	0200                	addi	s0,sp,256
+ 15a:	0104                	addi	s1,sp,128
+ 15c:	0306                	slli	t1,t1,0x1
+ 15e:	0900                	addi	s0,sp,144
+ 160:	0004                	0x4
+ 162:	0501                	addi	a0,a0,0
+ 164:	04020013          	addi	zero,tp,64 # fffffffffffe1040 <_dtb+0xfffffffffffe0840>
+ 168:	0601                	addi	a2,a2,0
+ 16a:	00090003          	lb	zero,0(s2)
+ 16e:	0100                	addi	s0,sp,128
+ 170:	1805                	addi	a6,a6,-31
+ 172:	0200                	addi	s0,sp,256
+ 174:	0104                	addi	s1,sp,128
+ 176:	04090003          	lb	zero,64(s2)
+ 17a:	0100                	addi	s0,sp,128
+ 17c:	0205                	addi	tp,tp,1
+ 17e:	0306                	slli	t1,t1,0x1
+ 180:	0901                	addi	s2,s2,0
+ 182:	0004                	0x4
+ 184:	0501                	addi	a0,a0,0
+ 186:	0606                	slli	a2,a2,0x1
+ 188:	00090003          	lb	zero,0(s2)
+ 18c:	0100                	addi	s0,sp,128
+ 18e:	0105                	addi	sp,sp,1
+ 190:	08090103          	lb	sp,128(s2)
+ 194:	0100                	addi	s0,sp,128
+ 196:	0306                	slli	t1,t1,0x1
+ 198:	00040903          	lb	s2,0(s0)
+ 19c:	0501                	addi	a0,a0,0
+ 19e:	0302                	c.slli64	t1
  1a0:	0901                	addi	s2,s2,0
  1a2:	0000                	unimp
- 1a4:	0501                	addi	a0,a0,0
- 1a6:	0312                	slli	t1,t1,0x4
- 1a8:	0900                	addi	s0,sp,144
- 1aa:	0000                	unimp
- 1ac:	0501                	addi	a0,a0,0
- 1ae:	060c                	addi	a1,sp,768
- 1b0:	00090003          	lb	zero,0(s2)
- 1b4:	0100                	addi	s0,sp,128
- 1b6:	1205                	addi	tp,tp,-31
- 1b8:	04090003          	lb	zero,64(s2)
- 1bc:	0100                	addi	s0,sp,128
- 1be:	1305                	addi	t1,t1,-31
- 1c0:	04097903          	0x4097903
- 1c4:	0100                	addi	s0,sp,128
- 1c6:	1805                	addi	a6,a6,-31
- 1c8:	0306                	slli	t1,t1,0x1
- 1ca:	0900                	addi	s0,sp,144
- 1cc:	0004                	0x4
- 1ce:	0501                	addi	a0,a0,0
- 1d0:	00030613          	mv	a2,t1
- 1d4:	0009                	c.nop	2
- 1d6:	0100                	addi	s0,sp,128
- 1d8:	1805                	addi	a6,a6,-31
- 1da:	04090003          	lb	zero,64(s2)
- 1de:	0100                	addi	s0,sp,128
- 1e0:	0205                	addi	tp,tp,1
- 1e2:	0306                	slli	t1,t1,0x1
- 1e4:	0901                	addi	s2,s2,0
- 1e6:	0004                	0x4
- 1e8:	0501                	addi	a0,a0,0
- 1ea:	0606                	slli	a2,a2,0x1
- 1ec:	00090003          	lb	zero,0(s2)
- 1f0:	0100                	addi	s0,sp,128
- 1f2:	1c05                	addi	s8,s8,-31
- 1f4:	0306                	slli	t1,t1,0x1
- 1f6:	0906                	slli	s2,s2,0x1
- 1f8:	0008                	0x8
- 1fa:	0501                	addi	a0,a0,0
- 1fc:	060c                	addi	a1,sp,768
- 1fe:	00090003          	lb	zero,0(s2)
- 202:	0100                	addi	s0,sp,128
- 204:	1c05                	addi	s8,s8,-31
- 206:	04090003          	lb	zero,64(s2)
- 20a:	0100                	addi	s0,sp,128
- 20c:	1205                	addi	tp,tp,-31
- 20e:	0306                	slli	t1,t1,0x1
- 210:	0900                	addi	s0,sp,144
- 212:	0004                	0x4
- 214:	0501                	addi	a0,a0,0
- 216:	0601                	addi	a2,a2,0
- 218:	04090203          	lb	tp,64(s2)
- 21c:	0100                	addi	s0,sp,128
- 21e:	0409                	addi	s0,s0,2
- 220:	0000                	unimp
- 222:	0101                	addi	sp,sp,0
- 224:	0105                	addi	sp,sp,1
- 226:	0900                	addi	s0,sp,144
- 228:	6002                	0x6002
- 22a:	0004                	0x4
- 22c:	0000                	unimp
- 22e:	0000                	unimp
- 230:	0300                	addi	s0,sp,384
- 232:	018e                	slli	gp,gp,0x3
- 234:	0501                	addi	a0,a0,0
- 236:	09070303          	lb	t1,144(a4)
- 23a:	0000                	unimp
- 23c:	0501                	addi	a0,a0,0
- 23e:	0302                	c.slli64	t1
- 240:	0972                	slli	s2,s2,0x1c
- 242:	0000                	unimp
- 244:	0301                	addi	t1,t1,0
- 246:	0901                	addi	s2,s2,0
+ 1a4:	0301                	addi	t1,t1,0
+ 1a6:	0901                	addi	s2,s2,0
+ 1a8:	0000                	unimp
+ 1aa:	0501                	addi	a0,a0,0
+ 1ac:	0312                	slli	t1,t1,0x4
+ 1ae:	0900                	addi	s0,sp,144
+ 1b0:	0000                	unimp
+ 1b2:	0501                	addi	a0,a0,0
+ 1b4:	060c                	addi	a1,sp,768
+ 1b6:	00090003          	lb	zero,0(s2)
+ 1ba:	0100                	addi	s0,sp,128
+ 1bc:	1205                	addi	tp,tp,-31
+ 1be:	04090003          	lb	zero,64(s2)
+ 1c2:	0100                	addi	s0,sp,128
+ 1c4:	1305                	addi	t1,t1,-31
+ 1c6:	04097903          	0x4097903
+ 1ca:	0100                	addi	s0,sp,128
+ 1cc:	1805                	addi	a6,a6,-31
+ 1ce:	0306                	slli	t1,t1,0x1
+ 1d0:	0900                	addi	s0,sp,144
+ 1d2:	0004                	0x4
+ 1d4:	0501                	addi	a0,a0,0
+ 1d6:	00030613          	mv	a2,t1
+ 1da:	0009                	c.nop	2
+ 1dc:	0100                	addi	s0,sp,128
+ 1de:	1805                	addi	a6,a6,-31
+ 1e0:	04090003          	lb	zero,64(s2)
+ 1e4:	0100                	addi	s0,sp,128
+ 1e6:	0205                	addi	tp,tp,1
+ 1e8:	0306                	slli	t1,t1,0x1
+ 1ea:	0901                	addi	s2,s2,0
+ 1ec:	0004                	0x4
+ 1ee:	0501                	addi	a0,a0,0
+ 1f0:	0606                	slli	a2,a2,0x1
+ 1f2:	00090003          	lb	zero,0(s2)
+ 1f6:	0100                	addi	s0,sp,128
+ 1f8:	1c05                	addi	s8,s8,-31
+ 1fa:	0306                	slli	t1,t1,0x1
+ 1fc:	0906                	slli	s2,s2,0x1
+ 1fe:	0008                	0x8
+ 200:	0501                	addi	a0,a0,0
+ 202:	060c                	addi	a1,sp,768
+ 204:	00090003          	lb	zero,0(s2)
+ 208:	0100                	addi	s0,sp,128
+ 20a:	1c05                	addi	s8,s8,-31
+ 20c:	04090003          	lb	zero,64(s2)
+ 210:	0100                	addi	s0,sp,128
+ 212:	1205                	addi	tp,tp,-31
+ 214:	0306                	slli	t1,t1,0x1
+ 216:	0900                	addi	s0,sp,144
+ 218:	0004                	0x4
+ 21a:	0501                	addi	a0,a0,0
+ 21c:	0601                	addi	a2,a2,0
+ 21e:	04090203          	lb	tp,64(s2)
+ 222:	0100                	addi	s0,sp,128
+ 224:	0409                	addi	s0,s0,2
+ 226:	0000                	unimp
+ 228:	0101                	addi	sp,sp,0
+ 22a:	0105                	addi	sp,sp,1
+ 22c:	0900                	addi	s0,sp,144
+ 22e:	6002                	0x6002
+ 230:	0004                	0x4
+ 232:	0000                	unimp
+ 234:	0000                	unimp
+ 236:	0300                	addi	s0,sp,384
+ 238:	018e                	slli	gp,gp,0x3
+ 23a:	0501                	addi	a0,a0,0
+ 23c:	09070303          	lb	t1,144(a4)
+ 240:	0000                	unimp
+ 242:	0501                	addi	a0,a0,0
+ 244:	0302                	c.slli64	t1
+ 246:	0972                	slli	s2,s2,0x1c
  248:	0000                	unimp
- 24a:	0501                	addi	a0,a0,0
- 24c:	0312                	slli	t1,t1,0x4
- 24e:	0900                	addi	s0,sp,144
- 250:	0000                	unimp
- 252:	0501                	addi	a0,a0,0
- 254:	0601                	addi	a2,a2,0
- 256:	00090603          	lb	a2,0(s2)
- 25a:	0100                	addi	s0,sp,128
- 25c:	0c05                	addi	s8,s8,1
- 25e:	08097a03          	0x8097a03
- 262:	0100                	addi	s0,sp,128
- 264:	1305                	addi	t1,t1,-31
- 266:	04097903          	0x4097903
- 26a:	0100                	addi	s0,sp,128
- 26c:	1805                	addi	a6,a6,-31
- 26e:	0306                	slli	t1,t1,0x1
- 270:	0900                	addi	s0,sp,144
- 272:	0004                	0x4
- 274:	0501                	addi	a0,a0,0
- 276:	00030613          	mv	a2,t1
- 27a:	0009                	c.nop	2
- 27c:	0100                	addi	s0,sp,128
- 27e:	1805                	addi	a6,a6,-31
- 280:	04090003          	lb	zero,64(s2)
- 284:	0100                	addi	s0,sp,128
- 286:	0205                	addi	tp,tp,1
- 288:	0306                	slli	t1,t1,0x1
- 28a:	0901                	addi	s2,s2,0
- 28c:	0004                	0x4
- 28e:	0501                	addi	a0,a0,0
- 290:	0606                	slli	a2,a2,0x1
- 292:	00090003          	lb	zero,0(s2)
- 296:	0100                	addi	s0,sp,128
- 298:	1c05                	addi	s8,s8,-31
- 29a:	0306                	slli	t1,t1,0x1
- 29c:	0906                	slli	s2,s2,0x1
- 29e:	0008                	0x8
- 2a0:	0501                	addi	a0,a0,0
- 2a2:	060c                	addi	a1,sp,768
- 2a4:	00090003          	lb	zero,0(s2)
- 2a8:	0100                	addi	s0,sp,128
- 2aa:	1c05                	addi	s8,s8,-31
- 2ac:	04090003          	lb	zero,64(s2)
- 2b0:	0100                	addi	s0,sp,128
- 2b2:	1205                	addi	tp,tp,-31
- 2b4:	0306                	slli	t1,t1,0x1
- 2b6:	0900                	addi	s0,sp,144
- 2b8:	0004                	0x4
- 2ba:	0501                	addi	a0,a0,0
- 2bc:	79030613          	addi	a2,t1,1936 # ffffffffffffa790 <_dtb+0xffffffffffff9f90>
- 2c0:	0409                	addi	s0,s0,2
- 2c2:	0100                	addi	s0,sp,128
- 2c4:	0305                	addi	t1,t1,1
- 2c6:	0200                	addi	s0,sp,256
- 2c8:	0104                	addi	s1,sp,128
- 2ca:	0306                	slli	t1,t1,0x1
- 2cc:	0916                	slli	s2,s2,0x5
- 2ce:	0004                	0x4
- 2d0:	0501                	addi	a0,a0,0
- 2d2:	0005                	c.nop	1
- 2d4:	0402                	c.slli64	s0
- 2d6:	0301                	addi	t1,t1,0
- 2d8:	0904                	addi	s1,sp,144
- 2da:	0000                	unimp
- 2dc:	0501                	addi	a0,a0,0
- 2de:	0002                	c.slli64	zero
- 2e0:	0402                	c.slli64	s0
- 2e2:	0301                	addi	t1,t1,0
- 2e4:	096c                	addi	a1,sp,156
- 2e6:	0000                	unimp
- 2e8:	0001                	nop
- 2ea:	0402                	c.slli64	s0
- 2ec:	0301                	addi	t1,t1,0
- 2ee:	0901                	addi	s2,s2,0
- 2f0:	0000                	unimp
- 2f2:	0501                	addi	a0,a0,0
- 2f4:	0012                	c.slli	zero,0x4
- 2f6:	0402                	c.slli64	s0
- 2f8:	0301                	addi	t1,t1,0
- 2fa:	0900                	addi	s0,sp,144
- 2fc:	0000                	unimp
- 2fe:	0501                	addi	a0,a0,0
- 300:	000c                	0xc
- 302:	0402                	c.slli64	s0
- 304:	0601                	addi	a2,a2,0
- 306:	00090003          	lb	zero,0(s2)
- 30a:	0100                	addi	s0,sp,128
- 30c:	1805                	addi	a6,a6,-31
- 30e:	0306                	slli	t1,t1,0x1
- 310:	0979                	addi	s2,s2,30
- 312:	000c                	0xc
- 314:	0501                	addi	a0,a0,0
- 316:	00030613          	mv	a2,t1
- 31a:	0009                	c.nop	2
- 31c:	0100                	addi	s0,sp,128
- 31e:	1805                	addi	a6,a6,-31
- 320:	04090003          	lb	zero,64(s2)
- 324:	0100                	addi	s0,sp,128
- 326:	0205                	addi	tp,tp,1
- 328:	0306                	slli	t1,t1,0x1
- 32a:	0901                	addi	s2,s2,0
- 32c:	0004                	0x4
- 32e:	0501                	addi	a0,a0,0
- 330:	0606                	slli	a2,a2,0x1
- 332:	00090003          	lb	zero,0(s2)
- 336:	0100                	addi	s0,sp,128
- 338:	1c05                	addi	s8,s8,-31
- 33a:	0306                	slli	t1,t1,0x1
- 33c:	0906                	slli	s2,s2,0x1
- 33e:	0008                	0x8
- 340:	0501                	addi	a0,a0,0
- 342:	060c                	addi	a1,sp,768
- 344:	00090003          	lb	zero,0(s2)
- 348:	0100                	addi	s0,sp,128
- 34a:	1c05                	addi	s8,s8,-31
- 34c:	04090003          	lb	zero,64(s2)
- 350:	0100                	addi	s0,sp,128
- 352:	1205                	addi	tp,tp,-31
- 354:	0306                	slli	t1,t1,0x1
- 356:	0900                	addi	s0,sp,144
- 358:	0004                	0x4
- 35a:	0901                	addi	s2,s2,0
- 35c:	0008                	0x8
- 35e:	0100                	addi	s0,sp,128
- 360:	01              	地址 0x0000000000000360 越界。
+ 24a:	0301                	addi	t1,t1,0
+ 24c:	0901                	addi	s2,s2,0
+ 24e:	0000                	unimp
+ 250:	0501                	addi	a0,a0,0
+ 252:	0312                	slli	t1,t1,0x4
+ 254:	0900                	addi	s0,sp,144
+ 256:	0000                	unimp
+ 258:	0501                	addi	a0,a0,0
+ 25a:	0601                	addi	a2,a2,0
+ 25c:	00090603          	lb	a2,0(s2)
+ 260:	0100                	addi	s0,sp,128
+ 262:	0c05                	addi	s8,s8,1
+ 264:	08097a03          	0x8097a03
+ 268:	0100                	addi	s0,sp,128
+ 26a:	1305                	addi	t1,t1,-31
+ 26c:	04097903          	0x4097903
+ 270:	0100                	addi	s0,sp,128
+ 272:	1805                	addi	a6,a6,-31
+ 274:	0306                	slli	t1,t1,0x1
+ 276:	0900                	addi	s0,sp,144
+ 278:	0004                	0x4
+ 27a:	0501                	addi	a0,a0,0
+ 27c:	00030613          	mv	a2,t1
+ 280:	0009                	c.nop	2
+ 282:	0100                	addi	s0,sp,128
+ 284:	1805                	addi	a6,a6,-31
+ 286:	04090003          	lb	zero,64(s2)
+ 28a:	0100                	addi	s0,sp,128
+ 28c:	0205                	addi	tp,tp,1
+ 28e:	0306                	slli	t1,t1,0x1
+ 290:	0901                	addi	s2,s2,0
+ 292:	0004                	0x4
+ 294:	0501                	addi	a0,a0,0
+ 296:	0606                	slli	a2,a2,0x1
+ 298:	00090003          	lb	zero,0(s2)
+ 29c:	0100                	addi	s0,sp,128
+ 29e:	1c05                	addi	s8,s8,-31
+ 2a0:	0306                	slli	t1,t1,0x1
+ 2a2:	0906                	slli	s2,s2,0x1
+ 2a4:	0008                	0x8
+ 2a6:	0501                	addi	a0,a0,0
+ 2a8:	060c                	addi	a1,sp,768
+ 2aa:	00090003          	lb	zero,0(s2)
+ 2ae:	0100                	addi	s0,sp,128
+ 2b0:	1c05                	addi	s8,s8,-31
+ 2b2:	04090003          	lb	zero,64(s2)
+ 2b6:	0100                	addi	s0,sp,128
+ 2b8:	1205                	addi	tp,tp,-31
+ 2ba:	0306                	slli	t1,t1,0x1
+ 2bc:	0900                	addi	s0,sp,144
+ 2be:	0004                	0x4
+ 2c0:	0501                	addi	a0,a0,0
+ 2c2:	79030613          	addi	a2,t1,1936 # ffffffffffffa790 <_dtb+0xffffffffffff9f90>
+ 2c6:	0409                	addi	s0,s0,2
+ 2c8:	0100                	addi	s0,sp,128
+ 2ca:	0305                	addi	t1,t1,1
+ 2cc:	0200                	addi	s0,sp,256
+ 2ce:	0104                	addi	s1,sp,128
+ 2d0:	0306                	slli	t1,t1,0x1
+ 2d2:	0916                	slli	s2,s2,0x5
+ 2d4:	0004                	0x4
+ 2d6:	0501                	addi	a0,a0,0
+ 2d8:	0005                	c.nop	1
+ 2da:	0402                	c.slli64	s0
+ 2dc:	0301                	addi	t1,t1,0
+ 2de:	0904                	addi	s1,sp,144
+ 2e0:	0000                	unimp
+ 2e2:	0501                	addi	a0,a0,0
+ 2e4:	0002                	c.slli64	zero
+ 2e6:	0402                	c.slli64	s0
+ 2e8:	0301                	addi	t1,t1,0
+ 2ea:	096c                	addi	a1,sp,156
+ 2ec:	0000                	unimp
+ 2ee:	0001                	nop
+ 2f0:	0402                	c.slli64	s0
+ 2f2:	0301                	addi	t1,t1,0
+ 2f4:	0901                	addi	s2,s2,0
+ 2f6:	0000                	unimp
+ 2f8:	0501                	addi	a0,a0,0
+ 2fa:	0012                	c.slli	zero,0x4
+ 2fc:	0402                	c.slli64	s0
+ 2fe:	0301                	addi	t1,t1,0
+ 300:	0900                	addi	s0,sp,144
+ 302:	0000                	unimp
+ 304:	0501                	addi	a0,a0,0
+ 306:	000c                	0xc
+ 308:	0402                	c.slli64	s0
+ 30a:	0601                	addi	a2,a2,0
+ 30c:	00090003          	lb	zero,0(s2)
+ 310:	0100                	addi	s0,sp,128
+ 312:	1805                	addi	a6,a6,-31
+ 314:	0306                	slli	t1,t1,0x1
+ 316:	0979                	addi	s2,s2,30
+ 318:	000c                	0xc
+ 31a:	0501                	addi	a0,a0,0
+ 31c:	00030613          	mv	a2,t1
+ 320:	0009                	c.nop	2
+ 322:	0100                	addi	s0,sp,128
+ 324:	1805                	addi	a6,a6,-31
+ 326:	04090003          	lb	zero,64(s2)
+ 32a:	0100                	addi	s0,sp,128
+ 32c:	0205                	addi	tp,tp,1
+ 32e:	0306                	slli	t1,t1,0x1
+ 330:	0901                	addi	s2,s2,0
+ 332:	0004                	0x4
+ 334:	0501                	addi	a0,a0,0
+ 336:	0606                	slli	a2,a2,0x1
+ 338:	00090003          	lb	zero,0(s2)
+ 33c:	0100                	addi	s0,sp,128
+ 33e:	1c05                	addi	s8,s8,-31
+ 340:	0306                	slli	t1,t1,0x1
+ 342:	0906                	slli	s2,s2,0x1
+ 344:	0008                	0x8
+ 346:	0501                	addi	a0,a0,0
+ 348:	060c                	addi	a1,sp,768
+ 34a:	00090003          	lb	zero,0(s2)
+ 34e:	0100                	addi	s0,sp,128
+ 350:	1c05                	addi	s8,s8,-31
+ 352:	04090003          	lb	zero,64(s2)
+ 356:	0100                	addi	s0,sp,128
+ 358:	1205                	addi	tp,tp,-31
+ 35a:	0306                	slli	t1,t1,0x1
+ 35c:	0900                	addi	s0,sp,144
+ 35e:	0004                	0x4
+ 360:	0901                	addi	s2,s2,0
+ 362:	0008                	0x8
+ 364:	0100                	addi	s0,sp,128
+ 366:	01              	地址 0x0000000000000366 越界。
 
 
 Disassembly of section .debug_line_str:
 
 0000000000000000 <.debug_line_str>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	6d6f682f          	0x6d6f682f
+  li x1,0x00450008        // ipv4 key
    4:	2f65                	addiw	t5,t5,25
    6:	6f64                	ld	s1,216(a4)
-  li x2,0x11              // udp proto type key 
    8:	676e                	ld	a4,216(sp)
    a:	6564                	ld	s1,200(a0)
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	696a                	ld	s2,152(sp)
    e:	6168732f          	0x6168732f
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   12:	6572                	ld	a0,280(sp)
   14:	646f632f          	0x646f632f
   18:	2f65                	addiw	t5,t5,25
   1a:	706e                	0x706e
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	7375                	lui	t1,0xffffd
   1e:	6f6f622f          	0x6f6f622f
+  bne x4, x1, notipv4     // compare to ipv4 key
   22:	7274                	ld	a3,224(a2)
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	62006d6f          	jal	s10,6644 <_dtb+0x5e44>
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	72746f6f          	jal	t5,46f4e <_dtb+0x4674e>
-  bne x4, x3, notvxlan    // compare to ipv4 key
   2c:	532e6d6f          	jal	s10,e655e <_dtb+0xe5d5e>
+  bne x4, x3, notvxlan    // compare to ipv4 key
   30:	6d00                	ld	s0,24(a0)
   32:	6961                	lui	s2,0x18
   34:	2e6e                	fld	ft8,216(sp)
@@ -673,39 +680,39 @@ Disassembly of section .debug_line_str:
   3c:	7369722f          	0x7369722f
   40:	722f7663          	bgeu	t5,sp,76c <main+0x30c>
   44:	7369                	lui	t1,0xffffa
-  46:	34367663          	bgeu	a2,gp,392 <test1+0x346>
-  jal loop
+  46:	34367663          	bgeu	a2,gp,392 <test1+0x342>
   4a:	752d                	lui	a0,0xfffeb
-  add  x0, x0, x0
+  jal loop
   4c:	6b6e                	ld	s6,216(sp)
   4e:	6f6e                	ld	t5,216(sp)
-  li   a0, 0x1  
+  add  x0, x0, x0
   50:	652d6e77          	0x652d6e77
-  slli a1, a0, 12
+  li   a0, 0x1  
   54:	666c                	ld	a1,200(a2)
   56:	636e692f          	0x636e692f
-  li   sp, 0x10000
+  slli a1, a0, 12
   5a:	756c                	ld	a1,232(a0)
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5c:	6564                	ld	s1,200(a0)
   5e:	63616d2f          	0x63616d2f
-  add  a2, a1, x0
+  lb   a1, 9(sp)
   62:	6968                	ld	a0,208(a0)
-  li   sp, 0x20ff0
+  add  a2, a1, x0
   64:	656e                	ld	a0,216(sp)
   66:	2f00                	fld	fs0,24(a4)
+  li   sp, 0x20ff0
   68:	2f74706f          	j	47b5e <_dtb+0x4735e>
-  lb   a1, 0(sp)
   6c:	6972                	ld	s2,280(sp)
   6e:	2f766373          	csrrsi	t1,0x2f7,12
-  call main
+  lb   a1, 0(sp)
   72:	6972                	ld	s2,280(sp)
-  la a1, _dtb
+  call main
   74:	36766373          	csrrsi	t1,0x367,12
+  la a1, _dtb
   78:	2d34                	fld	fa3,88(a0)
   7a:	6e75                	lui	t3,0x1d
-  jr s0
   7c:	776f6e6b          	0x776f6e6b
+  jr s0
   80:	2d6e                	fld	fs10,216(sp)
   82:	6c65                	lui	s8,0x19
   84:	2f66                	fld	ft10,88(sp)
@@ -726,34 +733,35 @@ Disassembly of section .debug_line_str:
 Disassembly of section .debug_info:
 
 0000000000000000 <.debug_info>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	001f 0000 0005      	0x50000001f
+  li x1,0x00450008        // ipv4 key
    6:	0801                	addi	a6,a6,0
-  li x2,0x11              // udp proto type key 
    8:	0000                	unimp
    a:	0000                	unimp
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	0001                	nop
    e:	0000                	unimp
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	0c00                	addi	s0,sp,528
   12:	0000                	unimp
   14:	0000                	unimp
   16:	0000                	unimp
   18:	0a00                	addi	s0,sp,272
   1a:	0000                	unimp
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	3100                	fld	fs0,32(a0)
   1e:	0000                	unimp
+  bne x4, x1, notipv4     // compare to ipv4 key
   20:	0100                	addi	s0,sp,128
   22:	3880                	fld	fs0,48(s1)
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	0002                	c.slli64	zero
   26:	0500                	addi	s0,sp,640
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	0100                	addi	s0,sp,128
   2a:	1208                	addi	a0,sp,288
-  bne x4, x3, notvxlan    // compare to ipv4 key
   2c:	0000                	unimp
   2e:	0f00                	addi	s0,sp,912
+  bne x4, x3, notvxlan    // compare to ipv4 key
   30:	008a                	slli	ra,ra,0x2
   32:	0000                	unimp
   34:	311d                	addiw	sp,sp,-25
@@ -763,45 +771,45 @@ Disassembly of section .debug_info:
   3c:	b900                	fsd	fs0,48(a0)
 	...
   46:	0000                	unimp
-  jal loop
-  48:	e000                	sd	s0,0(s0)
+  48:	e600                	sd	s0,8(a2)
   4a:	0000                	unimp
-  add  x0, x0, x0
+  jal loop
   4c:	0100                	addi	s0,sp,128
   4e:	0601                	addi	a2,a2,0
-  li   a0, 0x1  
+  add  x0, x0, x0
   50:	0049                	c.nop	18
   52:	0000                	unimp
-  slli a1, a0, 12
+  li   a0, 0x1  
   54:	0101                	addi	sp,sp,0
   56:	4708                	lw	a0,8(a4)
-  li   sp, 0x10000
+  slli a1, a0, 12
   58:	0000                	unimp
   5a:	0100                	addi	s0,sp,128
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5c:	0502                	c.slli64	a0
   5e:	00fa                	slli	ra,ra,0x1e
-  add  a2, a1, x0
+  lb   a1, 9(sp)
   60:	0000                	unimp
   62:	0201                	addi	tp,tp,0
-  li   sp, 0x20ff0
+  add  a2, a1, x0
   64:	00006707          	0x6707
+  li   sp, 0x20ff0
   68:	0200                	addi	s0,sp,256
   6a:	003d                	c.nop	15
-  lb   a1, 0(sp)
   6c:	0000                	unimp
   6e:	4d02                	lw	s10,0(sp)
-  call main
+  lb   a1, 0(sp)
   70:	5218                	lw	a4,32(a2)
   72:	0000                	unimp
-  la a1, _dtb
+  call main
   74:	1000                	addi	s0,sp,32
   76:	0504                	addi	s1,sp,640
+  la a1, _dtb
   78:	6e69                	lui	t3,0x1a
   7a:	0074                	addi	a3,sp,12
-  jr s0
   7c:	7a02                	ld	s4,32(sp)
   7e:	0000                	unimp
+  jr s0
   80:	0200                	addi	s0,sp,256
   82:	0065194f          	fnmadd.s	fs2,fa0,ft6,ft0,rtz
   86:	0000                	unimp
@@ -953,7 +961,7 @@ Disassembly of section .debug_info:
  1cc:	c27e                	sw	t6,4(sp)
  1ce:	0001                	nop
  1d0:	0d00                	addi	s0,sp,656
- 1d2:	1a7e0063          	beq	t3,t2,372 <test1+0x326>
+ 1d2:	1a7e0063          	beq	t3,t2,372 <test1+0x322>
  1d6:	0198                	addi	a4,sp,192
  1d8:	0000                	unimp
  1da:	740e                	ld	s0,224(sp)
@@ -1021,31 +1029,32 @@ Disassembly of section .debug_info:
 Disassembly of section .debug_abbrev:
 
 0000000000000000 <.debug_abbrev>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	1101                	addi	sp,sp,-32
    2:	1000                	addi	s0,sp,32
+  li x1,0x00450008        // ipv4 key
    4:	03175517          	auipc	a0,0x3175
-  li x2,0x11              // udp proto type key 
    8:	1b0e                	slli	s6,s6,0x23
    a:	250e                	fld	fa0,192(sp)
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	130e                	slli	t1,t1,0x23
    e:	0005                	c.nop	1
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	0000                	unimp
   12:	2401                	sext.w	s0,s0
   14:	0b00                	addi	s0,sp,400
   16:	030b3e0b          	0x30b3e0b
   1a:	000e                	c.slli	zero,0x3
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	0200                	addi	s0,sp,256
   1e:	0016                	c.slli	zero,0x5
+  bne x4, x1, notipv4     // compare to ipv4 key
   20:	0b3a0e03          	lb	t3,179(s4)
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	0b390b3b          	0xb390b3b
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	1349                	addi	t1,t1,-14
   2a:	0000                	unimp
+  2c:	31000503          	lb	a0,784(zero) # 310 <test1+0x2c0>
   bne x4, x3, notvxlan    // compare to ipv4 key
-  2c:	31000503          	lb	a0,784(zero) # 310 <test1+0x2c4>
   30:	00170213          	addi	tp,a4,1
   34:	0400                	addi	s0,sp,512
   36:	1755010b          	0x1755010b
@@ -1055,39 +1064,39 @@ Disassembly of section .debug_abbrev:
   40:	00170213          	addi	tp,a4,1
   44:	0600                	addi	s0,sp,768
   46:	0005                	c.nop	1
-  jal loop
   48:	1331                	addi	t1,t1,-20
   4a:	0000                	unimp
+  jal loop
+  4c:	31003407          	fld	fs0,784(zero) # 310 <test1+0x2c0>
   add  x0, x0, x0
-  4c:	31003407          	fld	fs0,784(zero) # 310 <test1+0x2c4>
-  li   a0, 0x1  
   50:	08000013          	li	zero,128
-  slli a1, a0, 12
+  li   a0, 0x1  
   54:	210b000f          	0x210b000f
-  li   sp, 0x10000
+  slli a1, a0, 12
   58:	4908                	lw	a0,16(a0)
   5a:	09000013          	li	zero,144
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5e:	0026                	c.slli	zero,0x9
-  add  a2, a1, x0
+  lb   a1, 9(sp)
   60:	1349                	addi	t1,t1,-14
   62:	0000                	unimp
-  li   sp, 0x20ff0
+  add  a2, a1, x0
   64:	1d0a                	slli	s10,s10,0x22
   66:	3101                	addiw	sp,sp,-32
+  li   sp, 0x20ff0
   68:	12011113          	0x12011113
-  lb   a1, 0(sp)
   6c:	01215807          	0x1215807
-  call main
+  lb   a1, 0(sp)
   70:	0b59                	addi	s6,s6,22
   72:	00032157          	0x32157
-  la a1, _dtb
+  call main
   76:	0b00                	addi	s0,sp,400
+  la a1, _dtb
   78:	011d                	addi	sp,sp,7
   7a:	1331                	addi	t1,t1,-20
-  jr s0
   7c:	0152                	slli	sp,sp,0x14
   7e:	1755                	addi	a4,a4,-11
+  jr s0
   80:	2158                	fld	fa4,128(a0)
   82:	5901                	li	s2,-32
   84:	000b570b          	0xb570b
@@ -1170,26 +1179,26 @@ Disassembly of section .debug_abbrev:
 Disassembly of section .debug_aranges:
 
 0000000000000000 <.debug_aranges>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	003c                	addi	a5,sp,8
    2:	0000                	unimp
+  li x1,0x00450008        // ipv4 key
    4:	0002                	c.slli64	zero
    6:	0000                	unimp
-  li x2,0x11              // udp proto type key 
    8:	0000                	unimp
    a:	0008                	0x8
 	...
   li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
-  18:	0080                	addi	s0,sp,64
+  18:	0084                	addi	s1,sp,64
   1a:	0000                	unimp
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	0000                	unimp
   1e:	0000                	unimp
+  bne x4, x1, notipv4     // compare to ipv4 key
   20:	0400                	addi	s0,sp,512
   22:	0000                	unimp
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	0000                	unimp
   26:	0000                	unimp
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	001c                	0x1c
 	...
   bne x4, x3, notvxlan    // compare to ipv4 key
@@ -1198,98 +1207,100 @@ Disassembly of section .debug_aranges:
   42:	0000                	unimp
   44:	0002                	c.slli64	zero
   46:	00000023          	sb	zero,0(zero) # 0 <ROM_BASE>
-  jal loop
   4a:	0008                	0x8
-  add  x0, x0, x0
+  jal loop
   4c:	0000                	unimp
   4e:	0000                	unimp
-  li   a0, 0x1  
+  add  x0, x0, x0
   50:	041c                	addi	a5,sp,512
   52:	0000                	unimp
-  slli a1, a0, 12
+  li   a0, 0x1  
   54:	0000                	unimp
   56:	0000                	unimp
-  li   sp, 0x10000
+  slli a1, a0, 12
   58:	0044                	addi	s1,sp,4
   5a:	0000                	unimp
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5c:	0000                	unimp
   5e:	0000                	unimp
-  add  a2, a1, x0
+  lb   a1, 9(sp)
   60:	0460                	addi	s0,sp,524
   62:	0000                	unimp
-  li   sp, 0x20ff0
+  add  a2, a1, x0
   64:	0000                	unimp
   66:	0000                	unimp
+  li   sp, 0x20ff0
   68:	005c                	addi	a5,sp,4
 	...
 
 Disassembly of section .debug_str:
 
 0000000000000000 <.debug_str>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	6f62                	ld	t5,24(sp)
    2:	6f72746f          	jal	s0,27ef8 <_dtb+0x276f8>
+  li x1,0x00450008        // ipv4 key
    6:	2e6d                	addiw	t3,t3,27
-  li x2,0x11              // udp proto type key 
    8:	682f0053          	0x682f0053
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	2f656d6f          	jal	s10,56302 <_dtb+0x55b02>
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	6f64                	ld	s1,216(a4)
   12:	676e                	ld	a4,216(sp)
   14:	6564                	ld	s1,200(a0)
   16:	696a                	ld	s2,152(sp)
   18:	6168732f          	0x6168732f
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	6572                	ld	a0,280(sp)
   1e:	646f632f          	0x646f632f
+  bne x4, x1, notipv4     // compare to ipv4 key
   22:	2f65                	addiw	t5,t5,25
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	706e                	0x706e
   26:	7375                	lui	t1,0xffffd
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	6f6f622f          	0x6f6f622f
-  bne x4, x3, notvxlan    // compare to ipv4 key
   2c:	7274                	ld	a3,224(a2)
   2e:	47006d6f          	jal	s10,649e <_dtb+0x5c9e>
+  bne x4, x3, notvxlan    // compare to ipv4 key
   32:	554e                	lw	a0,240(sp)
   34:	4120                	lw	s0,64(a0)
   36:	2e322053          	0x2e322053
   3a:	5f003733          	0x5f003733
   3e:	695f 746e 3233      	0x3233746e695f
   44:	745f 7500 736e      	0x736e7500745f
-  jal loop
   4a:	6769                	lui	a4,0x1a
-  add  x0, x0, x0
+  jal loop
   4c:	656e                	ld	a0,216(sp)
   4e:	2064                	fld	fs1,192(s0)
-  li   a0, 0x1  
+  add  x0, x0, x0
   50:	72616863          	bltu	sp,t1,780 <main+0x320>
-  slli a1, a0, 12
+  li   a0, 0x1  
   54:	6c00                	ld	s0,24(s0)
   56:	20676e6f          	jal	t3,7625c <_dtb+0x75a5c>
-  li   sp, 0x10000
+  slli a1, a0, 12
   5a:	6e75                	lui	t3,0x1d
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5c:	6e676973          	csrrsi	s2,0x6e6,14
-  add  a2, a1, x0
+  lb   a1, 9(sp)
   60:	6465                	lui	s0,0x19
   62:	6920                	ld	s0,80(a0)
-  li   sp, 0x20ff0
+  add  a2, a1, x0
   64:	746e                	ld	s0,248(sp)
   66:	7300                	ld	s0,32(a4)
+  li   sp, 0x20ff0
   68:	6f68                	ld	a0,216(a4)
   6a:	7472                	ld	s0,312(sp)
-  lb   a1, 0(sp)
   6c:	7520                	ld	s0,104(a0)
   6e:	736e                	ld	t1,248(sp)
-  call main
+  lb   a1, 0(sp)
   70:	6769                	lui	a4,0x1a
   72:	656e                	ld	a0,216(sp)
-  la a1, _dtb
+  call main
   74:	2064                	fld	fs1,192(s0)
   76:	6e69                	lui	t3,0x1a
+  la a1, _dtb
   78:	0074                	addi	a3,sp,12
   7a:	5f5f 6975 746e      	0x746e69755f5f
+  jr s0
   80:	745f3233          	0x745f3233
   84:	6d00                	ld	s0,24(a0)
   86:	6961                	lui	s2,0x18
@@ -1362,35 +1373,36 @@ Disassembly of section .debug_str:
 Disassembly of section .debug_rnglists:
 
 0000000000000000 <.debug_rnglists>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	001e                	c.slli	zero,0x7
    2:	0000                	unimp
+  li x1,0x00450008        // ipv4 key
    4:	0005                	c.nop	1
    6:	0008                	0x8
-  li x2,0x11              // udp proto type key 
    8:	0000                	unimp
    a:	0000                	unimp
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	00000007          	0x7
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	0000                	unimp
   12:	0000                	unimp
-  14:	8400                	0x8400
+  14:	8800                	0x8800
   16:	0701                	addi	a4,a4,0
   18:	0400                	addi	s0,sp,512
   1a:	0000                	unimp
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	0000                	unimp
   1e:	0000                	unimp
+  bne x4, x1, notipv4     // compare to ipv4 key
   20:	001c                	0x1c
   22:	00b6                	slli	ra,ra,0xd
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	0000                	unimp
   26:	0005                	c.nop	1
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	0008                	0x8
   2a:	0000                	unimp
-  bne x4, x3, notvxlan    // compare to ipv4 key
   2c:	0000                	unimp
   2e:	6006                	0x6006
+  bne x4, x3, notvxlan    // compare to ipv4 key
   30:	0004                	0x4
   32:	0000                	unimp
   34:	0000                	unimp
@@ -1403,46 +1415,46 @@ Disassembly of section .debug_rnglists:
   42:	0000                	unimp
   44:	0000                	unimp
   46:	0000                	unimp
-  jal loop
   48:	048c                	addi	a1,sp,576
   4a:	0000                	unimp
-  add  x0, x0, x0
+  jal loop
   4c:	0000                	unimp
   4e:	0000                	unimp
-  li   a0, 0x1  
+  add  x0, x0, x0
   50:	9006                	c.add	zero,ra
   52:	0004                	0x4
-  slli a1, a0, 12
+  li   a0, 0x1  
   54:	0000                	unimp
   56:	0000                	unimp
-  li   sp, 0x10000
+  slli a1, a0, 12
   58:	9800                	0x9800
   5a:	0004                	0x4
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5c:	0000                	unimp
   5e:	0000                	unimp
-  add  a2, a1, x0
+  lb   a1, 9(sp)
   60:	0000                	unimp
   62:	8c06                	mv	s8,ra
-  li   sp, 0x20ff0
+  add  a2, a1, x0
   64:	0004                	0x4
   66:	0000                	unimp
+  li   sp, 0x20ff0
   68:	0000                	unimp
   6a:	9000                	0x9000
-  lb   a1, 0(sp)
   6c:	0004                	0x4
   6e:	0000                	unimp
-  call main
+  lb   a1, 0(sp)
   70:	0000                	unimp
   72:	0600                	addi	s0,sp,768
-  la a1, _dtb
+  call main
   74:	0490                	addi	a2,sp,576
   76:	0000                	unimp
+  la a1, _dtb
   78:	0000                	unimp
   7a:	0000                	unimp
-  jr s0
   7c:	0490                	addi	a2,sp,576
   7e:	0000                	unimp
+  jr s0
   80:	0000                	unimp
   82:	0000                	unimp
   84:	9806                	add	a6,a6,ra
@@ -1493,33 +1505,34 @@ Disassembly of section .debug_rnglists:
 Disassembly of section .debug_loclists:
 
 0000000000000000 <.debug_loclists>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	0132                	slli	sp,sp,0xc
    2:	0000                	unimp
+  li x1,0x00450008        // ipv4 key
    4:	0005                	c.nop	1
    6:	0008                	0x8
-  li x2,0x11              // udp proto type key 
    8:	0000                	unimp
    a:	0000                	unimp
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	00046007          	0x46007
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	0000                	unimp
   12:	0000                	unimp
   14:	7000                	ld	s0,32(s0)
   16:	0004                	0x4
   18:	0000                	unimp
   1a:	0000                	unimp
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	0a00                	addi	s0,sp,272
   1e:	00081003          	lh	zero,0(a6) # 590b511c <_dtb+0x590b491c>
+  bne x4, x1, notipv4     // compare to ipv4 key
   22:	0000                	unimp
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	0000                	unimp
   26:	9f00                	0x9f00
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	00048807          	0x48807
-  bne x4, x3, notvxlan    // compare to ipv4 key
   2c:	0000                	unimp
   2e:	0000                	unimp
+  bne x4, x3, notvxlan    // compare to ipv4 key
   30:	9000                	0x9000
   32:	0004                	0x4
   34:	0000                	unimp
@@ -1531,44 +1544,44 @@ Disassembly of section .debug_loclists:
   42:	0000                	unimp
   44:	7000                	ld	s0,32(s0)
   46:	0004                	0x4
-  jal loop
   48:	0000                	unimp
   4a:	0000                	unimp
-  add  x0, x0, x0
+  jal loop
   4c:	0300                	addi	s0,sp,384
   4e:	4808                	lw	a0,16(s0)
-  li   a0, 0x1  
+  add  x0, x0, x0
   50:	079f 0488 0000      	0x488079f
-  slli a1, a0, 12
+  li   a0, 0x1  
   56:	0000                	unimp
-  li   sp, 0x10000
+  slli a1, a0, 12
   58:	0000                	unimp
   5a:	0490                	addi	a2,sp,576
-  lb   a1, 9(sp)
+  li   sp, 0x10000
   5c:	0000                	unimp
   5e:	0000                	unimp
-  add  a2, a1, x0
+  lb   a1, 9(sp)
   60:	0000                	unimp
   62:	5d01                	li	s10,-32
-  li   sp, 0x20ff0
+  add  a2, a1, x0
   64:	0700                	addi	s0,sp,896
   66:	0490                	addi	a2,sp,576
+  li   sp, 0x20ff0
   68:	0000                	unimp
   6a:	0000                	unimp
-  lb   a1, 0(sp)
   6c:	0000                	unimp
   6e:	049c                	addi	a5,sp,576
-  call main
+  lb   a1, 0(sp)
   70:	0000                	unimp
   72:	0000                	unimp
-  la a1, _dtb
+  call main
   74:	0000                	unimp
   76:	030a                	slli	t1,t1,0x2
+  la a1, _dtb
   78:	0810                	addi	a2,sp,16
   7a:	0000                	unimp
-  jr s0
   7c:	0000                	unimp
   7e:	0000                	unimp
+  jr s0
   80:	079f 04b4 0000      	0x4b4079f
   86:	0000                	unimp
   88:	0000                	unimp
@@ -1656,35 +1669,36 @@ Disassembly of section .debug_loclists:
 Disassembly of section .debug_frame:
 
 0000000000000000 <.debug_frame>:
-  li x1,0x00450008        // ipv4 key
+  jal test1
    0:	000c                	0xc
    2:	0000                	unimp
+  li x1,0x00450008        // ipv4 key
    4:	ffff                	0xffff
    6:	ffff                	0xffff
-  li x2,0x11              // udp proto type key 
    8:	7c010003          	lb	zero,1984(sp)
-  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
+  li x2,0x11              // udp proto type key 
    c:	0d01                	addi	s10,s10,0
    e:	0002                	c.slli64	zero
+  li x3,0x12b5            // udp destport 4789(=0x12b5) for vxlan
   10:	0014                	0x14
   12:	0000                	unimp
   14:	0000                	unimp
   16:	0000                	unimp
   18:	041c                	addi	a5,sp,512
   1a:	0000                	unimp
-  bne x4, x1, notipv4     // compare to ipv4 key
   1c:	0000                	unimp
   1e:	0000                	unimp
+  bne x4, x1, notipv4     // compare to ipv4 key
   20:	0018                	0x18
   22:	0000                	unimp
-  bne x4, x2, notudp      // compare to udp proto type key
   24:	0000                	unimp
   26:	0000                	unimp
+  bne x4, x2, notudp      // compare to udp proto type key
   28:	0014                	0x14
   2a:	0000                	unimp
-  bne x4, x3, notvxlan    // compare to ipv4 key
   2c:	0000                	unimp
   2e:	0000                	unimp
+  bne x4, x3, notvxlan    // compare to ipv4 key
   30:	0434                	addi	a3,sp,520
   32:	0000                	unimp
   34:	0000                	unimp
@@ -1697,15 +1711,14 @@ Disassembly of section .debug_frame:
   42:	0000                	unimp
   44:	0000                	unimp
   46:	0000                	unimp
-  jal loop
   48:	0460                	addi	s0,sp,524
   4a:	0000                	unimp
-  add  x0, x0, x0
+  jal loop
   4c:	0000                	unimp
   4e:	0000                	unimp
-  li   a0, 0x1  
+  add  x0, x0, x0
   50:	005c                	addi	a5,sp,4
   52:	0000                	unimp
-  slli a1, a0, 12
+  li   a0, 0x1  
   54:	0000                	unimp
 	...

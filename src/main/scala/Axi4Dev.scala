@@ -168,6 +168,9 @@ class AXI4IROM(
     requestKeys = if (wcorrupt) Seq(AMBACorrupt) else Seq(),
     minLatency = 1)))
 
+  val frag = LazyModule(new AXI4Fragmenter)
+  node := frag.node
+
   lazy val module = new LazyModuleImp(this) 
   {
     val (in, edgeIn) = node.in(0)
@@ -258,7 +261,7 @@ class AXI4PKTROM(
     val rom = Chisel.Vec(bigs.map(x => x.U((8*beatBytes).W)))
     
     /******************* push data to wind begin ******************/
-    val idle :: send_datal :: send_datah :: Nil = Enum(3)
+    val idle :: send_data :: Nil = Enum(2)
     val ar_id_s1 = Reg(UInt())
     val ar_echo = Reg(in.ar.bits.echo.cloneType)
     val state = RegInit(idle)
@@ -276,20 +279,10 @@ class AXI4PKTROM(
           //offset := 0.U
           ar_id_s1 := in.ar.bits.id
           ar_echo := in.ar.bits.echo
-          state := send_datal
+          state := send_data
         }
       }
-      is(send_datal) {
-        in.ar.ready := false.B
-        in.r.valid := true.B
-        in.r.bits.id   := ar_id_s1
-        in.r.bits.resp := AXI4Parameters.RESP_OKAY
-        in.r.bits.data := rom(offset)(63, 0)
-        in.r.bits.echo := ar_echo
-        in.r.bits.last := false.B
-        when(in.r.fire()) { state := send_datah }
-      }
-      is(send_datah) {        
+      is(send_data) {        
         in.ar.ready := false.B
         in.r.valid := true.B
         in.r.bits.id   := ar_id_s1
@@ -303,7 +296,7 @@ class AXI4PKTROM(
           in.r.bits.last := true.B
           state := idle 
         }
-        .otherwise { state := send_datal }
+        .otherwise { state := send_data }
       }
     }
     /******************* push data to wind end ******************/
